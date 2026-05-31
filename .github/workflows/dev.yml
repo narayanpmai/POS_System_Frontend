@@ -1,0 +1,103 @@
+name: CI/CD for koselighar-frontend (dev)
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: [self-hosted, hostinger]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Load NVM and Node.js
+        shell: bash
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm install 24
+          nvm use 24
+          node -v
+          npm -v
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm use 24
+          npm ci --legacy-peer-deps
+
+      - name: Remove ALL existing env files
+        shell: bash
+        run: |
+          rm -f .env*
+          echo "✓ Removed ALL .env files"
+
+      - name: Create environment file
+        shell: bash
+        run: |
+          cat > .env << 'EOF'
+          NEXT_PUBLIC_API_URL=https://koseligharapi.deeyosoft.com
+          EOF
+          echo "✓ Created .env"
+
+      - name: Build project
+        shell: bash
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm use 24
+          npm run build
+
+      - name: Verify build output
+        shell: bash
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "❌ ERROR: dist directory not found!"
+            exit 1
+          fi
+          if ! grep -r "koseligharapi.deeyosoft.com" dist/ 2>/dev/null; then
+            echo "❌ ERROR: Production API URL not found in build!"
+            exit 1
+          fi
+          echo "✓ Production build verified"
+
+      - name: Deploy to production server
+        shell: bash
+        run: |
+          BUILD_DIR=$(pwd)/dist
+          DEPLOY_DIR=/home/beingonam/koselighar-frontend-dev
+
+          echo "Deploying to: $DEPLOY_DIR"
+          if [ ! -d "$BUILD_DIR" ]; then
+            echo "✗ Build directory does not exist!"
+            exit 1
+          fi
+          mkdir -p $DEPLOY_DIR
+          rm -rf $DEPLOY_DIR/*
+          cp -r $BUILD_DIR/* $DEPLOY_DIR/
+          chmod -R 755 $DEPLOY_DIR
+          echo "✓ Deployment complete"
+
+      - name: Reload nginx
+        shell: bash
+        run: |
+          sudo systemctl reload nginx
+          echo "✓ Nginx reloaded"
+
+      - name: Health Check
+        shell: bash
+        run: |
+          sleep 3
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://koselighar.smartptrm.com)
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✓ Frontend site is reachable"
+          else
+            echo "✗ Frontend site not reachable (HTTP $STATUS)"
+            exit 1
+          fi

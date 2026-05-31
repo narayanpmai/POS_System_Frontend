@@ -1,0 +1,495 @@
+/* Google Fonts Import */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Brand Colors - Premium HSL System */
+  --primary-base: 220; /* Royal Deep Blue */
+  --secondary-base: 25; /* Vibrant Mandarin Orange */
+  
+  --primary: hsl(var(--primary-base), 85%, 57%);
+  --primary-dark: hsl(var(--primary-base), 90%, 40%);
+  --primary-light: hsl(var(--primary-base), 80%, 95%);
+  --primary-glow: hsla(var(--primary-base), 85%, 57%, 0.15);
+  
+  --secondary: hsl(var(--secondary-base), 95%, 55%);
+  --secondary-dark: hsl(var(--secondary-base), 95%, 45%);
+  --secondary-light: hsl(var(--secondary-base), 95%, 95%);
+  
+  --dark-bg: #0b1329;
+  --dark-card: #152244;
+  --light-bg: #f8fafc;
+  --light-card: #ffffff;
+  
+  --text-dark: #0f172a;
+  --text-light: #64748b;
+  
+  --table-header-bg: #dce8f8;
+  
+  --border-color: #e2e8f0;
+  --radius-lg: 16px;
+  --radius-md: 10px;
+  
+  --font-main: 'Plus Jakarta Sans', sans-serif;
+  --font-heading: 'Outfit', sans-serif;
+  
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-main);
+  background-color: var(--light-bg);
+  color: var(--text-dark);
+  overflow-x: hidden;
+}
+
+/* Dark Mode Support */
+[data-theme='dark'] {
+  --light-bg: var(--dark-bg);
+  --light-card: var(--dark-card);
+  --text-dark: #f8fafc;
+  --text-light: #94a3b8;
+  --border-color: #1e293b;
+  --table-header-bg: #1e293b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --light-bg: var(--dark-bg);
+    --light-card: var(--dark-card);
+    --text-dark: #f8fafc;
+    --text-light: #94a3b8;
+    --border-color: #1e293b;
+    --table-header-bg: #1e293b;
+  }
+}
+
+/* Comprehensive Dark Mode Overrides for Bootstrap Classes & Inline Styles */
+[data-theme='dark'] .text-dark,
+[data-theme='dark'] h1, 
+[data-theme='dark'] h2, 
+[data-theme='dark'] h3, 
+[data-theme='dark'] h4, 
+[data-theme='dark'] h5, 
+[data-theme='dark'] h6 {
+  color: #f8fafc !important;
+}
+
+[data-theme='dark'] .text-secondary,
+[data-theme='dark'] .text-muted {
+  color: #94a3b8 !important;
+}
+
+[data-theme='dark'] .bg-white,
+[data-theme='dark'] .bg-light,
+[data-theme='dark'] .custom-table th,
+[data-theme='dark'] .pos-cart-footer {
+  background-color: var(--dark-card) !important;
+}
+
+[data-theme='dark'] .card,
+[data-theme='dark'] .modal-content,
+[data-theme='dark'] .dropdown-menu {
+  background-color: var(--dark-card) !important;
+  color: #f8fafc !important;
+  border-color: var(--border-color) !important;
+}
+
+[data-theme='dark'] .border,
+[data-theme='dark'] .border-top,
+[data-theme='dark'] .border-bottom,
+[data-theme='dark'] .table td,
+[data-theme='dark'] .table th,
+[data-theme='dark'] hr {
+  border-color: var(--border-color) !important;
+}
+
+[data-theme='dark'] .custom-sidebar {
+  background-color: var(--dark-card) !important;
+  border-right-color: var(--border-color) !important;
+}
+
+[data-theme='dark'] .form-control,
+[data-theme='dark'] .form-select,
+[data-theme='dark'] .input-group-text,
+[data-theme='dark'] input {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: var(--border-color) !important;
+}
+
+[data-theme='dark'] .form-control:focus, 
+[data-theme='dark'] .form-select:focus {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+[data-theme='dark'] .thermal-receipt {
+  background-color: #ffffff !important; /* Keep receipts white for printing */
+  color: #000000 !important;
+}
+[data-theme='dark'] .thermal-receipt .text-dark,
+[data-theme='dark'] .thermal-receipt .text-secondary {
+  color: #000000 !important;
+}
+[data-theme='dark'] .thermal-receipt .text-muted {
+  color: #666666 !important;
+}
+[data-theme='dark'] .thermal-receipt h1, 
+[data-theme='dark'] .thermal-receipt h2, 
+[data-theme='dark'] .thermal-receipt h3, 
+[data-theme='dark'] .thermal-receipt h4, 
+[data-theme='dark'] .thermal-receipt h5, 
+[data-theme='dark'] .thermal-receipt h6 {
+  color: #000000 !important;
+}
+
+[data-theme='dark'] .table {
+  color: #f8fafc !important;
+}
+[data-theme='dark'] .table-responsive {
+  background-color: transparent !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+/* Beautiful Premium Layout */
+.app-wrapper {
+  display: flex;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 260px;
+  padding: 30px;
+  transition: var(--transition-smooth);
+}
+
+@media (max-width: 991.98px) {
+  .main-content {
+    margin-left: 0;
+    padding: 20px;
+  }
+}
+
+/* Sidebar Custom Styling */
+.custom-sidebar {
+  width: 260px;
+  background: #ffffff;
+  color: var(--text-dark);
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.03);
+  border-right: 1px solid var(--border-color);
+}
+
+.sidebar-header {
+  padding: 24px;
+}
+
+.sidebar-brand-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: 0.5px;
+  color: #0d6efd !important;
+}
+
+.sidebar-menu {
+  flex: 1;
+  padding: 20px 14px;
+  overflow-y: auto;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  color: #4b5563;
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  margin-bottom: 6px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: var(--transition-smooth);
+}
+
+.sidebar-link:hover {
+  background-color: #f8fafc;
+  color: #0d6efd;
+}
+
+.sidebar-link.active {
+  background-color: #0d6efd;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(13, 110, 253, 0.2);
+}
+
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.85rem;
+  color: var(--text-light);
+}
+
+/* Navbar Custom Styling */
+.custom-navbar {
+  background-color: transparent;
+  padding: 15px 30px;
+  margin-bottom: 25px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* Beautiful Cards with Orange Accents */
+.stat-card {
+  border: none;
+  border-radius: var(--radius-lg);
+  background: var(--light-card);
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition-smooth);
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+}
+
+.stat-card-blue::before {
+  background-color: var(--primary);
+}
+
+.stat-card-orange::before {
+  background-color: var(--secondary);
+}
+
+.stat-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  margin-bottom: 16px;
+}
+
+.stat-card-blue .stat-card-icon {
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+.stat-card-orange .stat-card-icon {
+  background-color: var(--secondary-light);
+  color: var(--secondary);
+}
+
+/* Tables and Form Controls styling */
+.custom-table {
+  background-color: var(--light-card);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  border: 1px solid var(--border-color);
+}
+
+.custom-table th {
+  background-color: #f1f5f9;
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--text-light);
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.custom-table td {
+  padding: 16px 20px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.25rem var(--primary-glow);
+}
+
+/* POS Interface Elements */
+.pos-product-card {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background-color: var(--light-card);
+  padding: 14px;
+  cursor: pointer;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: var(--transition-smooth);
+}
+
+.pos-product-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.08);
+}
+
+.pos-cart {
+  background-color: var(--light-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  height: 80vh;
+}
+
+.pos-cart-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+}
+
+.pos-cart-item {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+.pos-cart-footer {
+  background-color: #f8fafc;
+  padding: 20px;
+  border-top: 1px solid var(--border-color);
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
+}
+
+/* Interactive elements */
+.btn-primary {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  padding: 10px 20px;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  transition: var(--transition-smooth);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.btn-secondary-brand {
+  background-color: var(--secondary);
+  border-color: var(--secondary);
+  color: white;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  padding: 10px 20px;
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.2);
+  transition: var(--transition-smooth);
+}
+
+.btn-secondary-brand:hover {
+  background-color: var(--secondary-dark);
+  border-color: var(--secondary-dark);
+  color: white;
+}
+
+.badge-low-stock {
+  background-color: #fee2e2;
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.badge-in-stock {
+  background-color: #dcfce7;
+  color: #22c55e;
+  font-weight: 600;
+}
+
+/* Modal Receipt Thermal Print Templates */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-receipt-modal, #printable-receipt-modal * {
+    visibility: visible;
+  }
+  #printable-receipt-modal {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm; /* Standard receipt roll */
+    margin: 0;
+    padding: 10px;
+    background-color: white;
+    color: black;
+    font-family: monospace;
+    font-size: 11px;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
+.thermal-receipt {
+  max-width: 350px;
+  margin: 0 auto;
+  background-color: #ffffff;
+  padding: 20px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  color: #333333;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border-color);
+}
+
+.thermal-receipt-divider {
+  border-top: 1px dashed #cccccc;
+  margin: 10px 0;
+}
+
+/* Custom Scrollbar for modern feeling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

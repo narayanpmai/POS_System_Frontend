@@ -1,0 +1,272 @@
+'use strict';
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import AuthLayout from '@/components/AuthLayout';
+import { useAuth } from '@/context/AuthContext';
+import axios from 'axios';
+import Link from 'next/link';
+import { formatAdToBs, formatAdToBsShort } from '@/utils/nepaliDate';
+
+// Chart.js imports
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
+
+interface SummaryData {
+  salesCountToday: number;
+  salesToday: number;
+  salesThisWeek: number;
+  salesThisMonth: number;
+  totalSales: number;
+  totalTaxCollected: number;
+  totalDiscountGiven: number;
+  totalTransactions: number;
+  totalNetProfit: number;
+  lowStockCount: number;
+  lowStockAlerts: any[];
+  topSellingProducts: any[];
+  recentTransactions: any[];
+}
+
+interface ChartTimelineItem {
+  date: string;
+  sales: number;
+  profit: number;
+  transactions: number;
+}
+
+export default function DashboardPage() {
+  const { token, api, activeFiscalYear } = useAuth();
+  const [summary, setSummary] = useState<SummaryData | null>(null);
+  const [chartData, setChartData] = useState<ChartTimelineItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [chartLoading, setChartLoading] = useState(true);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const fetchSummary = async () => {
+      try {
+        const res = await api.get('/reports/dashboard-summary');
+        setSummary(res.data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error fetching dashboard summary:', err);
+        setLoading(false);
+      }
+    };
+
+    const fetchSalesTimeline = async () => {
+      try {
+        const res = await api.get('/reports/sales');
+        setChartData(res.data.timeline || []);
+        setChartLoading(false);
+      } catch (err) {
+        console.error('Error fetching sales timeline:', err);
+        setChartLoading(false);
+      }
+    };
+
+    fetchSummary();
+    fetchSalesTimeline();
+  }, [token, activeFiscalYear]);
+
+  // Chart configuration
+  const lineChartData = {
+    labels: chartData.map((d) => {
+      return formatAdToBsShort(d.date);
+    }),
+    datasets: [
+      {
+        label: 'Sales Revenue',
+        data: chartData.map((d) => d.sales),
+        borderColor: '#0d6efd',
+        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+        borderWidth: 2,
+        tension: 0.4, // Smooth curve
+        fill: true,
+        pointBackgroundColor: '#0d6efd',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      },
+    ],
+  };
+
+  const chartOptions: any = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        cornerRadius: 8,
+        titleFont: { family: 'Outfit', size: 13, weight: 'bold' },
+        bodyFont: { family: 'Plus Jakarta Sans', size: 12 },
+      },
+    },
+    scales: {
+      y: {
+        grid: { color: '#f1f5f9' },
+        ticks: { font: { family: 'Plus Jakarta Sans' } },
+      },
+      x: {
+        grid: { display: false },
+        ticks: { font: { family: 'Plus Jakarta Sans' } },
+      },
+    },
+  };
+
+  if (loading) {
+    return (
+      <AuthLayout>
+        <div className="d-flex align-items-center justify-content-center py-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading telemetry...</span>
+          </div>
+        </div>
+      </AuthLayout>
+    );
+  }
+
+  return (
+    <AuthLayout>
+      {/* 1. Stat Grid */}
+      <div className="row g-4 mb-4">
+        <div className="col-12 col-sm-6 col-xl-3">
+          <div className="card border-0 rounded-lg p-4 shadow-sm h-100 text-center" style={{ backgroundColor: 'var(--light-card)' }}>
+            <span className="text-secondary font-weight-semibold d-block mb-2">Today's Sales</span>
+            <h3 className="m-0 font-weight-bold" style={{ color: '#0d6efd' }}>Rs. {summary?.salesToday.toFixed(2) || '0.00'}</h3>
+          </div>
+        </div>
+
+        <div className="col-12 col-sm-6 col-xl-3">
+          <div className="card border-0 rounded-lg p-4 shadow-sm h-100 text-center" style={{ backgroundColor: 'var(--light-card)' }}>
+            <span className="text-secondary font-weight-semibold d-block mb-2">Monthly Sales</span>
+            <h3 className="m-0 font-weight-bold" style={{ color: '#198754' }}>Rs. {summary?.salesThisMonth?.toFixed(2) || summary?.salesThisWeek.toFixed(2) || '0.00'}</h3>
+          </div>
+        </div>
+
+        <div className="col-12 col-sm-6 col-xl-3">
+          <div className="card border-0 rounded-lg p-4 shadow-sm h-100 text-center" style={{ backgroundColor: 'var(--light-card)' }}>
+            <span className="text-secondary font-weight-semibold d-block mb-2">Est. Monthly Profit</span>
+            <h3 className="m-0 font-weight-bold" style={{ color: '#0dcaf0' }}>Rs. {summary?.totalNetProfit.toFixed(2) || '0.00'}</h3>
+          </div>
+        </div>
+
+        <div className="col-12 col-sm-6 col-xl-3">
+          <div className="card border-0 rounded-lg p-4 shadow-sm h-100 text-center" style={{ backgroundColor: 'var(--light-card)' }}>
+            <span className="text-secondary font-weight-semibold d-block mb-2">Total Sales</span>
+            <h3 className="m-0 font-weight-bold" style={{ color: '#ffc107' }}>Rs. {summary?.totalSales?.toFixed(2) || summary?.salesThisMonth?.toFixed(2) || '0.00'}</h3>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Interactive Charts & Timeline */}
+      <div className="row g-4 mb-4">
+        <div className="col-12 col-xl-8">
+          <div className="card border-0 rounded-lg p-4 shadow-sm h-100" style={{ backgroundColor: 'var(--light-card)' }}>
+            <h6 className="font-weight-semibold text-secondary mb-4">Sales Analytics (Last 7 Days)</h6>
+            <div style={{ height: '350px' }}>
+              {chartLoading ? (
+                <div className="d-flex align-items-center justify-content-center h-100">
+                  <div className="spinner-border text-primary" role="status"></div>
+                </div>
+              ) : (
+                <Line data={lineChartData} options={chartOptions} />
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="col-12 col-xl-4">
+          <div className="card border-0 rounded-lg p-4 shadow-sm h-100" style={{ backgroundColor: 'var(--light-card)' }}>
+            <h6 className="font-weight-semibold text-danger mb-4 d-flex align-items-center gap-2">
+              <i className="bi bi-exclamation-triangle"></i> Low Stock Alerts
+            </h6>
+            
+            <div className="d-flex flex-column gap-3 mt-4 text-center">
+              {(!summary?.lowStockAlerts || summary.lowStockAlerts.length === 0) ? (
+                <p className="text-secondary font-weight-semibold mt-5">All products are adequately stocked.</p>
+              ) : (
+                summary.lowStockAlerts.map((prod, idx) => (
+                  <div key={idx} className="d-flex align-items-center justify-content-between p-2 border-bottom">
+                    <span className="font-weight-semibold text-dark">{prod.name}</span>
+                    <span className="badge bg-danger-subtle text-danger px-2 py-1 rounded-pill">{prod.stock} left</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Tables Row */}
+      <div className="row g-4">
+        {/* Recent Transactions */}
+        <div className="col-12">
+          <div className="card border-0 rounded-lg p-4 shadow-sm" style={{ backgroundColor: 'var(--light-card)' }}>
+            <h6 className="font-weight-semibold text-secondary mb-4">Recent Invoices</h6>
+            <div className="table-responsive">
+              <table className="table custom-table m-0">
+                <thead>
+                  <tr>
+                    <th>Invoice ID</th>
+                    <th>Date</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Payment</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {summary?.recentTransactions.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="text-center text-muted py-4">No recent sales records in system</td>
+                    </tr>
+                  ) : (
+                    summary?.recentTransactions.map((tx) => (
+                      <tr key={tx.id}>
+                        <td className="font-weight-bold text-dark">{tx.invoiceNo}</td>
+                        <td>{formatAdToBs(tx.createdAt)}</td>
+                        <td>{tx.customer?.name || 'Walk-In Customer'}</td>
+                        <td className="font-weight-bold">Rs. {tx.totalAmount.toFixed(2)}</td>
+                        <td><span className="badge bg-success-subtle text-success border border-success px-2 py-1 rounded-pill">Paid</span></td>
+                        <td>{tx.paymentMethod}</td>
+                        <td><button className="btn btn-sm btn-light border px-3"><i className="bi bi-eye"></i></button></td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </AuthLayout>
+  );
+}
