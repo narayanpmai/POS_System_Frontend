@@ -1,4 +1,3 @@
-'use strict';
 'use client';
 
 import { useEffect } from 'react';
@@ -25,7 +24,7 @@ export default function RootPage() {
         <div className="spinner-border text-primary" role="status">
           <span className="visually-hidden">Loading...</span>
         </div>
-        <p className="mt-3 text-secondary font-weight-semibold">Configuring POS Environment...</p>
+        <p className="mt-3 text-secondary fw-semibold">Configuring POS Environment...</p>
       </div>
     </div>
   );

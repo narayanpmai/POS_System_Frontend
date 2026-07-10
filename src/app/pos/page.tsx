@@ -1,4 +1,3 @@
-'use strict';
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -262,11 +261,11 @@ export default function POSPage() {
       const html2pdf = (await import('html2pdf.js')).default;
 
       const opt = {
-        margin:       [6, 6, 6, 6],
+        margin:       [6, 6, 6, 6] as [number, number, number, number],
         filename:     `Invoice-${checkoutResult.invoiceNo || 'INV'}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
+        image:        { type: 'jpeg' as 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 3, useCORS: true, letterRendering: true },
-        jsPDF:        { unit: 'mm', format: 'a6', orientation: 'portrait' }
+        jsPDF:        { unit: 'mm' as 'mm', format: 'a6' as 'a6', orientation: 'portrait' as 'portrait' }
       };
 
       html2pdf().set(opt).from(element).save();
@@ -287,7 +286,7 @@ export default function POSPage() {
 
   return (
     <AuthLayout>
-      <div className="row g-4">
+      <div className="row g-4 animate-fade-in-up">
         {/* ==============================================
             LEFT PANEL: PRODUCTS DISCOVERY GRID
             ============================================== */}
@@ -308,7 +307,7 @@ export default function POSPage() {
                 style={{ outline: 'none' }}
               />
               <button 
-                className="btn btn-primary px-4 py-2 border-0 font-weight-bold" 
+                className="btn btn-primary px-4 py-2 border-0 fw-bold" 
                 style={{ backgroundColor: '#0d6efd', borderRadius: '0px' }}
                 onClick={() => {}}
               >
@@ -348,16 +347,15 @@ export default function POSPage() {
               </div>
             ) : (
               filteredProducts.map((prod) => (
-                <div key={prod.id} className="col-6 col-sm-4">
+                <div key={prod.id} className="col-6 col-sm-4 animate-fade-in-up animate-delay-100">
                   <div 
-                    className="card text-center p-3 border shadow-sm cursor-pointer hover-card bg-white" 
-                    style={{ borderRadius: '12px', border: '1px solid #dee2e6', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                    className="pos-product-card" 
                     onClick={() => addToCart(prod)}
                   >
-                    <h6 className="font-weight-bold text-dark mb-2 text-truncate" title={prod.name} style={{ fontSize: '1rem' }}>
+                    <h6 className="fw-bold text-dark mb-2 text-truncate" title={prod.name} style={{ fontSize: '1rem' }}>
                       {prod.name}
                     </h6>
-                    <div className="font-weight-bold mb-2" style={{ color: '#0d6efd', fontSize: '1.1rem' }}>
+                    <div className="fw-bold mb-2" style={{ color: '#0d6efd', fontSize: '1.1rem' }}>
                       Rs.{prod.price.toFixed(2)}
                     </div>
                     <div className="text-secondary" style={{ fontSize: '0.75rem' }}>
@@ -373,12 +371,12 @@ export default function POSPage() {
         {/* ==============================================
             RIGHT PANEL: VIRTUAL CART & CHECKOUT PANEL
             ============================================== */}
-        <div className="col-12 col-xl-4">
-          <div className="card border-0 rounded-md p-4 shadow-sm" style={{ backgroundColor: 'var(--light-card)', borderRadius: '12px' }}>
+        <div className="col-12 col-xl-4 animate-slide-in-right animate-delay-200">
+          <div className="pos-cart p-4">
             
             {/* Cart Header */}
             <div className="pb-3 d-flex justify-content-between align-items-center">
-              <h5 className="font-weight-bold text-dark m-0">Current Order</h5>
+              <h5 className="fw-bold text-dark m-0">Current Order</h5>
             </div>
 
             {/* Customer select */}
@@ -418,7 +416,7 @@ export default function POSPage() {
                 cart.map((item) => (
                   <div key={item.product.id} className="d-flex justify-content-between align-items-center py-3 border-bottom">
                     <div style={{ flex: '1', minWidth: '0' }}>
-                      <h6 className="font-weight-bold text-dark m-0 text-truncate" title={item.product.name} style={{ fontSize: '0.95rem' }}>
+                      <h6 className="fw-bold text-dark m-0 text-truncate" title={item.product.name} style={{ fontSize: '0.95rem' }}>
                         {item.product.name}
                       </h6>
                       <small className="text-secondary">Rs.{item.price.toFixed(2)}</small>
@@ -449,7 +447,7 @@ export default function POSPage() {
                     </div>
 
                     <div className="text-end d-flex align-items-center gap-3">
-                      <span className="font-weight-bold text-dark" style={{ fontSize: '0.95rem' }}>
+                      <span className="fw-bold text-dark" style={{ fontSize: '0.95rem' }}>
                         Rs.{(item.price * item.quantity).toFixed(2)}
                       </span>
                       <button className="btn btn-link text-danger p-0 border-0" onClick={() => removeFromCart(item.product.id)}>
@@ -465,11 +463,11 @@ export default function POSPage() {
             <div className="border-top pt-3">
               <div className="d-flex justify-content-between mb-2 text-secondary fs-7">
                 <span>Total Items:</span>
-                <span className="font-weight-bold text-dark">{cart.reduce((a, b) => a + b.quantity, 0)}</span>
+                <span className="fw-bold text-dark">{cart.reduce((a, b) => a + b.quantity, 0)}</span>
               </div>
               <div className="d-flex justify-content-between mb-2 text-secondary fs-7">
                 <span>Sub Total:</span>
-                <span className="font-weight-bold text-dark">Rs.{getSubtotal().toFixed(2)}</span>
+                <span className="fw-bold text-dark">Rs.{getSubtotal().toFixed(2)}</span>
               </div>
               <div className="d-flex justify-content-between mb-2 align-items-center text-secondary fs-7">
                 <span>Discount:</span>
@@ -486,7 +484,7 @@ export default function POSPage() {
               
               <div className="border-top my-2"></div>
 
-              <div className="d-flex justify-content-between mb-3 font-weight-bold fs-5">
+              <div className="d-flex justify-content-between mb-3 fw-bold fs-5">
                 <span className="text-primary">Grand Total:</span>
                 <span style={{ color: '#0d6efd' }}>Rs. {getNetPayable().toFixed(2)}</span>
               </div>
@@ -514,10 +512,12 @@ export default function POSPage() {
 
               {/* Orange Pay Now Button */}
               <button
-                className="btn w-100 py-2.5 font-weight-bold text-white d-flex align-items-center justify-content-center gap-2 border-0 shadow-sm"
-                style={{ backgroundColor: '#ff7a00', borderRadius: '30px', fontSize: '1rem', transition: 'background-color 0.2s' }}
+                className="btn w-100 py-2.5 fw-bold text-white d-flex align-items-center justify-content-center gap-2 border-0 shadow-lg"
+                style={{ background: 'var(--gradient-secondary)', borderRadius: '30px', fontSize: '1.1rem', transition: 'var(--transition-bounce)' }}
                 disabled={cart.length === 0 || submittingCheckout}
                 onClick={handleCheckoutSubmit}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)' }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0) scale(1)' }}
               >
                 {submittingCheckout ? (
                   <span className="spinner-border spinner-border-sm" role="status"></span>
@@ -539,7 +539,7 @@ export default function POSPage() {
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content border-0 shadow-lg rounded-lg" style={{ borderRadius: '12px' }}>
             <div className="modal-header bg-primary text-white border-none p-3">
-              <h5 className="modal-title font-weight-bold" id="newCustomerModalLabel">
+              <h5 className="modal-title fw-bold" id="newCustomerModalLabel">
                 <i className="bi bi-person-plus-fill me-2"></i>Register Quick CRM Customer
               </h5>
               <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -547,7 +547,7 @@ export default function POSPage() {
             <form onSubmit={handleQuickCreateCustomer}>
               <div className="modal-body p-4">
                 <div className="mb-3">
-                  <label className="form-label font-weight-semibold">Customer Full Name</label>
+                  <label className="form-label fw-semibold">Customer Full Name</label>
                   <input
                     type="text"
                     className="form-control"
@@ -558,7 +558,7 @@ export default function POSPage() {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label font-weight-semibold">Telephone Number</label>
+                  <label className="form-label fw-semibold">Telephone Number</label>
                   <input
                     type="text"
                     className="form-control"
@@ -584,7 +584,7 @@ export default function POSPage() {
         <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '420px' }}>
           <div className="modal-content border-0 shadow-lg rounded-lg" style={{ borderRadius: '12px' }}>
             <div className="modal-header bg-dark text-white border-none p-3 no-print">
-              <h5 className="modal-title font-weight-bold" id="receiptModalLabel">
+              <h5 className="modal-title fw-bold" id="receiptModalLabel">
                 <i className="bi bi-printer-fill me-2 text-warning"></i>POS Checkout Success
               </h5>
               <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -594,7 +594,7 @@ export default function POSPage() {
               {/* Receipt formatting for window.print() */}
               <div id="printable-receipt-modal" className="thermal-receipt mx-auto">
                 <div className="text-center">
-                  <h5 className="m-0 font-weight-bold" style={{ fontFamily: 'Outfit' }}>
+                  <h5 className="m-0 fw-bold" style={{ fontFamily: 'Outfit' }}>
                     {storeSettings?.storeName || 'PANCHPOKHARI KOSELI GHAR'}
                   </h5>
                   <p className="m-0 text-muted" style={{ fontSize: '10px' }}>
@@ -652,7 +652,7 @@ export default function POSPage() {
                       <span>-Rs. {Number(checkoutResult?.discountAmount).toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="d-flex justify-content-between font-weight-bold border-top pt-1 mt-1 fs-6">
+                  <div className="d-flex justify-content-between fw-bold border-top pt-1 mt-1 fs-6">
                     <span>TOTAL PAID:</span>
                     <span>Rs. {Number(checkoutResult?.totalAmount || 0).toFixed(2)}</span>
                   </div>

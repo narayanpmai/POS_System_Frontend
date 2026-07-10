@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Barcode from 'react-barcode';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
+import * as XLSX from 'xlsx';
 
 interface Category {
   id: number;
@@ -34,6 +35,7 @@ interface Product {
   brandId?: number;
   brand?: Brand;
   unit: string;
+  description?: string;
 }
 
 export default function ProductsPage() {
@@ -59,6 +61,9 @@ export default function ProductsPage() {
 
   // Edit / Add states
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  
+  // Excel Import ref
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Product Form states
   const [name, setName] = useState('');
@@ -279,6 +284,81 @@ export default function ProductsPage() {
     }
   };
 
+  const handleExportExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(products.map(p => ({
+      ID: p.id,
+      Name: p.name,
+      SKU: p.SKU,
+      Barcode: p.barcode,
+      Category: p.category?.name || '',
+      Brand: p.brand?.name || '',
+      'Cost Price': p.cost,
+      'Selling Price': p.price,
+      Stock: p.stock,
+      'Alert Qty': p.minStockAlert,
+      Unit: p.unit
+    })));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Products");
+    XLSX.writeFile(wb, "Products.xlsx");
+  };
+
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!isAdmin) {
+      alert('Only administrators can import products');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const data = event.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const parsedData = XLSX.utils.sheet_to_json(sheet);
+
+        if (parsedData.length === 0) {
+          alert('Excel file is empty');
+          return;
+        }
+
+        // Loop through each item and create product
+        for (const item of parsedData as any[]) {
+          const payload = {
+            name: item.Name,
+            SKU: item.SKU,
+            barcode: item.Barcode || item.SKU,
+            price: Number(item['Selling Price']),
+            cost: Number(item['Cost Price']),
+            stock: Number(item.Stock || 0),
+            minStockAlert: Number(item['Alert Qty'] || 5),
+            categoryId: categories.find(c => c.name === item.Category)?.id || (categories[0]?.id || 1),
+            brandId: brands.find(b => b.name === item.Brand)?.id || null,
+            taxRate: 13.0,
+            unit: item.Unit || 'pcs',
+            description: ''
+          };
+
+          await api.post('/products', payload);
+        }
+
+        alert('Products imported successfully!');
+        loadCatalogs();
+      } catch (err: any) {
+        console.error(err);
+        alert('Error importing products. Ensure formatting is correct.');
+      }
+      
+      // reset file input
+      e.target.value = '';
+    };
+    reader.readAsBinaryString(file);
+  };
+
   const handleAddProductClick = () => {
     setEditingProduct(null);
     setName('');
@@ -308,7 +388,7 @@ export default function ProductsPage() {
         <ul className="nav nav-pills border-0 bg-white p-1 rounded-pill shadow-sm" style={{ border: '1px solid var(--border-color)' }}>
           <li className="nav-item">
             <button
-              className={`nav-link rounded-pill font-weight-bold px-4 py-2 ${activeTab === 'products' ? 'active bg-primary' : 'text-secondary'}`}
+              className={`nav-link rounded-pill fw-bold px-4 py-2 ${activeTab === 'products' ? 'active bg-primary' : 'text-secondary'}`}
               onClick={() => setActiveTab('products')}
             >
               <i className="bi bi-box-seam me-2"></i>All Products
@@ -316,7 +396,7 @@ export default function ProductsPage() {
           </li>
           <li className="nav-item">
             <button
-              className={`nav-link rounded-pill font-weight-bold px-4 py-2 ${activeTab === 'categories' ? 'active bg-primary' : 'text-secondary'}`}
+              className={`nav-link rounded-pill fw-bold px-4 py-2 ${activeTab === 'categories' ? 'active bg-primary' : 'text-secondary'}`}
               onClick={() => setActiveTab('categories')}
             >
               <i className="bi bi-tags me-2"></i>Product Categories
@@ -328,17 +408,44 @@ export default function ProductsPage() {
         {isAdmin && (
           <div>
             {activeTab === 'products' ? (
-              <button
-                className="btn btn-primary d-flex align-items-center gap-2 font-weight-bold px-3 py-2"
-                style={{ backgroundColor: '#0d6efd', borderRadius: '20px' }}
-                onClick={handleAddProductClick}
-              >
-                <i className="bi bi-plus-circle"></i>
-                <span>Add Product</span>
-              </button>
+              <div className="d-flex gap-2">
+                <button
+                  className="btn btn-outline-success d-flex align-items-center gap-2 fw-bold px-3 py-2"
+                  style={{ borderRadius: '20px' }}
+                  onClick={handleExportExcel}
+                  title="Export Products"
+                >
+                  <i className="bi bi-file-earmark-excel"></i>
+                  <span>Export</span>
+                </button>
+                <button
+                  className="btn btn-outline-success d-flex align-items-center gap-2 fw-bold px-3 py-2"
+                  style={{ borderRadius: '20px' }}
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Import Products"
+                >
+                  <i className="bi bi-upload"></i>
+                  <span>Import</span>
+                </button>
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  style={{ display: 'none' }} 
+                  accept=".xlsx, .xls" 
+                  onChange={handleImportExcel} 
+                />
+                <button
+                  className="btn btn-primary d-flex align-items-center gap-2 fw-bold px-3 py-2"
+                  style={{ backgroundColor: '#0d6efd', borderRadius: '20px' }}
+                  onClick={handleAddProductClick}
+                >
+                  <i className="bi bi-plus-circle"></i>
+                  <span>Add Product</span>
+                </button>
+              </div>
             ) : (
               <button
-                className="btn btn-primary d-flex align-items-center gap-2 font-weight-bold px-3 py-2"
+                className="btn btn-primary d-flex align-items-center gap-2 fw-bold px-3 py-2"
                 style={{ backgroundColor: '#0d6efd', borderRadius: '20px' }}
                 onClick={() => {
                   setEditingCategory(null);
@@ -394,10 +501,10 @@ export default function ProductsPage() {
             <table className="table mb-0 align-middle">
               <thead>
                 <tr style={{ backgroundColor: 'var(--light-bg)' }}>
-                  <th className="font-weight-bold text-dark py-3 ps-3 border-bottom-0 border-top" style={{ width: '15%' }}>SKU</th>
-                  <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '50%' }}>Name</th>
-                  <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '15%' }}>Status</th>
-                  {isAdmin && <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top text-center" style={{ width: '20%' }}>Actions</th>}
+                  <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top" style={{ width: '15%' }}>SKU</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '50%' }}>Name</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '15%' }}>Status</th>
+                  {isAdmin && <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-center" style={{ width: '20%' }}>Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -412,10 +519,10 @@ export default function ProductsPage() {
                 ) : (
                   products.map((prod) => (
                     <tr key={prod.id}>
-                      <td className="ps-3 border-bottom py-3 font-mono font-weight-bold" style={{ color: '#ec4899' }}>
+                      <td className="ps-3 border-bottom py-3 font-mono fw-bold" style={{ color: '#ec4899' }}>
                         {prod.SKU}
                       </td>
-                      <td className="border-bottom font-weight-bold text-dark">
+                      <td className="border-bottom fw-bold text-dark">
                         {prod.name}
                       </td>
                       <td className="border-bottom">
@@ -475,10 +582,10 @@ export default function ProductsPage() {
             <table className="table mb-0 align-middle">
               <thead>
                 <tr style={{ backgroundColor: 'var(--light-bg)' }}>
-                  <th className="font-weight-bold text-dark py-3 ps-3 border-bottom-0 border-top">Category Name</th>
-                  <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top">Description</th>
-                  <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top">Products Count</th>
-                  {isAdmin && <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top text-center">Actions</th>}
+                  <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top">Category Name</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top">Description</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top">Products Count</th>
+                  {isAdmin && <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-center">Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -489,7 +596,7 @@ export default function ProductsPage() {
                 ) : (
                   categories.map((cat) => (
                     <tr key={cat.id}>
-                      <td className="font-weight-bold text-dark">{cat.name}</td>
+                      <td className="fw-bold text-dark">{cat.name}</td>
                       <td className="text-muted">{cat.description || 'No description provided'}</td>
                       <td><span className="badge bg-primary rounded-pill">{cat._count?.products || 0} items</span></td>
                       {isAdmin && (
@@ -520,7 +627,7 @@ export default function ProductsPage() {
         <div className="modal-dialog modal-dialog-centered modal-lg">
           <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '12px', overflow: 'hidden' }}>
             <div className="modal-header bg-white border-bottom p-3 d-flex align-items-center justify-content-between">
-              <h5 className="modal-title font-weight-bold text-dark m-0" id="productModalLabel" style={{ fontSize: '1.1rem' }}>
+              <h5 className="modal-title fw-bold text-dark m-0" id="productModalLabel" style={{ fontSize: '1.1rem' }}>
                 <span className="text-primary me-2"><i className="bi bi-plus-circle"></i></span>
                 {editingProduct ? 'Edit Product' : 'New Product'}
               </h5>
@@ -531,7 +638,7 @@ export default function ProductsPage() {
                 {/* Row 1 */}
                 <div className="row g-3 mb-3">
                   <div className="col-12 col-md-5">
-                    <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Name <span className="text-danger">*</span></label>
+                    <label className="form-label fw-bold text-secondary fs-8 mb-1">Name <span className="text-danger">*</span></label>
                     <input
                       type="text"
                       className="form-control"
@@ -541,7 +648,7 @@ export default function ProductsPage() {
                     />
                   </div>
                   <div className="col-12 col-md-4">
-                    <label className="form-label font-weight-bold text-secondary fs-8 mb-1">SKU <span className="text-danger">*</span></label>
+                    <label className="form-label fw-bold text-secondary fs-8 mb-1">SKU <span className="text-danger">*</span></label>
                     <input
                       type="text"
                       className="form-control"
@@ -551,7 +658,7 @@ export default function ProductsPage() {
                     />
                   </div>
                   <div className="col-12 col-md-3">
-                    <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Unit</label>
+                    <label className="form-label fw-bold text-secondary fs-8 mb-1">Unit</label>
                     <select className="form-select" value={unit} onChange={(e) => setUnit(e.target.value)}>
                       <optgroup label="Quantity">
                         <option value="pcs">Piece (pcs)</option>
@@ -590,8 +697,8 @@ export default function ProductsPage() {
 
                 {/* Row 2 */}
                 <div className="row g-3 mb-3">
-                  <div className="col-12 col-md-6">
-                    <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Category <span className="text-danger">*</span></label>
+                  <div className="col-12 col-md-4">
+                    <label className="form-label fw-bold text-secondary fs-8 mb-1">Category <span className="text-danger">*</span></label>
                     <select
                       className="form-select"
                       value={selectedCategory}
@@ -604,8 +711,8 @@ export default function ProductsPage() {
                       ))}
                     </select>
                   </div>
-                  <div className="col-12 col-md-6">
-                    <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Brand</label>
+                  <div className="col-12 col-md-4">
+                    <label className="form-label fw-bold text-secondary fs-8 mb-1">Brand</label>
                     <select
                       className="form-select"
                       value={selectedBrand}
@@ -617,12 +724,35 @@ export default function ProductsPage() {
                       ))}
                     </select>
                   </div>
+                  <div className="col-12 col-md-4">
+                    <label className="form-label fw-bold text-secondary fs-8 mb-1">Barcode</label>
+                    <div className="input-group">
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Scan or enter"
+                        value={barcode}
+                        onChange={(e) => setBarcode(e.target.value)}
+                      />
+                      <button 
+                        className="btn btn-outline-secondary" 
+                        type="button" 
+                        onClick={() => {
+                          const newBarcode = Math.floor(Math.random() * 1000000000000).toString().padStart(12, '0');
+                          setBarcode(newBarcode);
+                        }}
+                        title="Generate Barcode"
+                      >
+                        <i className="bi bi-magic"></i>
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Row 3 */}
                 <div className="row g-3 mb-3">
                   <div className="col-6 col-md-3">
-                    <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Purchase Price <span className="text-danger">*</span></label>
+                    <label className="form-label fw-bold text-secondary fs-8 mb-1">Purchase Price <span className="text-danger">*</span></label>
                     <div className="input-group">
                       <span className="input-group-text bg-light text-secondary border-end-0" style={{ fontSize: '0.9rem' }}>Rs.</span>
                       <input
@@ -636,7 +766,7 @@ export default function ProductsPage() {
                     </div>
                   </div>
                   <div className="col-6 col-md-3">
-                    <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Selling Price <span className="text-danger">*</span></label>
+                    <label className="form-label fw-bold text-secondary fs-8 mb-1">Selling Price <span className="text-danger">*</span></label>
                     <div className="input-group">
                       <span className="input-group-text bg-light text-secondary border-end-0" style={{ fontSize: '0.9rem' }}>Rs.</span>
                       <input
@@ -650,7 +780,7 @@ export default function ProductsPage() {
                     </div>
                   </div>
                   <div className="col-6 col-md-3">
-                    <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Stock Qty <span className="text-danger">*</span></label>
+                    <label className="form-label fw-bold text-secondary fs-8 mb-1">Stock Qty <span className="text-danger">*</span></label>
                     <input
                       type="number"
                       className="form-control"
@@ -661,7 +791,7 @@ export default function ProductsPage() {
                     />
                   </div>
                   <div className="col-6 col-md-3">
-                    <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Alert Qty</label>
+                    <label className="form-label fw-bold text-secondary fs-8 mb-1">Alert Qty</label>
                     <input
                       type="number"
                       className="form-control"
@@ -673,7 +803,7 @@ export default function ProductsPage() {
 
                 {/* Row 4 */}
                 <div className="mb-3">
-                  <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Description</label>
+                  <label className="form-label fw-bold text-secondary fs-8 mb-1">Description</label>
                   <textarea
                     className="form-control"
                     rows={3}
@@ -684,8 +814,8 @@ export default function ProductsPage() {
                 </div>
               </div>
               <div className="modal-footer border-top p-3 bg-white d-flex justify-content-end gap-2">
-                <button type="button" className="btn btn-outline-secondary px-4 py-2 font-weight-semibold" data-bs-dismiss="modal" style={{ borderRadius: '6px' }}>Cancel</button>
-                <button type="submit" className="btn btn-primary px-4 py-2 font-weight-semibold" style={{ backgroundColor: '#0066ff', border: 'none', borderRadius: '20px' }}>Save Product</button>
+                <button type="button" className="btn btn-outline-secondary px-4 py-2 fw-semibold" data-bs-dismiss="modal" style={{ borderRadius: '6px' }}>Cancel</button>
+                <button type="submit" className="btn btn-primary px-4 py-2 fw-semibold" style={{ backgroundColor: '#0066ff', border: 'none', borderRadius: '20px' }}>Save Product</button>
               </div>
             </form>
           </div>
@@ -699,7 +829,7 @@ export default function ProductsPage() {
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content border-0 shadow-lg rounded-lg">
             <div className="modal-header bg-primary text-white border-none p-3.5">
-              <h5 className="modal-title font-weight-bold" id="categoryModalLabel">
+              <h5 className="modal-title fw-bold" id="categoryModalLabel">
                 <i className="bi bi-tag-fill me-2"></i>{editingCategory ? 'Edit Product Category' : 'Register Product Category'}
               </h5>
               <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -707,7 +837,7 @@ export default function ProductsPage() {
             <form onSubmit={handleCategorySubmit}>
               <div className="modal-body p-4">
                 <div className="mb-3">
-                  <label className="form-label font-weight-semibold">Category Name</label>
+                  <label className="form-label fw-semibold">Category Name</label>
                   <input
                     type="text"
                     className="form-control"
@@ -718,7 +848,7 @@ export default function ProductsPage() {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label font-weight-semibold">Brief Description</label>
+                  <label className="form-label fw-semibold">Brief Description</label>
                   <textarea
                     className="form-control"
                     rows={3}
@@ -744,47 +874,47 @@ export default function ProductsPage() {
         <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '500px' }}>
           <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '12px' }}>
             <div className="modal-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
-              <h5 className="modal-title font-weight-bold"><i className="bi bi-box-seam me-2 text-primary"></i> Product Details</h5>
+              <h5 className="modal-title fw-bold"><i className="bi bi-box-seam me-2 text-primary"></i> Product Details</h5>
               <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div className="modal-body p-4">
               {selectedProductForView && (
                 <div className="row g-3">
                   <div className="col-12 text-center mb-3">
-                    <h4 className="font-weight-bold text-dark">{selectedProductForView.name}</h4>
+                    <h4 className="fw-bold text-dark">{selectedProductForView.name}</h4>
                     <span className="badge bg-success">Active</span>
                   </div>
                   <div className="col-6">
                     <p className="text-muted mb-1 fs-8">SKU</p>
-                    <p className="font-weight-bold">{selectedProductForView.SKU}</p>
+                    <p className="fw-bold">{selectedProductForView.SKU}</p>
                   </div>
                   <div className="col-6">
                     <p className="text-muted mb-1 fs-8">Barcode</p>
-                    <p className="font-weight-bold">{selectedProductForView.barcode || 'N/A'}</p>
+                    <p className="fw-bold">{selectedProductForView.barcode || 'N/A'}</p>
                   </div>
                   <div className="col-6">
                     <p className="text-muted mb-1 fs-8">Category</p>
-                    <p className="font-weight-bold">{selectedProductForView.category?.name || 'Uncategorized'}</p>
+                    <p className="fw-bold">{selectedProductForView.category?.name || 'Uncategorized'}</p>
                   </div>
                   <div className="col-6">
                     <p className="text-muted mb-1 fs-8">Brand</p>
-                    <p className="font-weight-bold">{selectedProductForView.brand?.name || 'No Brand'}</p>
+                    <p className="fw-bold">{selectedProductForView.brand?.name || 'No Brand'}</p>
                   </div>
                   <div className="col-6">
                     <p className="text-muted mb-1 fs-8">Cost Price</p>
-                    <p className="font-weight-bold text-danger">Rs. {selectedProductForView.cost.toFixed(2)}</p>
+                    <p className="fw-bold text-danger">Rs. {selectedProductForView.cost.toFixed(2)}</p>
                   </div>
                   <div className="col-6">
                     <p className="text-muted mb-1 fs-8">Selling Price</p>
-                    <p className="font-weight-bold text-success">Rs. {selectedProductForView.price.toFixed(2)}</p>
+                    <p className="fw-bold text-success">Rs. {selectedProductForView.price.toFixed(2)}</p>
                   </div>
                   <div className="col-6">
                     <p className="text-muted mb-1 fs-8">Current Stock</p>
-                    <p className="font-weight-bold">{selectedProductForView.stock} {selectedProductForView.unit}</p>
+                    <p className="fw-bold">{selectedProductForView.stock} {selectedProductForView.unit}</p>
                   </div>
                   <div className="col-6">
                     <p className="text-muted mb-1 fs-8">Tax Rate</p>
-                    <p className="font-weight-bold">{selectedProductForView.taxRate}%</p>
+                    <p className="fw-bold">{selectedProductForView.taxRate}%</p>
                   </div>
                 </div>
               )}
@@ -803,13 +933,13 @@ export default function ProductsPage() {
         <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '400px' }}>
           <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '12px' }}>
             <div className="modal-header bg-dark text-white border-0 p-3 no-print">
-              <h5 className="modal-title font-weight-bold"><i className="bi bi-qr-code-scan me-2 text-warning"></i> Print Barcode</h5>
+              <h5 className="modal-title fw-bold"><i className="bi bi-qr-code-scan me-2 text-warning"></i> Print Barcode</h5>
               <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div className="modal-body p-4 text-center">
               
               <div id="printable-receipt-modal" className="thermal-receipt mx-auto d-flex flex-column align-items-center justify-content-center p-3" style={{ border: '1px dashed #ccc' }}>
-                <h6 className="font-weight-bold text-dark mb-1" style={{ fontSize: '14px' }}>{selectedProductForBarcode?.name}</h6>
+                <h6 className="fw-bold text-dark mb-1" style={{ fontSize: '14px' }}>{selectedProductForBarcode?.name}</h6>
                 <p className="text-muted m-0 mb-2" style={{ fontSize: '11px' }}>{selectedProductForBarcode?.category?.name || ''}</p>
                 
                 {selectedProductForBarcode?.barcode ? (
@@ -818,7 +948,7 @@ export default function ProductsPage() {
                   <Barcode value={selectedProductForBarcode?.SKU || 'UNKNOWN'} width={2} height={50} fontSize={14} />
                 )}
                 
-                <h5 className="font-weight-bold mt-2" style={{ fontSize: '16px' }}>Rs. {selectedProductForBarcode?.price.toFixed(2)}</h5>
+                <h5 className="fw-bold mt-2" style={{ fontSize: '16px' }}>Rs. {selectedProductForBarcode?.price.toFixed(2)}</h5>
               </div>
 
             </div>

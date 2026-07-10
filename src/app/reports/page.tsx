@@ -1,4 +1,3 @@
-'use strict';
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -6,6 +5,7 @@ import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { Bar } from 'react-chartjs-2';
 import { formatAdToBsShort } from '@/utils/nepaliDate';
+import BSDatePicker from '@/components/BSDatePicker';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -52,7 +52,7 @@ interface TimelinePoint {
 export default function ReportsPage() {
   const { token, api, activeFiscalYear } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<'daily' | 'closing_stock' | 'closing_balance'>('daily');
+  const [activeTab, setActiveTab] = useState<'daily' | 'closing_stock' | 'closing_balance' | 'deleted_sales'>('daily');
 
   // Daily Report States
   const todayStr = new Date().toISOString().split('T')[0];
@@ -80,6 +80,9 @@ export default function ReportsPage() {
   // Closing States
   const [closingStock, setClosingStock] = useState<any>(null);
   const [closingBalance, setClosingBalance] = useState<any>(null);
+
+  // Deleted Sales State
+  const [deletedSales, setDeletedSales] = useState<any[]>([]);
 
   // Loaders
   const loadDailyReport = async (start: string, end: string) => {
@@ -135,6 +138,19 @@ export default function ReportsPage() {
     }
   };
 
+  const loadDeletedSales = async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const res = await api.get('/sales/deleted');
+      setDeletedSales(res.data);
+    } catch (err) {
+      console.error('Error fetching deleted sales:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'daily') {
       loadDailyReport(startDate, endDate);
@@ -142,6 +158,8 @@ export default function ReportsPage() {
       loadClosingStock();
     } else if (activeTab === 'closing_balance') {
       loadClosingBalance();
+    } else if (activeTab === 'deleted_sales') {
+      loadDeletedSales();
     }
   }, [token, activeFiscalYear, activeTab]);
 
@@ -180,7 +198,7 @@ export default function ReportsPage() {
         borderRadius: 4
       },
       {
-        label: 'Investment (Capital)',
+        label: 'Investment / Other Incomes',
         data: timeline.map((t) => t.investment || 0),
         backgroundColor: '#8b5cf6', // purple
         borderRadius: 4
@@ -231,6 +249,15 @@ export default function ReportsPage() {
             <i className="bi bi-wallet2 me-2"></i> Closing Balance
           </button>
         </li>
+        <li className="nav-item">
+          <button 
+            className={`nav-link fw-bold ${activeTab === 'deleted_sales' ? 'active shadow-sm bg-danger text-white border-0' : 'bg-white text-secondary border'}`}
+            style={{ borderRadius: '8px', padding: '0.6rem 1.2rem' }}
+            onClick={() => setActiveTab('deleted_sales')}
+          >
+            <i className="bi bi-trash-fill me-2"></i> Deleted Sales
+          </button>
+        </li>
       </ul>
 
       {activeTab === 'daily' && (
@@ -239,28 +266,24 @@ export default function ReportsPage() {
           <div className="card border-0 rounded-md shadow-sm p-3 mb-4 bg-white" style={{ borderRadius: '10px' }}>
             <div className="row g-3 align-items-end">
               <div className="col-12 col-md-3">
-                <label className="form-label font-weight-bold text-secondary mb-1" style={{ fontSize: '0.75rem' }}>From Date</label>
-                <input
-                  type="date"
-                  className="form-control bg-light border-0 p-2"
+                <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: '0.75rem' }}>From Date (BS)</label>
+                <BSDatePicker
                   value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  style={{ borderRadius: '6px', fontSize: '0.85rem' }}
+                  onChange={(val) => setStartDate(val)}
+                  className="form-control bg-light border-0 p-2"
                 />
               </div>
               <div className="col-12 col-md-3">
-                <label className="form-label font-weight-bold text-secondary mb-1" style={{ fontSize: '0.75rem' }}>To Date</label>
-                <input
-                  type="date"
-                  className="form-control bg-light border-0 p-2"
+                <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: '0.75rem' }}>To Date (BS)</label>
+                <BSDatePicker
                   value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  style={{ borderRadius: '6px', fontSize: '0.85rem' }}
+                  onChange={(val) => setEndDate(val)}
+                  className="form-control bg-light border-0 p-2"
                 />
               </div>
               <div className="col-12 col-md-3">
                 <button 
-                  className="btn btn-primary w-100 py-2 font-weight-bold d-flex align-items-center justify-content-center gap-2"
+                  className="btn btn-primary w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2"
                   style={{ backgroundColor: '#0d6efd', borderRadius: '6px', height: '38px', border: 'none' }}
                   onClick={handleFilter}
                 >
@@ -269,7 +292,7 @@ export default function ReportsPage() {
               </div>
               <div className="col-12 col-md-3">
                 <button 
-                  className="btn btn-outline-secondary w-100 py-2 font-weight-semibold d-flex align-items-center justify-content-center gap-2 border bg-white text-secondary"
+                  className="btn btn-outline-secondary w-100 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2 border bg-white text-secondary"
                   style={{ borderRadius: '6px', height: '38px' }}
                   onClick={handleReset}
                 >
@@ -291,7 +314,7 @@ export default function ReportsPage() {
                   <div className="card border-0 shadow-sm p-3 text-center bg-white" style={{ borderRadius: '10px' }}>
                     <div className="mb-2"><i className="bi bi-graph-up fs-4 text-success" style={{ color: '#198754' }}></i></div>
                     <div className="text-secondary mb-1" style={{ fontSize: '0.8rem', fontWeight: '500' }}>Total Income (Sales)</div>
-                    <div className="font-weight-bold text-success mb-1" style={{ fontSize: '1.25rem' }}>
+                    <div className="fw-bold text-success mb-1" style={{ fontSize: '1.25rem' }}>
                       Rs.{summary.totalIncome.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
@@ -300,7 +323,7 @@ export default function ReportsPage() {
                   <div className="card border-0 shadow-sm p-3 text-center bg-white" style={{ borderRadius: '10px' }}>
                     <div className="mb-2"><i className="bi bi-receipt fs-4 text-danger" style={{ color: '#dc3545' }}></i></div>
                     <div className="text-secondary mb-1" style={{ fontSize: '0.8rem', fontWeight: '500' }}>Total Expenses</div>
-                    <div className="font-weight-bold text-danger mb-1" style={{ fontSize: '1.25rem' }}>
+                    <div className="fw-bold text-danger mb-1" style={{ fontSize: '1.25rem' }}>
                       Rs.{summary.totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
@@ -309,7 +332,7 @@ export default function ReportsPage() {
                   <div className="card border-0 shadow-sm p-3 text-center bg-white" style={{ borderRadius: '10px' }}>
                     <div className="mb-2"><i className="bi bi-cart3 fs-4 text-warning" style={{ color: '#fd7e14' }}></i></div>
                     <div className="text-secondary mb-1" style={{ fontSize: '0.8rem', fontWeight: '500' }}>Total Purchases</div>
-                    <div className="font-weight-bold text-warning mb-1" style={{ fontSize: '1.25rem' }}>
+                    <div className="fw-bold text-warning mb-1" style={{ fontSize: '1.25rem' }}>
                       Rs.{summary.totalPurchases.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
@@ -318,7 +341,7 @@ export default function ReportsPage() {
                   <div className="card border-0 shadow-sm p-3 text-center bg-white" style={{ borderRadius: '10px' }}>
                     <div className="mb-2"><i className="bi bi-cash-coin fs-4" style={{ color: summary.netProfit < 0 ? '#dc3545' : '#198754' }}></i></div>
                     <div className="text-secondary mb-1" style={{ fontSize: '0.8rem', fontWeight: '500' }}>Net Profit / Loss</div>
-                    <div className="font-weight-bold mb-1" style={{ fontSize: '1.25rem', color: summary.netProfit < 0 ? '#dc3545' : '#198754' }}>
+                    <div className="fw-bold mb-1" style={{ fontSize: '1.25rem', color: summary.netProfit < 0 ? '#dc3545' : '#198754' }}>
                       {summary.netProfit < 0 ? '-' : ''}Rs.{Math.abs(summary.netProfit).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                   </div>
@@ -327,7 +350,7 @@ export default function ReportsPage() {
 
               {/* Chart Row */}
               <div className="card border-0 shadow-sm p-4 mb-4 bg-white" style={{ borderRadius: '10px' }}>
-                <h5 className="font-weight-bold text-dark mb-4"><i className="bi bi-bar-chart-line-fill text-primary me-2"></i> Income vs Expenses</h5>
+                <h5 className="fw-bold text-dark mb-4"><i className="bi bi-bar-chart-line-fill text-primary me-2"></i> Income vs Expenses</h5>
                 <div style={{ height: '360px' }}>
                   {timeline.length > 0 ? (
                     <Bar data={chartData} options={chartOptions} />
@@ -343,7 +366,7 @@ export default function ReportsPage() {
 
       {activeTab === 'closing_stock' && (
         <div className="card border-0 rounded-md shadow-sm p-4 bg-white" style={{ borderRadius: '10px' }}>
-          <h5 className="font-weight-bold text-dark mb-4 d-flex align-items-center gap-2">
+          <h5 className="fw-bold text-dark mb-4 d-flex align-items-center gap-2">
             <i className="bi bi-box-seam text-primary"></i>
             Closing Stock as of FY {closingStock?.fiscalYear}
           </h5>
@@ -398,7 +421,7 @@ export default function ReportsPage() {
 
       {activeTab === 'closing_balance' && (
         <div className="card border-0 rounded-md shadow-sm p-4 bg-white" style={{ borderRadius: '10px' }}>
-          <h5 className="font-weight-bold text-dark mb-4 d-flex align-items-center gap-2">
+          <h5 className="fw-bold text-dark mb-4 d-flex align-items-center gap-2">
             <i className="bi bi-wallet2 text-primary"></i>
             Closing Balance for FY {closingBalance?.fiscalYear}
           </h5>
@@ -435,6 +458,48 @@ export default function ReportsPage() {
             </div>
           ) : (
             <div className="text-center py-4 text-muted">Failed to load closing balance.</div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'deleted_sales' && (
+        <div className="card border-0 rounded-md shadow-sm p-4 bg-white" style={{ borderRadius: '10px' }}>
+          <h5 className="fw-bold text-dark mb-4 d-flex align-items-center gap-2">
+            <i className="bi bi-trash text-danger"></i>
+            Deleted Sales Audit Log
+          </h5>
+
+          {loading ? (
+            <div className="text-center py-5"><div className="spinner-border text-danger" role="status"></div></div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table align-middle">
+                <thead className="bg-light">
+                  <tr>
+                    <th className="py-3 ps-3 text-secondary" style={{ fontSize: '0.85rem' }}>Invoice No</th>
+                    <th className="py-3 text-secondary" style={{ fontSize: '0.85rem' }}>Customer</th>
+                    <th className="py-3 text-secondary" style={{ fontSize: '0.85rem' }}>Amount</th>
+                    <th className="py-3 text-secondary" style={{ fontSize: '0.85rem' }}>Deleted By (Admin ID)</th>
+                    <th className="py-3 text-secondary text-end pe-3" style={{ fontSize: '0.85rem' }}>Deleted Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deletedSales.length === 0 ? (
+                    <tr><td colSpan={5} className="text-center py-4 text-muted">No deleted sales records found.</td></tr>
+                  ) : (
+                    deletedSales.map((sale: any) => (
+                      <tr key={sale.id}>
+                        <td className="ps-3 py-3 fw-semibold text-dark">{sale.invoiceNo}</td>
+                        <td className="py-3 text-secondary">{sale.customerName || 'Walk-In'}</td>
+                        <td className="py-3 fw-bold text-danger">Rs. {sale.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                        <td className="py-3 text-secondary">Admin #{sale.deletedById}</td>
+                        <td className="py-3 text-end pe-3 text-secondary">{new Date(sale.deletedAt).toLocaleString()}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}

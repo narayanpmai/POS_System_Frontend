@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth, FiscalYear } from '@/context/AuthContext';
 import { formatAdToBsFull } from '@/utils/nepaliDate';
+import BSDatePicker from '@/components/BSDatePicker';
 
 export default function FiscalYearsPage() {
   const { api, refreshFiscalYear, loading: authLoading, isAuthenticated } = useAuth();
@@ -203,24 +204,18 @@ export default function FiscalYearsPage() {
                     />
                   </div>
                   <div className="mb-3">
-                    <label className="form-label">Start Date (AD) <span className="text-danger">*</span></label>
-                    <input 
-                      type="date" 
-                      className="form-control" 
+                    <label className="form-label">Start Date (BS) <span className="text-danger">*</span></label>
+                    <BSDatePicker 
                       value={startDate}
-                      onChange={e => setStartDate(e.target.value)}
-                      required 
+                      onChange={(date) => setStartDate(date)}
                     />
-                    <small className="text-muted d-block mt-1">Enter English AD date (e.g. Mid-July)</small>
+                    <small className="text-muted d-block mt-1">Select the start date in Nepali Calendar</small>
                   </div>
                   <div className="mb-4">
-                    <label className="form-label">End Date (AD) <span className="text-danger">*</span></label>
-                    <input 
-                      type="date" 
-                      className="form-control" 
+                    <label className="form-label">End Date (BS) <span className="text-danger">*</span></label>
+                    <BSDatePicker 
                       value={endDate}
-                      onChange={e => setEndDate(e.target.value)}
-                      required 
+                      onChange={(date) => setEndDate(date)}
                     />
                   </div>
                   <div className="d-flex gap-2">
