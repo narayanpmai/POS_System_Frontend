@@ -9,7 +9,6 @@
     "start": "next start"
   },
   "dependencies": {
-    "@popperjs/core": "^2.11.8",
     "@remotemerge/nepali-date-converter": "^1.2.0",
     "@sbmdkl/nepali-datepicker-reactjs": "^1.2.5",
     "axios": "^1.6.2",
