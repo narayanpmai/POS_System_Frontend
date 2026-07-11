@@ -11,6 +11,7 @@
   "dependencies": {
     "@popperjs/core": "^2.11.8",
     "@remotemerge/nepali-date-converter": "^1.2.0",
+    "@sbmdkl/nepali-datepicker-reactjs": "^1.2.5",
     "axios": "^1.6.2",
     "bootstrap": "^5.3.2",
     "bootstrap-icons": "^1.11.2",
@@ -20,7 +21,8 @@
     "react": "^18.2.0",
     "react-barcode": "^1.6.1",
     "react-chartjs-2": "^5.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^20.10.4",

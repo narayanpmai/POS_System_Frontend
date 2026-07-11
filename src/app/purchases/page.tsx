@@ -14,6 +14,8 @@ export default function PurchasesPage() {
   
   // New Purchase Form UI state
   const [showForm, setShowForm] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingPurchaseId, setEditingPurchaseId] = useState<number | null>(null);
 
   // Form State
   const [referenceNo, setReferenceNo] = useState(`PUR-${Math.floor(Math.random() * 1000000000)}`);
@@ -113,22 +115,70 @@ export default function PurchasesPage() {
     }));
 
     try {
-      await api.post('/purchases', {
-        poNumber: referenceNo,
-        purchaseDate: new Date().toISOString(),
-        totalAmount: totals.grandTotal,
-        items: mappedItems
-      });
-      alert('Purchase Order created successfully!');
-      setShowForm(false);
-      setCart([]);
-      setReferenceNo(`PUR-${Math.floor(Math.random() * 1000000000)}`);
-      setTaxPercent(0);
-      setOverallDiscPercent(0);
+      if (isEditing && editingPurchaseId) {
+        await api.put(`/purchases/${editingPurchaseId}`, {
+          poNumber: referenceNo,
+          supplierId: supplier ? parseInt(supplier) : null,
+          purchaseDate: new Date().toISOString(),
+          totalAmount: totals.grandTotal,
+          items: mappedItems
+        });
+        alert('Purchase Order updated successfully!');
+      } else {
+        await api.post('/purchases', {
+          poNumber: referenceNo,
+          supplierId: supplier ? parseInt(supplier) : null,
+          purchaseDate: new Date().toISOString(),
+          totalAmount: totals.grandTotal,
+          items: mappedItems
+        });
+        alert('Purchase Order created successfully!');
+      }
+
+      closeForm();
       loadData();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error creating purchase');
+      alert(err.response?.data?.message || 'Error saving purchase');
     }
+  };
+
+  const closeForm = () => {
+    setShowForm(false);
+    setIsEditing(false);
+    setEditingPurchaseId(null);
+    setCart([]);
+    setReferenceNo(`PUR-${Math.floor(Math.random() * 1000000000)}`);
+    setTaxPercent(0);
+    setOverallDiscPercent(0);
+    setSupplier('');
+    setNote('');
+  };
+
+  const handleEdit = (purchase: any) => {
+    setIsEditing(true);
+    setEditingPurchaseId(purchase.id);
+    setReferenceNo(purchase.poNumber);
+    setSupplier(purchase.supplierId ? purchase.supplierId.toString() : '');
+    // Populate items
+    if (purchase.items && purchase.items.length > 0) {
+      const existingCart = purchase.items.map((item: any) => ({
+        productId: item.productId.toString(),
+        unitPrice: item.costPrice,
+        unit: item.measurementUnit || 'pcs',
+        qty: item.quantity,
+        discPercent: 0 // Simplification since backend doesn't store per-item discount percent currently
+      }));
+      setCart(existingCart);
+    } else {
+      setCart([]);
+    }
+    
+    // Simplification: Not recalculating exact old tax/overall disc since they are not stored.
+    // They could be inferred from total amount if needed, but we'll reset to 0 for the edit view.
+    setTaxPercent(0);
+    setOverallDiscPercent(0);
+    
+    setShowForm(true);
   };
 
   if (showForm) {
@@ -136,10 +186,10 @@ export default function PurchasesPage() {
       <AuthLayout>
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h5 className="font-weight-bold m-0 d-flex align-items-center gap-2 text-dark">
-            <i className="bi bi-cart3 text-primary"></i> New Purchase Order
+          <h5 className="fw-bold m-0 d-flex align-items-center gap-2 text-dark">
+            <i className="bi bi-cart3 text-primary"></i> {isEditing ? 'Edit Purchase Order' : 'New Purchase Order'}
           </h5>
-          <button className="btn btn-light border bg-white font-weight-semibold" onClick={() => setShowForm(false)}>
+          <button className="btn btn-light border bg-white fw-semibold" onClick={closeForm}>
             <i className="bi bi-arrow-left me-1"></i> Back
           </button>
         </div>
@@ -148,7 +198,7 @@ export default function PurchasesPage() {
         <div className="card border-0 rounded-md p-4 shadow-sm mb-4" style={{ backgroundColor: 'var(--light-card)' }}>
           <div className="row g-4">
             <div className="col-12 col-md-4">
-              <label className="form-label font-weight-bold fs-7 text-dark mb-1">Supplier <span className="text-danger">*</span></label>
+              <label className="form-label fw-bold fs-7 text-dark mb-1">Supplier <span className="text-danger">*</span></label>
               <select className="form-select border-1" value={supplier} onChange={e => setSupplier(e.target.value)}>
                 <option value="">-- Select Supplier --</option>
                 {suppliers.map(sup => (
@@ -157,11 +207,11 @@ export default function PurchasesPage() {
               </select>
             </div>
             <div className="col-12 col-md-4">
-              <label className="form-label font-weight-bold fs-7 text-dark mb-1">Note</label>
+              <label className="form-label fw-bold fs-7 text-dark mb-1">Note</label>
               <input type="text" className="form-control border-1" placeholder="Optional note" value={note} onChange={e => setNote(e.target.value)} />
             </div>
             <div className="col-12 col-md-4">
-              <label className="form-label font-weight-bold fs-7 text-dark mb-1">Reference No</label>
+              <label className="form-label fw-bold fs-7 text-dark mb-1">Reference No</label>
               <input type="text" className="form-control border-1 bg-light" readOnly value={referenceNo} />
             </div>
           </div>
@@ -170,10 +220,10 @@ export default function PurchasesPage() {
         {/* Section 2: Purchase Items */}
         <div className="card border-0 rounded-md p-0 shadow-sm mb-4" style={{ backgroundColor: 'var(--light-card)', overflow: 'hidden' }}>
           <div className="p-3 d-flex justify-content-between align-items-center border-bottom">
-            <h6 className="font-weight-bold m-0 d-flex align-items-center gap-2">
+            <h6 className="fw-bold m-0 d-flex align-items-center gap-2">
               <i className="bi bi-list-ul text-primary"></i> Purchase Items
             </h6>
-            <button className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 font-weight-semibold" onClick={handleAddItem}>
+            <button className="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 fw-semibold" onClick={handleAddItem}>
               <i className="bi bi-plus-circle"></i> Add Item
             </button>
           </div>
@@ -182,13 +232,13 @@ export default function PurchasesPage() {
             <table className="table mb-0 align-middle">
               <thead>
                 <tr style={{ backgroundColor: 'var(--table-header-bg)' }}>
-                  <th className="font-weight-bold text-dark py-3 ps-3 border-0" style={{ width: '30%' }}>Product</th>
-                  <th className="font-weight-bold text-dark py-3 border-0">Unit Price (Rs.)</th>
-                  <th className="font-weight-bold text-dark py-3 border-0">Unit</th>
-                  <th className="font-weight-bold text-dark py-3 border-0">Qty</th>
-                  <th className="font-weight-bold text-dark py-3 border-0">Subtotal</th>
-                  <th className="font-weight-bold text-dark py-3 border-0">Disc %</th>
-                  <th className="font-weight-bold text-dark py-3 border-0 text-center">Del</th>
+                  <th className="fw-bold text-dark py-3 ps-3 border-0" style={{ width: '30%' }}>Product</th>
+                  <th className="fw-bold text-dark py-3 border-0">Unit Price (Rs.)</th>
+                  <th className="fw-bold text-dark py-3 border-0">Unit</th>
+                  <th className="fw-bold text-dark py-3 border-0">Qty</th>
+                  <th className="fw-bold text-dark py-3 border-0">Subtotal</th>
+                  <th className="fw-bold text-dark py-3 border-0">Disc %</th>
+                  <th className="fw-bold text-dark py-3 border-0 text-center">Del</th>
                 </tr>
               </thead>
               <tbody>
@@ -271,11 +321,11 @@ export default function PurchasesPage() {
             <div className="col-12 col-md-6">
               <div className="row g-3">
                 <div className="col-6">
-                  <label className="form-label font-weight-bold fs-7 text-dark mb-1">Tax (%)</label>
+                  <label className="form-label fw-bold fs-7 text-dark mb-1">Tax (%)</label>
                   <input type="number" min="0" className="form-control" value={taxPercent} onChange={e => setTaxPercent(parseFloat(e.target.value) || 0)} />
                 </div>
                 <div className="col-6">
-                  <label className="form-label font-weight-bold fs-7 text-dark mb-1">Overall Disc (%)</label>
+                  <label className="form-label fw-bold fs-7 text-dark mb-1">Overall Disc (%)</label>
                   <input type="number" min="0" max="100" className="form-control" value={overallDiscPercent} onChange={e => setOverallDiscPercent(parseFloat(e.target.value) || 0)} />
                 </div>
               </div>
@@ -284,25 +334,25 @@ export default function PurchasesPage() {
             <div className="col-12 col-md-6 d-flex flex-column align-items-end justify-content-center">
               <div style={{ minWidth: '250px' }}>
                 <div className="d-flex justify-content-between mb-2">
-                  <span className="text-secondary font-weight-semibold">Subtotal:</span>
-                  <span className="font-weight-bold text-dark">Rs.{totals.itemSubtotal.toFixed(2)}</span>
+                  <span className="text-secondary fw-semibold">Subtotal:</span>
+                  <span className="fw-bold text-dark">Rs.{totals.itemSubtotal.toFixed(2)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-2">
-                  <span className="text-secondary font-weight-semibold">Discount:</span>
-                  <span className="font-weight-bold text-danger">-Rs.{totals.overallDisc.toFixed(2)}</span>
+                  <span className="text-secondary fw-semibold">Discount:</span>
+                  <span className="fw-bold text-danger">-Rs.{totals.overallDisc.toFixed(2)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-3 border-bottom pb-3">
-                  <span className="text-secondary font-weight-semibold">Tax:</span>
-                  <span className="font-weight-bold text-info">+Rs.{totals.taxAmt.toFixed(2)}</span>
+                  <span className="text-secondary fw-semibold">Tax:</span>
+                  <span className="fw-bold text-info">+Rs.{totals.taxAmt.toFixed(2)}</span>
                 </div>
                 <div className="d-flex justify-content-between mb-4">
-                  <span className="text-dark font-weight-bold fs-5">Grand Total:</span>
-                  <span className="font-weight-bold fs-5 text-primary">Rs.{totals.grandTotal.toFixed(2)}</span>
+                  <span className="text-dark fw-bold fs-5">Grand Total:</span>
+                  <span className="fw-bold fs-5 text-primary">Rs.{totals.grandTotal.toFixed(2)}</span>
                 </div>
                 
                 <div className="d-flex justify-content-end">
-                  <button className="btn btn-primary font-weight-bold d-flex align-items-center gap-2 px-4 py-2" style={{ backgroundColor: '#0d6efd' }} onClick={submitPurchase}>
-                    <i className="bi bi-check-circle"></i> Submit Purchase
+                  <button className="btn btn-primary fw-bold d-flex align-items-center gap-2 px-4 py-2" style={{ backgroundColor: '#0d6efd' }} onClick={submitPurchase}>
+                    <i className="bi bi-check-circle"></i> {isEditing ? 'Update Purchase' : 'Submit Purchase'}
                   </button>
                 </div>
               </div>
@@ -317,14 +367,14 @@ export default function PurchasesPage() {
   return (
     <AuthLayout>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h4 className="font-weight-bold m-0">Purchase Orders</h4>
-        <button className="btn btn-primary font-weight-bold d-flex align-items-center gap-2 px-3" onClick={() => setShowForm(true)}>
+        <h4 className="fw-bold m-0">Purchase Orders</h4>
+        <button className="btn btn-primary fw-bold d-flex align-items-center gap-2 px-3" onClick={() => setShowForm(true)}>
           <i className="bi bi-plus-lg"></i> New Purchase
         </button>
       </div>
 
       <div className="card p-4 border-0 shadow-sm" style={{ backgroundColor: 'var(--light-card)' }}>
-        <h5 className="font-weight-bold mb-3">Recent Purchases</h5>
+        <h5 className="fw-bold mb-3">Recent Purchases</h5>
         <div className="table-responsive">
           <table className="table custom-table">
             <thead>
@@ -334,6 +384,7 @@ export default function PurchasesPage() {
                 <th>Items Count</th>
                 <th>Total Amount (Rs.)</th>
                 <th>Status</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -343,12 +394,17 @@ export default function PurchasesPage() {
                 <tr><td colSpan={5} className="text-center py-4 text-muted">No purchases recorded yet</td></tr>
               ) : purchases.map(p => (
                 <tr key={p.id}>
-                  <td className="font-weight-bold text-primary">{p.poNumber}</td>
+                  <td className="fw-bold text-primary">{p.poNumber}</td>
                   <td>{formatAdToBs(p.purchaseDate)}</td>
                   <td>{p.items?.length || 0} products</td>
-                  <td className="font-weight-bold">Rs. {p.totalAmount.toFixed(2)}</td>
+                  <td className="fw-bold">Rs. {p.totalAmount.toFixed(2)}</td>
                   <td>
                     <span className="badge bg-success-subtle text-success px-2 py-1 rounded-pill">{p.status}</span>
+                  </td>
+                  <td>
+                    <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(p)} title="Edit Purchase">
+                      <i className="bi bi-pencil-square"></i> Edit
+                    </button>
                   </td>
                 </tr>
               ))}

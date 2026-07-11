@@ -1,4 +1,3 @@
-'use strict';
 'use client';
 
 import React, { useState } from 'react';
@@ -37,7 +36,7 @@ export default function RegisterPage() {
       <div className="card shadow-2xl border-0 p-4 p-md-5 rounded-lg text-white" style={{ maxWidth: '480px', width: '100%', backgroundColor: 'rgba(21, 34, 68, 0.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
         
         <div className="text-center mb-4">
-          <h2 className="font-weight-bold" style={{ fontFamily: 'var(--font-heading)' }}>
+          <h2 className="fw-bold" style={{ fontFamily: 'var(--font-heading)' }}>
             Register <span className="text-warning">Cashier</span>
           </h2>
           <p className="text-light" style={{ fontSize: '0.9rem' }}>Create a new cashier user to operate checkout terminals</p>
@@ -111,7 +110,7 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <button type="submit" className="btn btn-warning w-100 py-2.5 font-weight-bold text-dark d-flex align-items-center justify-content-center gap-2" disabled={submitting || loading}>
+          <button type="submit" className="btn btn-warning w-100 py-2.5 fw-bold text-dark d-flex align-items-center justify-content-center gap-2" disabled={submitting || loading}>
             {submitting ? (
               <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
             ) : (

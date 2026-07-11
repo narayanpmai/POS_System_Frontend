@@ -5,9 +5,10 @@ import Link from 'next/link';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { formatAdToBsFull } from '@/utils/nepaliDate';
+import * as XLSX from 'xlsx';
 
 export default function SalesHistoryPage() {
-  const { token, api, activeFiscalYear } = useAuth();
+  const { token, api, activeFiscalYear, user } = useAuth();
   const [sales, setSales] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -66,11 +67,11 @@ export default function SalesHistoryPage() {
       const html2pdf = (await import('html2pdf.js')).default;
 
       const opt = {
-        margin:       [6, 6, 6, 6],
+        margin:       [6, 6, 6, 6] as [number, number, number, number],
         filename:     `Invoice-${selectedSale.invoiceNo || 'INV'}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
+        image:        { type: 'jpeg' as 'jpeg', quality: 0.98 },
         html2canvas:  { scale: 3, useCORS: true, letterRendering: true },
-        jsPDF:        { unit: 'mm', format: 'a6', orientation: 'portrait' }
+        jsPDF:        { unit: 'mm' as 'mm', format: 'a6' as 'a6', orientation: 'portrait' as 'portrait' }
       };
 
       html2pdf().set(opt).from(element).save();
@@ -80,17 +81,51 @@ export default function SalesHistoryPage() {
     }
   };
 
+  const handleDeleteSale = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this sale and restore stock?')) return;
+    try {
+      await api.delete(`/sales/${id}`);
+      alert('Sale deleted successfully');
+      loadData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Error deleting sale');
+    }
+  };
+
+  const handleExportExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(sales.map(s => ({
+      'Invoice No': s.invoiceNo,
+      Date: formatDate(s.createdAt),
+      Customer: s.customer?.name || 'Walk-in Customer',
+      Amount: s.totalAmount,
+      Payment: s.paymentStatus,
+      Status: 'Completed'
+    })));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Sales");
+    XLSX.writeFile(wb, "Sales_History.xlsx");
+  };
+
   return (
     <AuthLayout>
       <div className="card border-0 rounded-md shadow-sm p-4" style={{ backgroundColor: 'var(--light-card)' }}>
         {/* Header */}
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <h4 className="font-weight-bold m-0 text-dark">Sales History</h4>
-          <Link href="/pos" className="text-decoration-none">
-            <button className="btn btn-primary font-weight-semibold d-flex align-items-center gap-2 px-3 py-2" style={{ backgroundColor: '#0d6efd', borderRadius: '8px' }}>
-              <i className="bi bi-display"></i> POS Screen
+        <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+          <h4 className="fw-bold m-0 text-dark">Sales History</h4>
+          <div className="d-flex gap-2">
+            <button 
+              className="btn btn-outline-success fw-semibold d-flex align-items-center gap-2 px-3 py-2" 
+              style={{ borderRadius: '8px' }} 
+              onClick={handleExportExcel}
+            >
+              <i className="bi bi-file-earmark-excel"></i> Export
             </button>
-          </Link>
+            <Link href="/pos" className="text-decoration-none">
+              <button className="btn btn-primary fw-semibold d-flex align-items-center gap-2 px-3 py-2" style={{ backgroundColor: '#0d6efd', borderRadius: '8px' }}>
+                <i className="bi bi-display"></i> POS Screen
+              </button>
+            </Link>
+          </div>
         </div>
 
         {/* Table */}
@@ -98,13 +133,13 @@ export default function SalesHistoryPage() {
           <table className="table mb-0 align-middle">
             <thead>
               <tr style={{ backgroundColor: 'var(--light-bg)' }}>
-                <th className="font-weight-bold text-dark py-3 ps-3 border-bottom-0 border-top">Invoice ID</th>
-                <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top">Date</th>
-                <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top">Customer</th>
-                <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top">Amount</th>
-                <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top">Payment</th>
-                <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top">Status</th>
-                <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top text-center">Actions</th>
+                <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top">Invoice ID</th>
+                <th className="fw-bold text-dark py-3 border-bottom-0 border-top">Date</th>
+                <th className="fw-bold text-dark py-3 border-bottom-0 border-top">Customer</th>
+                <th className="fw-bold text-dark py-3 border-bottom-0 border-top">Amount</th>
+                <th className="fw-bold text-dark py-3 border-bottom-0 border-top">Payment</th>
+                <th className="fw-bold text-dark py-3 border-bottom-0 border-top">Status</th>
+                <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -120,7 +155,7 @@ export default function SalesHistoryPage() {
                 sales.map((sale) => (
                   <tr key={sale.id}>
                     <td className="ps-3 border-bottom py-3">
-                      <span className="font-weight-bold text-dark">{sale.invoiceNo}</span>
+                      <span className="fw-bold text-dark">{sale.invoiceNo}</span>
                     </td>
                     <td className="border-bottom text-secondary">
                       {formatDate(sale.createdAt)}
@@ -128,7 +163,7 @@ export default function SalesHistoryPage() {
                     <td className="border-bottom text-secondary">
                       {sale.customer?.name || 'Walk-in Customer'}
                     </td>
-                    <td className="border-bottom text-dark font-weight-semibold">
+                    <td className="border-bottom text-dark fw-semibold">
                       Rs.{sale.totalAmount.toFixed(2)}
                     </td>
                     <td className="border-bottom">
@@ -142,13 +177,25 @@ export default function SalesHistoryPage() {
                       </span>
                     </td>
                     <td className="border-bottom text-center">
-                      <button 
-                        className="btn btn-outline-primary btn-sm px-3 py-1 font-weight-semibold" 
-                        style={{ borderRadius: '4px' }}
-                        onClick={() => handleViewSale(sale)}
-                      >
-                        <i className="bi bi-eye"></i> View
-                      </button>
+                      <div className="d-flex justify-content-center gap-2">
+                        <button 
+                          className="btn btn-outline-primary btn-sm px-3 py-1 fw-semibold" 
+                          style={{ borderRadius: '4px' }}
+                          onClick={() => handleViewSale(sale)}
+                        >
+                          <i className="bi bi-eye"></i> View
+                        </button>
+                        {user?.role?.name === 'Admin' && (
+                          <button 
+                            className="btn btn-outline-danger btn-sm px-3 py-1 fw-semibold" 
+                            style={{ borderRadius: '4px' }}
+                            onClick={() => handleDeleteSale(sale.id)}
+                            title="Delete Sale & Restore Stock"
+                          >
+                            <i className="bi bi-trash-fill"></i> Delete
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -165,7 +212,7 @@ export default function SalesHistoryPage() {
         <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '420px' }}>
           <div className="modal-content border-0 shadow-lg rounded-lg" style={{ borderRadius: '12px' }}>
             <div className="modal-header bg-dark text-white border-none p-3 no-print">
-              <h5 className="modal-title font-weight-bold">
+              <h5 className="modal-title fw-bold">
                 <i className="bi bi-receipt me-2 text-warning"></i>Invoice Details
               </h5>
               <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -175,7 +222,7 @@ export default function SalesHistoryPage() {
               {/* Receipt formatting for window.print() and PDF export */}
               <div id="printable-receipt-modal" className="thermal-receipt mx-auto">
                 <div className="text-center">
-                  <h5 className="m-0 font-weight-bold" style={{ fontFamily: 'Outfit' }}>
+                  <h5 className="m-0 fw-bold" style={{ fontFamily: 'Outfit' }}>
                     {storeSettings?.storeName || 'PANCHPOKHARI KOSELI GHAR'}
                   </h5>
                   <p className="m-0 text-muted" style={{ fontSize: '10px' }}>
@@ -233,7 +280,7 @@ export default function SalesHistoryPage() {
                       <span>-Rs. {Number(selectedSale?.discountAmount).toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="d-flex justify-content-between font-weight-bold border-top pt-1 mt-1 fs-6">
+                  <div className="d-flex justify-content-between fw-bold border-top pt-1 mt-1 fs-6">
                     <span>TOTAL PAID:</span>
                     <span>Rs. {Number(selectedSale?.totalAmount || 0).toFixed(2)}</span>
                   </div>

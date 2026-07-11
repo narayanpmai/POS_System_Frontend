@@ -1,4 +1,3 @@
-'use strict';
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -45,7 +44,7 @@ export default function LoginPage() {
       <div className="card shadow-2xl border-0 p-4 p-md-5 rounded-lg text-white" style={{ maxWidth: '480px', width: '100%', backgroundColor: 'rgba(21, 34, 68, 0.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
         
         <div className="text-center mb-5">
-          <h2 className="font-weight-bold text-white mb-2 d-flex align-items-center justify-content-center gap-2" style={{ letterSpacing: '1px' }}>
+          <h2 className="fw-bold text-white mb-2 d-flex align-items-center justify-content-center gap-2" style={{ letterSpacing: '1px' }}>
             <img src="/logo.png" alt="Logo" style={{ height: '48px', width: '48px', objectFit: 'contain' }} />
             <span>Panchpokhari Koseli Ghar</span>
           </h2>
@@ -93,7 +92,7 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <button type="submit" className="btn btn-warning w-100 py-2.5 font-weight-bold text-dark d-flex align-items-center justify-content-center gap-2" disabled={submitting || loading}>
+          <button type="submit" className="btn btn-warning w-100 py-2.5 fw-bold text-dark d-flex align-items-center justify-content-center gap-2" disabled={submitting || loading}>
             {submitting ? (
               <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
             ) : (

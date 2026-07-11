@@ -33,7 +33,7 @@ export default function NepaliClock() {
   return (
     <div className="d-flex align-items-center gap-2 text-dark fs-7 px-3 py-1 bg-white rounded-pill border shadow-sm">
       <i className="bi bi-calendar-event text-danger"></i>
-      <span className="font-weight-semibold">{formattedBs} BS</span>
+      <span className="fw-semibold">{formattedBs} BS</span>
     </div>
   );
 }

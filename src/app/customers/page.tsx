@@ -1,4 +1,3 @@
-'use strict';
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -157,7 +156,7 @@ export default function CustomersPage() {
 
       {/* Directory Table */}
       <div className="card border-none rounded-lg p-4 shadow-sm" style={{ backgroundColor: 'var(--light-card)', border: '1px solid var(--border-color)' }}>
-        <h5 className="font-weight-bold mb-4 d-flex align-items-center gap-2">
+        <h5 className="fw-bold mb-4 d-flex align-items-center gap-2">
           <i className="bi bi-people-fill text-primary"></i>
           CRM Client Directory
         </h5>
@@ -188,12 +187,12 @@ export default function CustomersPage() {
               ) : (
                 customers.map((cust) => (
                   <tr key={cust.id}>
-                    <td className="font-weight-bold text-dark">{cust.name}</td>
+                    <td className="fw-bold text-dark">{cust.name}</td>
                     <td>{cust.phone || <span className="text-muted fs-8">None</span>}</td>
                     <td>{cust.email || <span className="text-muted fs-8">None</span>}</td>
                     <td className="text-muted">{cust.address || <span className="text-muted fs-8">None</span>}</td>
                     <td>
-                      <span className="badge bg-warning-subtle text-warning-emphasis px-2.5 py-1 rounded-pill font-weight-bold">
+                      <span className="badge bg-warning-subtle text-warning-emphasis px-2.5 py-1 rounded-pill fw-bold">
                         {cust.points} pts
                       </span>
                     </td>
@@ -232,7 +231,7 @@ export default function CustomersPage() {
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content border-0 shadow-lg rounded-lg">
             <div className="modal-header bg-primary text-white border-none p-3.5">
-              <h5 className="modal-title font-weight-bold" id="customerModalLabel">
+              <h5 className="modal-title fw-bold" id="customerModalLabel">
                 <i className="bi bi-person-fill-gear me-2"></i>{editingCustomer ? 'Edit Client Profile' : 'Register Client Profile'}
               </h5>
               <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -240,7 +239,7 @@ export default function CustomersPage() {
             <form onSubmit={handleCustomerSubmit}>
               <div className="modal-body p-4">
                 <div className="mb-3">
-                  <label className="form-label font-weight-semibold">Customer Full Name</label>
+                  <label className="form-label fw-semibold">Customer Full Name</label>
                   <input
                     type="text"
                     className="form-control"
@@ -251,7 +250,7 @@ export default function CustomersPage() {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label font-weight-semibold">Telephone Number</label>
+                  <label className="form-label fw-semibold">Telephone Number</label>
                   <input
                     type="text"
                     className="form-control"
@@ -261,7 +260,7 @@ export default function CustomersPage() {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label font-weight-semibold">Email Address</label>
+                  <label className="form-label fw-semibold">Email Address</label>
                   <input
                     type="email"
                     className="form-control"
@@ -271,7 +270,7 @@ export default function CustomersPage() {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label font-weight-semibold">Billing/Physical Address</label>
+                  <label className="form-label fw-semibold">Billing/Physical Address</label>
                   <input
                     type="text"
                     className="form-control"
@@ -297,7 +296,7 @@ export default function CustomersPage() {
         <div className="modal-dialog modal-dialog-centered modal-lg">
           <div className="modal-content border-0 shadow-lg rounded-lg">
             <div className="modal-header bg-dark text-white border-none p-3.5">
-              <h5 className="modal-title font-weight-bold" id="customerHistoryModalLabel">
+              <h5 className="modal-title fw-bold" id="customerHistoryModalLabel">
                 <i className="bi bi-clock-history me-2 text-warning"></i>Purchase history logs - {activeHistoryCustomer?.name}
               </h5>
               <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -323,11 +322,11 @@ export default function CustomersPage() {
                     ) : (
                       activeHistoryCustomer.sales.map((sale: any) => (
                         <tr key={sale.id}>
-                          <td className="font-weight-bold text-primary">{sale.invoiceNo}</td>
+                          <td className="fw-bold text-primary">{sale.invoiceNo}</td>
                           <td>Rs. {sale.subtotal.toFixed(2)}</td>
                           <td>Rs. {sale.taxAmount.toFixed(2)}</td>
                           <td className="text-danger">Rs. {sale.discountAmount.toFixed(2)}</td>
-                          <td className="font-weight-bold text-dark">Rs. {sale.totalAmount.toFixed(2)}</td>
+                          <td className="fw-bold text-dark">Rs. {sale.totalAmount.toFixed(2)}</td>
                           <td>{formatAdToBs(sale.createdAt)}</td>
                         </tr>
                       ))
@@ -337,7 +336,7 @@ export default function CustomersPage() {
               </div>
             </div>
             <div className="modal-footer border-top p-3">
-              <button type="button" className="btn btn-light rounded-md font-weight-bold" data-bs-dismiss="modal">Close</button>
+              <button type="button" className="btn btn-light rounded-md fw-bold" data-bs-dismiss="modal">Close</button>
             </div>
           </div>
         </div>

@@ -1,9 +1,8 @@
-'use strict';
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
+import axios, { AxiosInstance } from 'axios';
 
 interface User {
   id: number;
@@ -36,7 +35,7 @@ interface AuthContextType {
   logout: () => void;
   error: string | null;
   clearError: () => void;
-  api: typeof axios;
+  api: AxiosInstance;
   activeFiscalYear: FiscalYear | null;
   refreshFiscalYear: () => Promise<void>;
 }
@@ -160,6 +159,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     delete axios.defaults.headers.common['Authorization'];
     router.push('/login');
   };
+
+  // Setup global Axios interceptor for 401 Unauthorized
+  useEffect(() => {
+    const interceptor = api.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          if (error.response.data) {
+            error.response.data.message = 'Session expired. Please log in again.';
+          }
+          // Auto-logout if token is invalid or expired
+          logout();
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      api.interceptors.response.eject(interceptor);
+    };
+  }, []); // Ignore deps warning, logout doesn't change meaningfully
 
   const clearError = () => setError(null);
 

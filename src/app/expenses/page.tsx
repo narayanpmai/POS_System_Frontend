@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { formatAdToBs } from '@/utils/nepaliDate';
+import BSDatePicker from '@/components/BSDatePicker';
 
 export default function ExpensesPage() {
   const { token, api, activeFiscalYear } = useAuth();
@@ -209,7 +210,7 @@ export default function ExpensesPage() {
         <ul className="nav nav-pills border-0 bg-white p-1 rounded-pill shadow-sm" style={{ border: '1px solid #dee2e6' }}>
           <li className="nav-item">
             <button
-              className={`nav-link rounded-pill font-weight-bold px-4 py-2 d-flex align-items-center ${activeTab === 'expenses' ? 'text-white' : 'text-secondary bg-transparent border-0'}`}
+              className={`nav-link rounded-pill fw-bold px-4 py-2 d-flex align-items-center ${activeTab === 'expenses' ? 'text-white' : 'text-secondary bg-transparent border-0'}`}
               style={activeTab === 'expenses' ? { backgroundColor: '#991b1b' } : {}}
               onClick={() => setActiveTab('expenses')}
             >
@@ -218,7 +219,7 @@ export default function ExpensesPage() {
           </li>
           <li className="nav-item">
             <button
-              className={`nav-link rounded-pill font-weight-bold px-4 py-2 d-flex align-items-center ${activeTab === 'categories' ? 'text-white' : 'text-secondary bg-transparent border-0'}`}
+              className={`nav-link rounded-pill fw-bold px-4 py-2 d-flex align-items-center ${activeTab === 'categories' ? 'text-white' : 'text-secondary bg-transparent border-0'}`}
               style={activeTab === 'categories' ? { backgroundColor: '#991b1b' } : {}}
               onClick={() => setActiveTab('categories')}
             >
@@ -228,11 +229,11 @@ export default function ExpensesPage() {
         </ul>
 
         {activeTab === 'expenses' ? (
-          <button className="btn d-flex align-items-center gap-2 px-3 py-2 font-weight-bold text-white shadow-sm" style={{ backgroundColor: '#991b1b', borderRadius: '8px' }} onClick={handleAddExpenseClick}>
+          <button className="btn d-flex align-items-center gap-2 px-3 py-2 fw-bold text-white shadow-sm" style={{ backgroundColor: '#991b1b', borderRadius: '8px' }} onClick={handleAddExpenseClick}>
             <i className="bi bi-plus-circle"></i> Log Expense
           </button>
         ) : (
-          <button className="btn d-flex align-items-center gap-2 px-3 py-2 font-weight-bold text-white shadow-sm" style={{ backgroundColor: '#991b1b', borderRadius: '8px' }} onClick={handleAddCategoryClick}>
+          <button className="btn d-flex align-items-center gap-2 px-3 py-2 fw-bold text-white shadow-sm" style={{ backgroundColor: '#991b1b', borderRadius: '8px' }} onClick={handleAddCategoryClick}>
             <i className="bi bi-plus-circle"></i> Add Category
           </button>
         )}
@@ -247,12 +248,12 @@ export default function ExpensesPage() {
             <table className="table mb-0 align-middle">
               <thead>
                 <tr style={{ backgroundColor: 'var(--light-bg)' }}>
-                  <th className="font-weight-bold text-dark py-3 ps-3 border-bottom-0 border-top" style={{ width: '15%' }}>Date</th>
-                  <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '20%' }}>Reference</th>
-                  <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '20%' }}>Category</th>
-                  <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '15%' }}>Amount</th>
-                  <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '20%' }}>Note</th>
-                  <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top text-center" style={{ width: '10%' }}>Actions</th>
+                  <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top" style={{ width: '15%' }}>Date</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '20%' }}>Reference</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '20%' }}>Category</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '15%' }}>Amount</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '20%' }}>Note</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-center" style={{ width: '10%' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -268,13 +269,13 @@ export default function ExpensesPage() {
                   expenses.map((exp) => (
                     <tr key={exp.id}>
                       <td className="ps-3 border-bottom py-3 text-secondary">{formatAdToBs(exp.date)}</td>
-                      <td className="border-bottom font-weight-bold text-dark">{exp.referenceNo || `EXP-${exp.id}`}</td>
+                      <td className="border-bottom fw-bold text-dark">{exp.referenceNo || `EXP-${exp.id}`}</td>
                       <td className="border-bottom text-dark">
                         <span className="badge bg-secondary-subtle text-dark px-2.5 py-1 rounded-pill" style={{ fontSize: '11px' }}>
                           {exp.category}
                         </span>
                       </td>
-                      <td className="border-bottom font-weight-bold text-danger">Rs. {exp.amount.toFixed(2)}</td>
+                      <td className="border-bottom fw-bold text-danger">Rs. {exp.amount.toFixed(2)}</td>
                       <td className="border-bottom text-secondary">{exp.description || <span className="text-muted fs-8">None</span>}</td>
                       <td className="border-bottom text-center">
                         <div className="d-flex justify-content-center gap-2">
@@ -304,9 +305,9 @@ export default function ExpensesPage() {
             <table className="table mb-0 align-middle">
               <thead>
                 <tr style={{ backgroundColor: 'var(--light-bg)' }}>
-                  <th className="font-weight-bold text-dark py-3 ps-3 border-bottom-0 border-top" style={{ width: '30%' }}>Category Name</th>
-                  <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '50%' }}>Description</th>
-                  <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top text-center" style={{ width: '20%' }}>Actions</th>
+                  <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top" style={{ width: '30%' }}>Category Name</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '50%' }}>Description</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-center" style={{ width: '20%' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -321,7 +322,7 @@ export default function ExpensesPage() {
                 ) : (
                   categories.map((cat) => (
                     <tr key={cat.id}>
-                      <td className="ps-3 border-bottom py-3 font-weight-bold text-dark">{cat.name}</td>
+                      <td className="ps-3 border-bottom py-3 fw-bold text-dark">{cat.name}</td>
                       <td className="border-bottom text-secondary">{cat.description || <span className="text-muted fs-8">No description provided</span>}</td>
                       <td className="border-bottom text-center">
                         <div className="d-flex justify-content-center gap-2">
@@ -349,7 +350,7 @@ export default function ExpensesPage() {
         <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '450px' }}>
           <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '12px', overflow: 'hidden' }}>
             <div className="modal-header bg-white border-bottom p-3 d-flex align-items-center justify-content-between">
-              <h5 className="modal-title font-weight-bold text-dark m-0" id="expenseModalLabel" style={{ fontSize: '1.1rem' }}>
+              <h5 className="modal-title fw-bold text-dark m-0" id="expenseModalLabel" style={{ fontSize: '1.1rem' }}>
                 {isEditing ? 'Edit Expense Record' : 'Log Expense'}
               </h5>
               <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" style={{ fontSize: '0.8rem' }}></button>
@@ -357,7 +358,7 @@ export default function ExpensesPage() {
             <form onSubmit={handleExpenseSubmit}>
               <div className="modal-body p-4" style={{ backgroundColor: 'var(--light-card)' }}>
                 <div className="mb-3">
-                  <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Reference No</label>
+                  <label className="form-label fw-bold text-secondary fs-8 mb-1">Reference No</label>
                   <input
                     type="text"
                     className="form-control border-1 p-2"
@@ -368,18 +369,15 @@ export default function ExpensesPage() {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Date</label>
-                  <input
-                    type="date"
-                    className="form-control border-1 p-2"
+                  <label className="form-label fw-bold text-secondary fs-8 mb-1">Date (BS)</label>
+                  <BSDatePicker
                     value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    required
-                    style={{ borderRadius: '6px' }}
+                    onChange={(val) => setDate(val)}
+                    className="form-control border-1 p-2"
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Category</label>
+                  <label className="form-label fw-bold text-secondary fs-8 mb-1">Category</label>
                   <select 
                     className="form-select border-1 p-2" 
                     value={category} 
@@ -397,7 +395,7 @@ export default function ExpensesPage() {
                   </select>
                 </div>
                 <div className="mb-3">
-                  <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Amount (Rs.)</label>
+                  <label className="form-label fw-bold text-secondary fs-8 mb-1">Amount (Rs.)</label>
                   <input
                     type="number"
                     min="0"
@@ -411,7 +409,7 @@ export default function ExpensesPage() {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Note</label>
+                  <label className="form-label fw-bold text-secondary fs-8 mb-1">Note</label>
                   <textarea
                     className="form-control border-1 p-2"
                     rows={3}
@@ -423,7 +421,7 @@ export default function ExpensesPage() {
                 </div>
               </div>
               <div className="modal-footer border-0 p-3 bg-white d-flex justify-content-end">
-                <button type="submit" className="btn btn-primary px-4 py-2 font-weight-semibold animate-pulse" style={{ backgroundColor: '#991b1b', border: 'none', borderRadius: '4px', fontSize: '0.9rem' }}>
+                <button type="submit" className="btn btn-primary px-4 py-2 fw-semibold animate-pulse" style={{ backgroundColor: '#991b1b', border: 'none', borderRadius: '4px', fontSize: '0.9rem' }}>
                   Save
                 </button>
               </div>
@@ -439,7 +437,7 @@ export default function ExpensesPage() {
         <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '450px' }}>
           <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '12px', overflow: 'hidden' }}>
             <div className="modal-header bg-white border-bottom p-3 d-flex align-items-center justify-content-between">
-              <h5 className="modal-title font-weight-bold text-dark m-0" id="expenseCategoryModalLabel" style={{ fontSize: '1.1rem' }}>
+              <h5 className="modal-title fw-bold text-dark m-0" id="expenseCategoryModalLabel" style={{ fontSize: '1.1rem' }}>
                 {isEditingCategory ? 'Edit Expense Category' : 'Add Expense Category'}
               </h5>
               <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" style={{ fontSize: '0.8rem' }}></button>
@@ -447,7 +445,7 @@ export default function ExpensesPage() {
             <form onSubmit={handleCategorySubmit}>
               <div className="modal-body p-4" style={{ backgroundColor: 'var(--light-card)' }}>
                 <div className="mb-3">
-                  <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Category Name</label>
+                  <label className="form-label fw-bold text-secondary fs-8 mb-1">Category Name</label>
                   <input
                     type="text"
                     className="form-control border-1 p-2"
@@ -459,7 +457,7 @@ export default function ExpensesPage() {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Description</label>
+                  <label className="form-label fw-bold text-secondary fs-8 mb-1">Description</label>
                   <textarea
                     className="form-control border-1 p-2"
                     rows={3}
@@ -471,7 +469,7 @@ export default function ExpensesPage() {
                 </div>
               </div>
               <div className="modal-footer border-0 p-3 bg-white d-flex justify-content-end">
-                <button type="submit" className="btn btn-primary px-4 py-2 font-weight-semibold" style={{ backgroundColor: '#991b1b', border: 'none', borderRadius: '4px', fontSize: '0.9rem' }}>
+                <button type="submit" className="btn btn-primary px-4 py-2 fw-semibold" style={{ backgroundColor: '#991b1b', border: 'none', borderRadius: '4px', fontSize: '0.9rem' }}>
                   Save Category
                 </button>
               </div>

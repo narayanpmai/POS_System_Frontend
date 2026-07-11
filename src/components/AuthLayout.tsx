@@ -1,4 +1,3 @@
-'use strict';
 'use client';
 
 import React, { useEffect } from 'react';
@@ -7,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 
-export default function AuthLayout({ children }: { children: React.Node }) {
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
 
@@ -24,7 +23,7 @@ export default function AuthLayout({ children }: { children: React.Node }) {
           <div className="spinner-border text-primary" role="status" style={{ width: '3rem', height: '3rem' }}>
             <span className="visually-hidden">Loading...</span>
           </div>
-          <p className="mt-3 text-secondary font-weight-semibold">Verifying Secure Session...</p>
+          <p className="mt-3 text-secondary fw-semibold">Verifying Secure Session...</p>
         </div>
       </div>
     );

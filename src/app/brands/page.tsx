@@ -106,8 +106,8 @@ export default function BrandsPage() {
       <div className="card border-0 rounded-md shadow-sm p-4" style={{ backgroundColor: 'var(--light-card)' }}>
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <h4 className="font-weight-bold m-0 text-dark">Brands</h4>
-          <button className="btn btn-primary font-weight-bold d-flex align-items-center gap-2 px-3 py-2" style={{ backgroundColor: '#0d6efd', borderRadius: '20px' }} onClick={handleAddClick}>
+          <h4 className="fw-bold m-0 text-dark">Brands</h4>
+          <button className="btn btn-primary fw-bold d-flex align-items-center gap-2 px-3 py-2" style={{ backgroundColor: '#0d6efd', borderRadius: '20px' }} onClick={handleAddClick}>
             <i className="bi bi-plus-circle"></i> Add Brand
           </button>
         </div>
@@ -117,11 +117,11 @@ export default function BrandsPage() {
           <table className="table mb-0 align-middle">
             <thead>
               <tr style={{ backgroundColor: 'var(--light-bg)' }}>
-                <th className="font-weight-bold text-dark py-3 ps-3 border-bottom-0 border-top" style={{ width: '10%' }}>ID</th>
-                <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '35%' }}>Name</th>
-                <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '30%' }}>Slug</th>
-                <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '15%' }}>Status</th>
-                <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top text-center" style={{ width: '10%' }}>Actions</th>
+                <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top" style={{ width: '10%' }}>ID</th>
+                <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '35%' }}>Name</th>
+                <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '30%' }}>Slug</th>
+                <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '15%' }}>Status</th>
+                <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-center" style={{ width: '10%' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -137,7 +137,7 @@ export default function BrandsPage() {
                 brands.map((brand) => (
                   <tr key={brand.id}>
                     <td className="ps-3 border-bottom py-3 text-secondary">{brand.id}</td>
-                    <td className="border-bottom font-weight-semibold text-dark">{brand.name}</td>
+                    <td className="border-bottom fw-semibold text-dark">{brand.name}</td>
                     <td className="border-bottom text-secondary font-mono">{brand.slug}</td>
                     <td className="border-bottom">
                       <span className={`badge px-2 py-1 ${brand.status === 'ACTIVE' ? 'bg-success' : 'bg-secondary'}`} style={{ borderRadius: '4px', fontSize: '11px' }}>
@@ -167,7 +167,7 @@ export default function BrandsPage() {
         <div className="modal-dialog modal-dialog-centered">
           <div className="modal-content border-0 shadow-lg rounded-lg">
             <div className="modal-header bg-primary text-white border-none p-3.5">
-              <h5 className="modal-title font-weight-bold" id="brandModalLabel">
+              <h5 className="modal-title fw-bold" id="brandModalLabel">
                 {isEditing ? 'Edit Brand' : 'Add Brand'}
               </h5>
               <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -175,7 +175,7 @@ export default function BrandsPage() {
             <form onSubmit={handleSubmit}>
               <div className="modal-body p-4">
                 <div className="mb-3">
-                  <label className="form-label font-weight-semibold">Brand Name</label>
+                  <label className="form-label fw-semibold">Brand Name</label>
                   <input
                     type="text"
                     className="form-control"
@@ -186,7 +186,7 @@ export default function BrandsPage() {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label font-weight-semibold">Status</label>
+                  <label className="form-label fw-semibold">Status</label>
                   <select className="form-select" value={status} onChange={(e) => setStatus(e.target.value)}>
                     <option value="ACTIVE">Active</option>
                     <option value="INACTIVE">Inactive</option>

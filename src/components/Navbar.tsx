@@ -1,4 +1,3 @@
-'use strict';
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -69,14 +68,14 @@ export default function Navbar() {
             aria-expanded="false"
           >
             <i className="bi bi-person-circle fs-5 text-secondary"></i>
-            <span className="font-weight-semibold text-dark fs-7">{user?.name || 'Loading...'}</span>
+            <span className="fw-semibold text-dark fs-7">{user?.name || 'Loading...'}</span>
             <i className="bi bi-caret-down-fill ms-1" style={{ fontSize: '0.65rem' }}></i>
           </button>
           
           <ul className="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-md p-2 mt-2" aria-labelledby="userDropdown">
             <li className="p-3 border-bottom">
-              <h6 className="m-0 font-weight-bold">{user?.name || 'User'}</h6>
-              <small className="text-primary font-weight-semibold">{user?.role?.name || 'Cashier'}</small>
+              <h6 className="m-0 fw-bold">{user?.name || 'User'}</h6>
+              <small className="text-primary fw-semibold">{user?.role?.name || 'Cashier'}</small>
             </li>
             <li className="pt-2">
               <button className="dropdown-item text-danger py-2 rounded-md" onClick={logout}>

@@ -112,35 +112,35 @@ export default function UserControlPage() {
   return (
     <AuthLayout>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h4 className="font-weight-bold m-0">User Management & Access Control</h4>
-        <button className="btn btn-primary font-weight-bold px-4" onClick={handleAddClick}>
+        <h4 className="fw-bold m-0">User Management & Access Control</h4>
+        <button className="btn btn-primary fw-bold px-4" onClick={handleAddClick}>
           + Create New Staff
         </button>
       </div>
 
       {showForm && (
         <div className="card p-4 border-none shadow-sm mb-4" style={{ backgroundColor: 'var(--light-card)', border: '1px solid var(--border-color)' }}>
-          <h5 className="font-weight-bold mb-4">{isEditing ? 'Edit User Details' : 'Create New Staff Member'}</h5>
+          <h5 className="fw-bold mb-4">{isEditing ? 'Edit User Details' : 'Create New Staff Member'}</h5>
           <form onSubmit={submitForm}>
             <div className="row g-3 mb-3">
               <div className="col-12 col-md-6">
-                <label className="form-label font-weight-semibold">Full Name</label>
+                <label className="form-label fw-semibold">Full Name</label>
                 <input required type="text" className="form-control" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
               </div>
               <div className="col-12 col-md-6">
-                <label className="form-label font-weight-semibold">Email (Login ID)</label>
+                <label className="form-label fw-semibold">Email (Login ID)</label>
                 <input required type="email" className="form-control" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
               </div>
               
               {!isEditing && (
                 <div className="col-12 col-md-6">
-                  <label className="form-label font-weight-semibold">Initial Password</label>
+                  <label className="form-label fw-semibold">Initial Password</label>
                   <input required type="password" minLength={6} className="form-control" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
                 </div>
               )}
 
               <div className="col-12 col-md-6">
-                <label className="form-label font-weight-semibold">Role Access</label>
+                <label className="form-label fw-semibold">Role Access</label>
                 <select className="form-select" value={formData.roleId} onChange={e => setFormData({...formData, roleId: parseInt(e.target.value)})}>
                   {roles.map(r => (
                     <option key={r.id} value={r.id}>{r.name} - {r.description}</option>
@@ -151,7 +151,7 @@ export default function UserControlPage() {
 
             <div className="d-flex justify-content-end gap-2 mt-4">
               <button type="button" className="btn btn-light border px-4" onClick={() => setShowForm(false)}>Cancel</button>
-              <button type="submit" className="btn btn-primary px-4 font-weight-bold">
+              <button type="submit" className="btn btn-primary px-4 fw-bold">
                 {isEditing ? 'Save Changes' : 'Create User'}
               </button>
             </div>
@@ -162,22 +162,22 @@ export default function UserControlPage() {
       {/* Reset Password Modal Simulator */}
       {showResetModal && (
         <div className="card p-4 border-none shadow-sm mb-4 border-danger" style={{ backgroundColor: '#fff5f5' }}>
-          <h5 className="text-danger font-weight-bold mb-3"><i className="bi bi-shield-lock-fill me-2"></i>Force Reset Password</h5>
+          <h5 className="text-danger fw-bold mb-3"><i className="bi bi-shield-lock-fill me-2"></i>Force Reset Password</h5>
           <form onSubmit={handleResetPassword}>
             <div className="mb-3">
-              <label className="form-label font-weight-semibold">New Password</label>
+              <label className="form-label fw-semibold">New Password</label>
               <input required type="password" minLength={6} className="form-control w-50" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
             </div>
             <div className="d-flex gap-2">
               <button type="button" className="btn btn-light border" onClick={() => setShowResetModal(false)}>Cancel</button>
-              <button type="submit" className="btn btn-danger font-weight-bold">Confirm Reset</button>
+              <button type="submit" className="btn btn-danger fw-bold">Confirm Reset</button>
             </div>
           </form>
         </div>
       )}
 
       <div className="card p-4 border-none shadow-sm" style={{ backgroundColor: 'var(--light-card)', border: '1px solid var(--border-color)' }}>
-        <h5 className="font-weight-bold mb-3">System Users</h5>
+        <h5 className="fw-bold mb-3">System Users</h5>
         <div className="table-responsive">
           <table className="table custom-table align-middle">
             <thead>
@@ -195,7 +195,7 @@ export default function UserControlPage() {
                 <tr><td colSpan={6} className="text-center py-4">Loading users...</td></tr>
               ) : users.map(u => (
                 <tr key={u.id}>
-                  <td className="font-weight-bold">{u.name}</td>
+                  <td className="fw-bold">{u.name}</td>
                   <td>{u.email}</td>
                   <td>
                     <span className={`badge px-2 py-1 rounded-pill ${u.role.name === 'Admin' ? 'bg-danger-subtle text-danger' : u.role.name === 'Manager' ? 'bg-warning-subtle text-warning' : 'bg-primary-subtle text-primary'}`}>

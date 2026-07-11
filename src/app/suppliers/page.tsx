@@ -124,8 +124,8 @@ export default function SuppliersPage() {
       <div className="card border-0 rounded-md shadow-sm p-4" style={{ backgroundColor: 'var(--light-card)' }}>
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <h4 className="font-weight-bold m-0 text-dark">Suppliers</h4>
-          <button className="btn btn-primary font-weight-bold d-flex align-items-center gap-2 px-3 py-2" style={{ backgroundColor: '#0d6efd', borderRadius: '20px' }} onClick={handleAddClick}>
+          <h4 className="fw-bold m-0 text-dark">Suppliers</h4>
+          <button className="btn btn-primary fw-bold d-flex align-items-center gap-2 px-3 py-2" style={{ backgroundColor: '#0d6efd', borderRadius: '20px' }} onClick={handleAddClick}>
             <i className="bi bi-plus-circle"></i> Add Supplier
           </button>
         </div>
@@ -135,12 +135,12 @@ export default function SuppliersPage() {
           <table className="table mb-0 align-middle">
             <thead>
               <tr style={{ backgroundColor: 'var(--light-bg)' }}>
-                <th className="font-weight-bold text-dark py-3 ps-3 border-bottom-0 border-top" style={{ width: '10%' }}>ID</th>
-                <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '25%' }}>Name</th>
-                <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '20%' }}>Email</th>
-                <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '15%' }}>Phone</th>
-                <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '20%' }}>Address</th>
-                <th className="font-weight-bold text-dark py-3 border-bottom-0 border-top text-center" style={{ width: '10%' }}>Actions</th>
+                <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top" style={{ width: '10%' }}>ID</th>
+                <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '25%' }}>Name</th>
+                <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '20%' }}>Email</th>
+                <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '15%' }}>Phone</th>
+                <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '20%' }}>Address</th>
+                <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-center" style={{ width: '10%' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -156,7 +156,7 @@ export default function SuppliersPage() {
                 suppliers.map((supp) => (
                   <tr key={supp.id}>
                     <td className="ps-3 border-bottom py-3 text-secondary">{supp.id}</td>
-                    <td className="border-bottom font-weight-semibold text-dark">{supp.name}</td>
+                    <td className="border-bottom fw-semibold text-dark">{supp.name}</td>
                     <td className="border-bottom text-secondary">{supp.email || <span className="text-muted fs-8">None</span>}</td>
                     <td className="border-bottom text-secondary">{supp.phone || <span className="text-muted fs-8">None</span>}</td>
                     <td className="border-bottom text-secondary">{supp.address || <span className="text-muted fs-8">None</span>}</td>
@@ -183,7 +183,7 @@ export default function SuppliersPage() {
         <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '450px' }}>
           <div className="modal-content border-0 shadow-lg rounded-lg" style={{ borderRadius: '12px', overflow: 'hidden' }}>
             <div className="modal-header bg-white border-bottom p-3 d-flex align-items-center justify-content-between">
-              <h5 className="modal-title font-weight-bold text-dark m-0" id="supplierModalLabel" style={{ fontSize: '1.1rem' }}>
+              <h5 className="modal-title fw-bold text-dark m-0" id="supplierModalLabel" style={{ fontSize: '1.1rem' }}>
                 {isEditing ? 'Edit Supplier' : 'New Supplier'}
               </h5>
               <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" style={{ fontSize: '0.8rem' }}></button>
@@ -191,7 +191,7 @@ export default function SuppliersPage() {
             <form onSubmit={handleSubmit}>
               <div className="modal-body p-4" style={{ backgroundColor: 'var(--light-card)' }}>
                 <div className="mb-3">
-                  <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Name</label>
+                  <label className="form-label fw-bold text-secondary fs-8 mb-1">Name</label>
                   <input
                     type="text"
                     className="form-control border-1 p-2"
@@ -203,7 +203,7 @@ export default function SuppliersPage() {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Email</label>
+                  <label className="form-label fw-bold text-secondary fs-8 mb-1">Email</label>
                   <input
                     type="email"
                     className="form-control border-1 p-2"
@@ -214,7 +214,7 @@ export default function SuppliersPage() {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Phone</label>
+                  <label className="form-label fw-bold text-secondary fs-8 mb-1">Phone</label>
                   <input
                     type="text"
                     className="form-control border-1 p-2"
@@ -225,7 +225,7 @@ export default function SuppliersPage() {
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label font-weight-bold text-secondary fs-8 mb-1">Address</label>
+                  <label className="form-label fw-bold text-secondary fs-8 mb-1">Address</label>
                   <textarea
                     className="form-control border-1 p-2"
                     rows={3}
@@ -237,7 +237,7 @@ export default function SuppliersPage() {
                 </div>
               </div>
               <div className="modal-footer border-0 p-3 bg-white d-flex justify-content-end">
-                <button type="submit" className="btn btn-primary px-4 py-2 font-weight-semibold" style={{ backgroundColor: '#0066ff', border: 'none', borderRadius: '20px', fontSize: '0.9rem' }}>
+                <button type="submit" className="btn btn-primary px-4 py-2 fw-semibold" style={{ backgroundColor: '#0066ff', border: 'none', borderRadius: '20px', fontSize: '0.9rem' }}>
                   Save
                 </button>
               </div>
