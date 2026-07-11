@@ -55,6 +55,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
   });
 
+  // Inject tenant domain header for multi-tenancy
+  if (typeof window !== 'undefined') {
+    api.defaults.headers.common['x-tenant-domain'] = window.location.hostname;
+    axios.defaults.headers.common['x-tenant-domain'] = window.location.hostname;
+  }
+
   const refreshFiscalYear = async () => {
     if (!token) return;
     try {

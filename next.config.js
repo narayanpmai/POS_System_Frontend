@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
   distDir: 'dist',
   reactStrictMode: false,
   eslint: {
@@ -8,7 +7,10 @@ const nextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true,
-  }
+  },
+  experimental: {
+    allowedDevOrigins: ['shop1.localhost:3000', 'localhost:3000'],
+  },
 };
 
 module.exports = nextConfig;
