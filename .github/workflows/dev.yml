@@ -128,75 +128,7 @@ jobs:
             exit 1
           fi
 
-      - name: Update nginx proxy config for koselighar.smartptrm.com
-        shell: bash
-        run: |
-          # Find the nginx config file for this site
-          NGINX_CONF=""
-          for f in /etc/nginx/sites-enabled/* /etc/nginx/conf.d/*; do
-            if [ -f "$f" ] && grep -q "koselighar.smartptrm.com" "$f" 2>/dev/null; then
-              NGINX_CONF="$f"
-              break
-            fi
-          done
 
-          if [ -z "$NGINX_CONF" ]; then
-            echo "⚠ No existing nginx config found for koselighar.smartptrm.com"
-            echo "Creating new config at /etc/nginx/sites-enabled/koselighar-frontend"
-            NGINX_CONF="/etc/nginx/sites-enabled/koselighar-frontend"
-          else
-            echo "Found nginx config: $NGINX_CONF"
-            echo "--- Current config ---"
-            cat "$NGINX_CONF"
-          fi
-
-          # Only update if not already proxying to 3001
-          if grep -q "proxy_pass.*3001" "$NGINX_CONF" 2>/dev/null; then
-            echo "✓ Nginx already configured to proxy to port 3001 — no changes needed"
-          else
-            echo "Updating nginx config to proxy to port 3001..."
-            sudo tee "$NGINX_CONF" > /dev/null << 'NGINXEOF'
-          server {
-              listen 80;
-              listen [::]:80;
-              server_name koselighar.smartptrm.com;
-              return 301 https://$host$request_uri;
-          }
-
-          server {
-              listen 443 ssl;
-              listen [::]:443 ssl;
-              server_name koselighar.smartptrm.com;
-
-              ssl_certificate /etc/letsencrypt/live/koselighar.smartptrm.com/fullchain.pem;
-              ssl_certificate_key /etc/letsencrypt/live/koselighar.smartptrm.com/privkey.pem;
-              include /etc/letsencrypt/options-ssl-nginx.conf;
-              ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-
-              location / {
-                  proxy_pass http://127.0.0.1:3001;
-                  proxy_http_version 1.1;
-                  proxy_set_header Upgrade $http_upgrade;
-                  proxy_set_header Connection 'upgrade';
-                  proxy_set_header Host $host;
-                  proxy_set_header X-Real-IP $remote_addr;
-                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                  proxy_set_header X-Forwarded-Proto $scheme;
-                  proxy_cache_bypass $http_upgrade;
-                  proxy_read_timeout 120s;
-              }
-          }
-          NGINXEOF
-            echo "✓ Nginx config updated"
-          fi
-
-          sudo nginx -t && echo "✓ Nginx config valid"
-
-      - name: Reload nginx
-        shell: bash
-        run: |
-          sudo systemctl reload nginx
-          echo "✓ Nginx reloaded"
 
       - name: Health Check
         shell: bash
@@ -220,5 +152,4 @@ jobs:
           echo "=== Final PM2 Status ==="
           pm2 list
           echo ""
-          echo "=== Nginx Status ==="
-          sudo systemctl status nginx --no-pager | head -20
+
