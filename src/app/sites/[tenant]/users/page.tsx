@@ -20,7 +20,7 @@ export default function UserControlPage() {
     name: '',
     email: '',
     password: '',
-    roleId: 2, // Default to cashier
+    roleId: 0, // Will be set once roles are loaded
     active: true,
   });
 
@@ -47,6 +47,12 @@ export default function UserControlPage() {
       ]);
       setUsers(usersRes.data);
       setRoles(rolesRes.data);
+      // Set default roleId to first non-Admin role, or first available role
+      const loadedRoles = rolesRes.data as any[];
+      if (loadedRoles.length > 0) {
+        const defaultRole = loadedRoles.find((r: any) => r.name !== 'Admin') || loadedRoles[0];
+        setFormData(prev => prev.roleId === 0 ? { ...prev, roleId: defaultRole.id } : prev);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -54,7 +60,8 @@ export default function UserControlPage() {
   };
 
   const handleAddClick = () => {
-    setFormData({ name: '', email: '', password: '', roleId: roles.find(r => r.name === 'Cashier')?.id || 2, active: true });
+    const defaultRole = roles.find(r => r.name !== 'Admin') || roles[0];
+    setFormData({ name: '', email: '', password: '', roleId: defaultRole?.id || roles[0]?.id || 0, active: true });
     setIsEditing(false);
     setShowForm(true);
   };
@@ -83,7 +90,8 @@ export default function UserControlPage() {
       setShowForm(false);
       loadData();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error saving user');
+      const msg = err.response?.data?.message;
+      alert(Array.isArray(msg) ? msg.join('\n') : (msg || 'Error saving user'));
     }
   };
 

@@ -9,7 +9,11 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   experimental: {
-    allowedDevOrigins: ['shop1.localhost:3000', 'localhost:3000'],
+    allowedDevOrigins: [
+      'shop1.localhost:3000',
+      'localhost:3000',
+      'koselighar.smartptrm.com',
+    ],
   },
 };
 

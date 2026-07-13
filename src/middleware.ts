@@ -14,20 +14,34 @@ export const config = {
   ],
 };
 
+// Map custom full domains to their tenant slug.
+// Add entries here when a store has its own custom domain.
+const CUSTOM_DOMAIN_MAP: Record<string, string> = {
+  'koselighar.smartptrm.com': 'koselighar',
+};
+
 export function middleware(req: NextRequest) {
   const url = req.nextUrl;
 
   // Get hostname of request (e.g. demo.koshelighar.com, demo.localhost:3000)
   const hostname = req.headers.get('host') || 'localhost:3000';
+  // Strip port for comparison
+  const hostWithoutPort = hostname.split(':')[0];
 
-  // We only want to rewrite if the request is not for the root domain or localhost
-  // E.g. skip for www.koshelighar.com or koshelighar.com
+  // --- Check custom full-domain map first ---
+  const customTenant = CUSTOM_DOMAIN_MAP[hostWithoutPort];
+  if (customTenant) {
+    url.pathname = `/sites/${customTenant}${url.pathname}`;
+    return NextResponse.rewrite(url);
+  }
+
+  // --- Subdomain-based routing ---
   const isLocalhost = hostname.includes('localhost');
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || (isLocalhost ? 'localhost:3000' : 'koshelighar.com');
 
   const currentHost = hostname.replace(`.${rootDomain}`, '');
 
-  // If there's a subdomain or custom domain, rewrite the request path
+  // If there's a subdomain, rewrite the request path
   // E.g. demo.koshelighar.com/products -> /sites/demo/products
   if (currentHost !== hostname && currentHost !== 'www' && currentHost !== rootDomain) {
     url.pathname = `/sites/${currentHost}${url.pathname}`;

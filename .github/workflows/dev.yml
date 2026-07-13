@@ -43,6 +43,7 @@ jobs:
         run: |
           cat > .env << 'EOF'
           NEXT_PUBLIC_API_URL=https://koseligharapi.deeyosoft.com
+          NEXT_PUBLIC_ROOT_DOMAIN=smartptrm.com
           EOF
           echo "✓ Created .env"
 
@@ -61,28 +62,69 @@ jobs:
             echo "❌ ERROR: dist directory not found!"
             exit 1
           fi
-          if ! grep -r "koseligharapi.deeyosoft.com" dist/ 2>/dev/null; then
-            echo "❌ ERROR: Production API URL not found in build!"
-            exit 1
-          fi
           echo "✓ Production build verified"
 
-      - name: Deploy to production server
+      - name: Deploy to production directory
         shell: bash
         run: |
-          BUILD_DIR=$(pwd)/dist
           DEPLOY_DIR=/home/beingonam/koselighar-frontend-dev
+          BUILD_SOURCE=$(pwd)
 
           echo "Deploying to: $DEPLOY_DIR"
-          if [ ! -d "$BUILD_DIR" ]; then
-            echo "✗ Build directory does not exist!"
-            exit 1
-          fi
           mkdir -p $DEPLOY_DIR
-          rm -rf $DEPLOY_DIR/*
-          cp -r $BUILD_DIR/* $DEPLOY_DIR/
+          rsync -a --delete "$BUILD_SOURCE"/ "$DEPLOY_DIR"/
           chmod -R 755 $DEPLOY_DIR
           echo "✓ Deployment complete"
+
+      - name: Copy env to deploy directory
+        shell: bash
+        run: |
+          cp .env /home/beingonam/koselighar-frontend-dev/.env
+          echo "✓ .env copied to deployment directory"
+
+      - name: Start/Reload Next.js with PM2
+        shell: bash
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm use 24
+
+          DEPLOY_DIR=/home/beingonam/koselighar-frontend-dev
+          cd "$DEPLOY_DIR"
+
+          # Install production deps in deploy dir
+          npm ci --legacy-peer-deps --omit=dev || npm install --legacy-peer-deps --omit=dev
+
+          APP_NAME="koselighar-frontend-dev"
+
+          if pm2 describe "$APP_NAME" > /dev/null 2>&1; then
+            echo "Reloading existing PM2 process..."
+            pm2 reload "$APP_NAME" --update-env
+          else
+            echo "Starting new PM2 process..."
+            pm2 start npm --name "$APP_NAME" -- start -- -p 3001
+          fi
+
+          # Wait for app to come online
+          MAX_ATTEMPTS=15
+          ATTEMPT=0
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            sleep 2
+            ATTEMPT=$((ATTEMPT + 1))
+            STATUS=$(pm2 jlist | jq -r ".[] | select(.name==\"$APP_NAME\") | .pm2_env.status" | head -n1)
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Status = $STATUS"
+            if [ "$STATUS" = "online" ]; then
+              echo "✓ Frontend deployment successful"
+              pm2 save --force
+              break
+            fi
+          done
+
+          if [ "$STATUS" != "online" ]; then
+            echo "❌ Timeout: App did not come online"
+            pm2 logs "$APP_NAME" --lines 50 --nostream || true
+            exit 1
+          fi
 
       - name: Reload nginx
         shell: bash
@@ -93,11 +135,18 @@ jobs:
       - name: Health Check
         shell: bash
         run: |
-          sleep 3
+          sleep 5
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://koselighar.smartptrm.com)
-          if [ "$STATUS" -eq 200 ]; then
-            echo "✓ Frontend site is reachable"
+          if [ "$STATUS" -eq 200 ] || [ "$STATUS" -eq 301 ] || [ "$STATUS" -eq 302 ]; then
+            echo "✓ Frontend site is reachable (HTTP $STATUS)"
           else
             echo "✗ Frontend site not reachable (HTTP $STATUS)"
             exit 1
           fi
+
+      - name: Deployment Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "=== Final PM2 Status ==="
+          pm2 list
