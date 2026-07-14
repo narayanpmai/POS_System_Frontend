@@ -55,6 +55,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
   });
 
+  // Attach tenant domain header dynamically from the browser context
+  api.interceptors.request.use((config) => {
+    if (typeof window !== 'undefined') {
+      config.headers['x-tenant-domain'] = window.location.host;
+    }
+    return config;
+  });
+
   const refreshFiscalYear = async () => {
     if (!token) return;
     try {
