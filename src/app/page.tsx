@@ -1,30 +1,15 @@
-'use client';
+import React from 'react';
+import Link from 'next/link';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-
-export default function RootPage() {
-  const router = useRouter();
-  const { isAuthenticated, loading } = useAuth();
-
-  useEffect(() => {
-    if (!loading) {
-      if (isAuthenticated) {
-        router.push('/dashboard');
-      } else {
-        router.push('/login');
-      }
-    }
-  }, [isAuthenticated, loading, router]);
-
+export default function RootHomePage() {
   return (
-    <div className="d-flex align-items-center justify-content-center min-vh-100 bg-light">
-      <div className="text-center">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-        <p className="mt-3 text-secondary fw-semibold">Configuring POS Environment...</p>
+    <div style={{ padding: '2rem', textAlign: 'center', fontFamily: 'sans-serif' }}>
+      <h1>Welcome to Kosheli Ghar</h1>
+      <p>This is a multi-tenant platform.</p>
+      <p>Please access your store via your specific subdomain (e.g., <strong>shop1.localhost:3000</strong>).</p>
+      
+      <div style={{ marginTop: '2rem' }}>
+        <p>Are you a tenant? Use your subdomain to log in.</p>
       </div>
     </div>
   );

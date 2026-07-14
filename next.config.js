@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
   distDir: 'dist',
   reactStrictMode: false,
   eslint: {
@@ -8,7 +7,9 @@ const nextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true,
-  }
+  },
+  experimental: {
+  },
 };
 
 module.exports = nextConfig;

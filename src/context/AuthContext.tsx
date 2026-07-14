@@ -55,6 +55,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
   });
 
+<<<<<<< HEAD
   // Attach tenant domain header dynamically from the browser context
   api.interceptors.request.use((config) => {
     if (typeof window !== 'undefined') {
@@ -62,6 +63,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
     return config;
   });
+=======
+  // Inject tenant domain header for multi-tenancy
+  if (typeof window !== 'undefined') {
+    api.defaults.headers.common['x-tenant-domain'] = window.location.hostname;
+    axios.defaults.headers.common['x-tenant-domain'] = window.location.hostname;
+  }
+>>>>>>> d1c2f7d9917d71165ca6f4ae328d5a8559768b6e
 
   const refreshFiscalYear = async () => {
     if (!token) return;
