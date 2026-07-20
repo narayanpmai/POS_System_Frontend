@@ -1,0 +1,14 @@
+{
+  "title": "Accounting Dashboard",
+  "trial_balance": "Trial Balance",
+  "journal_entries": "Journal Entries",
+  "code": "Code",
+  "account_name": "Account Name",
+  "type": "Type",
+  "debit": "Debit (Dr)",
+  "credit": "Credit (Cr)",
+  "total": "Total:",
+  "account": "Account",
+  "description": "Description",
+  "no_entries": "No journal entries found."
+}

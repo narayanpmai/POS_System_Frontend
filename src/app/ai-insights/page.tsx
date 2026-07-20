@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import AuthLayout from '@/components/AuthLayout';
 
 export default function AiInsightsPage() {
   const { api } = useAuth();
+  const { t } = useLanguage();
   const [salesPred, setSalesPred] = useState<any>(null);
   const [reorder, setReorder] = useState<any[]>([]);
   const [slowMoving, setSlowMoving] = useState<any[]>([]);
@@ -45,19 +47,19 @@ export default function AiInsightsPage() {
   return (
     <AuthLayout>
       <div className="container-fluid py-4">
-        <h2 className="mb-4 fw-bold">🤖 AI Insights & Predictions</h2>
+        <h2 className="mb-4 fw-bold">🤖 {t('ai_insights', 'title') || 'AI Insights & Predictions'}</h2>
         
         <div className="row mb-4">
           <div className="col-md-4">
             <div className="card shadow-sm border-0 h-100" style={{ background: 'linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%)' }}>
               <div className="card-body text-center">
-                <h5 className="text-muted fw-bold mb-3">Sales Prediction (Next 30 Days)</h5>
+                <h5 className="text-muted fw-bold mb-3">{t('ai_insights', 'sales_prediction') || 'Sales Prediction (Next 30 Days)'}</h5>
                 <h2 className="text-primary fw-bold mb-0">Rs. {salesPred?.predictedNext30Days?.toFixed(2)}</h2>
                 <p className="mt-2 text-success fw-bold">
                   <i className="bi bi-graph-up-arrow me-1"></i>
-                  {salesPred?.trend} ({(salesPred?.confidence * 100).toFixed(0)}% Confidence)
+                  {salesPred?.trend} ({(salesPred?.confidence * 100).toFixed(0)}% {t('ai_insights', 'confidence') || 'Confidence'})
                 </p>
-                <small className="text-muted">Based on previous 30 days: Rs. {salesPred?.last30Days?.toFixed(2)}</small>
+                <small className="text-muted">{t('ai_insights', 'based_on_previous') || 'Based on previous 30 days:'} Rs. {salesPred?.last30Days?.toFixed(2)}</small>
               </div>
             </div>
           </div>
@@ -67,19 +69,19 @@ export default function AiInsightsPage() {
           <div className="col-md-6">
             <div className="card shadow-sm border-0">
               <div className="card-header bg-white border-bottom-0 pt-4 pb-0">
-                <h5 className="fw-bold text-danger"><i className="bi bi-exclamation-triangle-fill me-2"></i>Reorder Suggestions</h5>
+                <h5 className="fw-bold text-danger"><i className="bi bi-exclamation-triangle-fill me-2"></i>{t('ai_insights', 'reorder_suggestions') || 'Reorder Suggestions'}</h5>
               </div>
               <div className="card-body">
                 {reorder.length === 0 ? (
-                  <p className="text-muted text-center py-4">Inventory levels are healthy.</p>
+                  <p className="text-muted text-center py-4">{t('ai_insights', 'inventory_healthy') || 'Inventory levels are healthy.'}</p>
                 ) : (
                   <div className="table-responsive">
                     <table className="table table-hover table-borderless">
                       <thead className="table-light">
                         <tr>
-                          <th>Product</th>
-                          <th>Stock</th>
-                          <th>Suggested Qty</th>
+                          <th>{t('ai_insights', 'product') || 'Product'}</th>
+                          <th>{t('ai_insights', 'stock') || 'Stock'}</th>
+                          <th>{t('ai_insights', 'suggested_qty') || 'Suggested Qty'}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -101,19 +103,19 @@ export default function AiInsightsPage() {
           <div className="col-md-6">
             <div className="card shadow-sm border-0">
               <div className="card-header bg-white border-bottom-0 pt-4 pb-0">
-                <h5 className="fw-bold text-warning"><i className="bi bi-hourglass-bottom me-2"></i>Slow Moving Stock</h5>
+                <h5 className="fw-bold text-warning"><i className="bi bi-hourglass-bottom me-2"></i>{t('ai_insights', 'slow_moving_stock') || 'Slow Moving Stock'}</h5>
               </div>
               <div className="card-body">
                 {slowMoving.length === 0 ? (
-                  <p className="text-muted text-center py-4">No slow moving products detected.</p>
+                  <p className="text-muted text-center py-4">{t('ai_insights', 'no_slow_moving') || 'No slow moving products detected.'}</p>
                 ) : (
                   <div className="table-responsive">
                     <table className="table table-hover table-borderless">
                       <thead className="table-light">
                         <tr>
-                          <th>Product</th>
-                          <th>Stock</th>
-                          <th>Suggestion</th>
+                          <th>{t('ai_insights', 'product') || 'Product'}</th>
+                          <th>{t('ai_insights', 'stock') || 'Stock'}</th>
+                          <th>{t('ai_insights', 'suggestion') || 'Suggestion'}</th>
                         </tr>
                       </thead>
                       <tbody>

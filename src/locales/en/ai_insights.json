@@ -1,0 +1,14 @@
+{
+  "title": "AI Insights & Predictions",
+  "sales_prediction": "Sales Prediction (Next 30 Days)",
+  "confidence": "Confidence",
+  "based_on_previous": "Based on previous 30 days:",
+  "reorder_suggestions": "Reorder Suggestions",
+  "inventory_healthy": "Inventory levels are healthy.",
+  "product": "Product",
+  "stock": "Stock",
+  "suggested_qty": "Suggested Qty",
+  "slow_moving_stock": "Slow Moving Stock",
+  "no_slow_moving": "No slow moving products detected.",
+  "suggestion": "Suggestion"
+}

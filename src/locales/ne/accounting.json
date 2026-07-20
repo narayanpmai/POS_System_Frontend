@@ -1,0 +1,14 @@
+{
+  "title": "लेखा ड्यासबोर्ड",
+  "trial_balance": "सन्तुलन परीक्षण (Trial Balance)",
+  "journal_entries": "जर्नल प्रविष्टिहरू",
+  "code": "कोड",
+  "account_name": "खाताको नाम",
+  "type": "प्रकार",
+  "debit": "डेबिट (Dr)",
+  "credit": "क्रेडिट (Cr)",
+  "total": "जम्मा:",
+  "account": "खाता",
+  "description": "विवरण",
+  "no_entries": "कुनै जर्नल प्रविष्टिहरू फेला परेनन्।"
+}

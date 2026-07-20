@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import AuthLayout from '@/components/AuthLayout';
 
 export default function AccountingDashboard() {
   const { api } = useAuth();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'trial_balance' | 'journal_entries'>('trial_balance');
   const [trialBalance, setTrialBalance] = useState<any[]>([]);
   const [journalEntries, setJournalEntries] = useState<any[]>([]);
@@ -39,7 +41,7 @@ export default function AccountingDashboard() {
     <AuthLayout>
       <div className="p-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>📊 Accounting Dashboard</h2>
+        <h2>📊 {t('accounting', 'title') || 'Accounting Dashboard'}</h2>
       </div>
 
       <ul className="nav nav-tabs mb-4">
@@ -48,7 +50,7 @@ export default function AccountingDashboard() {
             className={`nav-link ${activeTab === 'trial_balance' ? 'active' : ''}`}
             onClick={() => setActiveTab('trial_balance')}
           >
-            Trial Balance
+            {t('accounting', 'trial_balance') || 'Trial Balance'}
           </button>
         </li>
         <li className="nav-item">
@@ -56,7 +58,7 @@ export default function AccountingDashboard() {
             className={`nav-link ${activeTab === 'journal_entries' ? 'active' : ''}`}
             onClick={() => setActiveTab('journal_entries')}
           >
-            Journal Entries
+            {t('accounting', 'journal_entries') || 'Journal Entries'}
           </button>
         </li>
       </ul>
@@ -69,11 +71,11 @@ export default function AccountingDashboard() {
             <table className="table table-hover align-middle mb-0">
               <thead className="table-light">
                 <tr>
-                  <th>Code</th>
-                  <th>Account Name</th>
-                  <th>Type</th>
-                  <th className="text-end">Debit (Dr)</th>
-                  <th className="text-end">Credit (Cr)</th>
+                  <th>{t('accounting', 'code') || 'Code'}</th>
+                  <th>{t('accounting', 'account_name') || 'Account Name'}</th>
+                  <th>{t('accounting', 'type') || 'Type'}</th>
+                  <th className="text-end">{t('accounting', 'debit') || 'Debit (Dr)'}</th>
+                  <th className="text-end">{t('accounting', 'credit') || 'Credit (Cr)'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -84,17 +86,17 @@ export default function AccountingDashboard() {
                       <td>{acc.code}</td>
                       <td>{acc.name}</td>
                       <td><span className="badge bg-secondary">{acc.type}</span></td>
-                      <td className="text-end">{isDebit && acc.balance > 0 ? `$${acc.balance.toFixed(2)}` : '-'}</td>
-                      <td className="text-end">{!isDebit && acc.balance > 0 ? `$${acc.balance.toFixed(2)}` : '-'}</td>
+                      <td className="text-end">{isDebit && acc.balance > 0 ? `Rs. ${acc.balance.toFixed(2)}` : '-'}</td>
+                      <td className="text-end">{!isDebit && acc.balance > 0 ? `Rs. ${acc.balance.toFixed(2)}` : '-'}</td>
                     </tr>
                   )
                 })}
               </tbody>
               <tfoot className="table-light fw-bold">
                 <tr>
-                  <td colSpan={3} className="text-end">Total:</td>
-                  <td className="text-end text-primary">${totalDebit.toFixed(2)}</td>
-                  <td className="text-end text-success">${totalCredit.toFixed(2)}</td>
+                  <td colSpan={3} className="text-end">{t('accounting', 'total') || 'Total:'}</td>
+                  <td className="text-end text-primary">Rs. {totalDebit.toFixed(2)}</td>
+                  <td className="text-end text-success">Rs. {totalCredit.toFixed(2)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -117,10 +119,10 @@ export default function AccountingDashboard() {
                   <table className="table table-sm table-borderless mb-0">
                     <thead className="table-light">
                       <tr>
-                        <th>Account</th>
-                        <th>Description</th>
-                        <th className="text-end">Debit</th>
-                        <th className="text-end">Credit</th>
+                        <th>{t('accounting', 'account') || 'Account'}</th>
+                        <th>{t('accounting', 'description') || 'Description'}</th>
+                        <th className="text-end">{t('accounting', 'debit') || 'Debit'}</th>
+                        <th className="text-end">{t('accounting', 'credit') || 'Credit'}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -128,8 +130,8 @@ export default function AccountingDashboard() {
                         <tr key={line.id}>
                           <td>{line.account.code} - {line.account.name}</td>
                           <td>{line.description}</td>
-                          <td className="text-end text-primary">{line.debit > 0 ? `$${line.debit.toFixed(2)}` : ''}</td>
-                          <td className="text-end text-success">{line.credit > 0 ? `$${line.credit.toFixed(2)}` : ''}</td>
+                          <td className="text-end text-primary">{line.debit > 0 ? `Rs. ${line.debit.toFixed(2)}` : ''}</td>
+                          <td className="text-end text-success">{line.credit > 0 ? `Rs. ${line.credit.toFixed(2)}` : ''}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -139,7 +141,7 @@ export default function AccountingDashboard() {
             </div>
           ))}
           {journalEntries.length === 0 && (
-            <div className="text-center py-5 text-muted">No journal entries found.</div>
+            <div className="text-center py-5 text-muted">{t('accounting', 'no_entries') || 'No journal entries found.'}</div>
           )}
         </div>
       )}

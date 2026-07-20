@@ -1,0 +1,14 @@
+{
+  "title": "एआई अन्तर्दृष्टि र अनुमानहरू",
+  "sales_prediction": "बिक्री अनुमान (आगामी ३० दिन)",
+  "confidence": "विश्वासनीयता",
+  "based_on_previous": "अघिल्लो ३० दिनको आधारमा:",
+  "reorder_suggestions": "पुनः अर्डर सुझावहरू",
+  "inventory_healthy": "मौज्दात (Inventory) स्तर स्वस्थ छ।",
+  "product": "उत्पादन",
+  "stock": "स्टक",
+  "suggested_qty": "सुझाव दिइएको मात्रा",
+  "slow_moving_stock": "सुस्त बिक्री हुने स्टक",
+  "no_slow_moving": "कुनै सुस्त बिक्री हुने सामानहरू भेटिएनन्।",
+  "suggestion": "सुझाव"
+}

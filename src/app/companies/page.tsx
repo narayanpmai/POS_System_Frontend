@@ -122,20 +122,20 @@ export default function CompaniesPage() {
   };
 
   if (!isSuperAdmin) {
-    return <AuthLayout><div className="p-4">Access Denied. Only Super Admin can view this page.</div></AuthLayout>;
+    return <AuthLayout><div className="p-4">{t('companies', 'access_denied') || 'Access Denied. Only Super Admin can view this page.'}</div></AuthLayout>;
   }
 
   return (
     <AuthLayout>
       <div className="p-4">
         <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="mb-0">🏢 {t('common', 'Companies') || 'Companies (Super Admin)'}</h2>
+        <h2 className="mb-0">🏢 {t('companies', 'title') || 'Companies (Super Admin)'}</h2>
         <div className="d-flex gap-2">
           <button className="btn btn-secondary" onClick={() => router.back()}>
-            <i className="bi bi-arrow-left me-2"></i> Back
+            <i className="bi bi-arrow-left me-2"></i> {t('companies', 'back') || 'Back'}
           </button>
           <button className="btn btn-primary" onClick={handleOpenModal}>
-            <i className="bi bi-plus-circle me-2"></i> Add Company
+            <i className="bi bi-plus-circle me-2"></i> {t('companies', 'add_company') || 'Add Company'}
           </button>
         </div>
       </div>
@@ -151,12 +151,12 @@ export default function CompaniesPage() {
               <table className="table table-hover align-middle mb-0">
                 <thead className="table-light">
                   <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                    <th>Actions</th>
+                    <th>{t('companies', 'id') || 'ID'}</th>
+                    <th>{t('companies', 'name') || 'Name'}</th>
+                    <th>{t('companies', 'email') || 'Email'}</th>
+                    <th>{t('companies', 'status') || 'Status'}</th>
+                    <th>{t('companies', 'created') || 'Created'}</th>
+                    <th>{t('companies', 'actions') || 'Actions'}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -167,9 +167,9 @@ export default function CompaniesPage() {
                       <td>{c.email || 'N/A'}</td>
                       <td>
                         {c.isActive ? (
-                          <span className="badge bg-success">Active</span>
+                          <span className="badge bg-success">{t('companies', 'active') || 'Active'}</span>
                         ) : (
-                          <span className="badge bg-danger">Inactive</span>
+                          <span className="badge bg-danger">{t('companies', 'inactive') || 'Inactive'}</span>
                         )}
                       </td>
                       <td>{new Date(c.createdAt).toLocaleDateString()}</td>
@@ -183,7 +183,7 @@ export default function CompaniesPage() {
                   {companies.length === 0 && (
                     <tr>
                       <td colSpan={6} className="text-center py-4 text-muted">
-                        No companies found.
+                        {t('companies', 'no_companies') || 'No companies found.'}
                       </td>
                     </tr>
                   )}
@@ -200,54 +200,54 @@ export default function CompaniesPage() {
           <div className="modal-dialog modal-lg modal-dialog-centered">
             <div className="modal-content border-0 shadow-lg">
               <div className="modal-header border-0 pb-0">
-                <h5 className="modal-title fw-bold">Add New Tenant / Company</h5>
+                <h5 className="modal-title fw-bold">{t('companies', 'add_title') || 'Add New Tenant / Company'}</h5>
                 <button type="button" className="btn-close" onClick={handleCloseModal}></button>
               </div>
               <div className="modal-body">
                 {errorMsg && <div className="alert alert-danger p-2 mb-3">{errorMsg}</div>}
 
                 <form onSubmit={handleSubmit} id="add-company-form">
-                  <h6 className="mb-3 text-primary border-bottom pb-2">Company Details</h6>
+                  <h6 className="mb-3 text-primary border-bottom pb-2">{t('companies', 'company_details') || 'Company Details'}</h6>
                   <div className="row g-3 mb-4">
                     <div className="col-md-6">
-                      <label className="form-label">Company Name *</label>
+                      <label className="form-label">{t('companies', 'company_name') || 'Company Name *'}</label>
                       <input type="text" className="form-control bg-light" name="name" value={formData.name} onChange={handleChange} required />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Phone</label>
+                      <label className="form-label">{t('companies', 'phone') || 'Phone'}</label>
                       <input type="text" className="form-control bg-light" name="phone" value={formData.phone} onChange={handleChange} />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Company Email</label>
+                      <label className="form-label">{t('companies', 'company_email') || 'Company Email'}</label>
                       <input type="email" className="form-control bg-light" name="email" value={formData.email} onChange={handleChange} />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Address</label>
+                      <label className="form-label">{t('companies', 'address') || 'Address'}</label>
                       <input type="text" className="form-control bg-light" name="address" value={formData.address} onChange={handleChange} />
                     </div>
                   </div>
 
-                  <h6 className="mb-3 text-primary border-bottom pb-2">Admin User Details (Required)</h6>
+                  <h6 className="mb-3 text-primary border-bottom pb-2">{t('companies', 'admin_details') || 'Admin User Details (Required)'}</h6>
                   <div className="row g-3">
                     <div className="col-md-4">
-                      <label className="form-label">Admin Name</label>
+                      <label className="form-label">{t('companies', 'admin_name') || 'Admin Name'}</label>
                       <input type="text" className="form-control bg-light" name="adminName" value={formData.adminName} onChange={handleChange} required />
                     </div>
                     <div className="col-md-4">
-                      <label className="form-label">Admin Email (Login) *</label>
+                      <label className="form-label">{t('companies', 'admin_email') || 'Admin Email (Login) *'}</label>
                       <input type="email" className="form-control bg-light" name="adminEmail" value={formData.adminEmail} onChange={handleChange} required />
                     </div>
                     <div className="col-md-4">
-                      <label className="form-label">Admin Password *</label>
+                      <label className="form-label">{t('companies', 'admin_password') || 'Admin Password *'}</label>
                       <input type="password" className="form-control bg-light" name="adminPassword" value={formData.adminPassword} onChange={handleChange} required minLength={6} />
                     </div>
                   </div>
                 </form>
               </div>
               <div className="modal-footer border-0 pt-0">
-                <button type="button" className="btn btn-light" onClick={handleCloseModal}>Cancel</button>
+                <button type="button" className="btn btn-light" onClick={handleCloseModal}>{t('companies', 'cancel') || 'Cancel'}</button>
                 <button type="submit" form="add-company-form" className="btn btn-primary px-4" disabled={submitting}>
-                  {submitting ? 'Creating...' : 'Create Company & Admin'}
+                  {submitting ? (t('companies', 'creating') || 'Creating...') : (t('companies', 'create_button') || 'Create Company & Admin')}
                 </button>
               </div>
             </div>
@@ -261,7 +261,7 @@ export default function CompaniesPage() {
           <div className="modal-dialog modal-dialog-centered">
             <div className="modal-content border-0 shadow-lg">
               <div className="modal-header border-0 pb-0">
-                <h5 className="modal-title fw-bold">Edit Company</h5>
+                <h5 className="modal-title fw-bold">{t('companies', 'edit_title') || 'Edit Company'}</h5>
                 <button type="button" className="btn-close" onClick={() => setShowEditModal(false)}></button>
               </div>
               <div className="modal-body">
@@ -270,34 +270,34 @@ export default function CompaniesPage() {
                 <form onSubmit={handleEditSubmit} id="edit-company-form">
                   <div className="row g-3">
                     <div className="col-md-12">
-                      <label className="form-label">Company Name *</label>
+                      <label className="form-label">{t('companies', 'company_name') || 'Company Name *'}</label>
                       <input type="text" className="form-control bg-light" value={editFormData.name} onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })} required />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Phone</label>
+                      <label className="form-label">{t('companies', 'phone') || 'Phone'}</label>
                       <input type="text" className="form-control bg-light" value={editFormData.phone} onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })} />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label">Company Email</label>
+                      <label className="form-label">{t('companies', 'company_email') || 'Company Email'}</label>
                       <input type="email" className="form-control bg-light" value={editFormData.email} onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })} />
                     </div>
                     <div className="col-md-12">
-                      <label className="form-label">Address</label>
+                      <label className="form-label">{t('companies', 'address') || 'Address'}</label>
                       <input type="text" className="form-control bg-light" value={editFormData.address} onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })} />
                     </div>
                     <div className="col-md-12">
                       <div className="form-check form-switch mt-2">
                         <input className="form-check-input" type="checkbox" role="switch" checked={editFormData.isActive} onChange={(e) => setEditFormData({ ...editFormData, isActive: e.target.checked })} />
-                        <label className="form-check-label fw-medium ms-2">Active Status</label>
+                        <label className="form-check-label fw-medium ms-2">{t('companies', 'active_status') || 'Active Status'}</label>
                       </div>
                     </div>
                   </div>
                 </form>
               </div>
               <div className="modal-footer border-0 pt-0">
-                <button type="button" className="btn btn-light" onClick={() => setShowEditModal(false)}>Cancel</button>
+                <button type="button" className="btn btn-light" onClick={() => setShowEditModal(false)}>{t('companies', 'cancel') || 'Cancel'}</button>
                 <button type="submit" form="edit-company-form" className="btn btn-primary px-4" disabled={submitting}>
-                  {submitting ? 'Saving...' : 'Save Changes'}
+                  {submitting ? (t('companies', 'saving') || 'Saving...') : (t('companies', 'save_changes') || 'Save Changes')}
                 </button>
               </div>
             </div>
