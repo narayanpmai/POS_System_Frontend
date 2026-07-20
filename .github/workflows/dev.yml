@@ -58,8 +58,8 @@ jobs:
       - name: Verify build output
         shell: bash
         run: |
-          if [ ! -d "dist" ]; then
-            echo "❌ ERROR: dist directory not found!"
+          if [ ! -d ".next" ]; then
+            echo "❌ ERROR: .next directory not found!"
             exit 1
           fi
           echo "✓ Production build verified"
