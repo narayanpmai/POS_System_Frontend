@@ -22,7 +22,7 @@ export default function UserControlPage() {
     name: '',
     email: '',
     password: '',
-    roleId: 2, // Default to cashier
+    roleId: 2, // Default will be updated when roles are fetched
     active: true,
   });
 
@@ -56,7 +56,9 @@ export default function UserControlPage() {
   };
 
   const handleAddClick = () => {
-    setFormData({ name: '', email: '', password: '', roleId: roles.find(r => r.name === 'Cashier')?.id || 2, active: true });
+    const defaultRole = roles.find(r => r.name === 'Cashier') || roles[0];
+    const defaultRoleId = defaultRole ? defaultRole.id : 2;
+    setFormData({ name: '', email: '', password: '', roleId: defaultRoleId, active: true });
     setIsEditing(false);
     setShowForm(true);
   };
