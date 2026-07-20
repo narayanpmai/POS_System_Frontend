@@ -1,0 +1,11 @@
+{
+  "title": "रिपोर्टहरू",
+  "sales_report": "बिक्री रिपोर्ट",
+  "inventory_report": "इन्भेन्टरी रिपोर्ट",
+  "financial_report": "वित्तीय रिपोर्ट",
+  "generate_report": "रिपोर्ट तयार गर्नुहोस्",
+  "from_date": "मिति देखि",
+  "to_date": "मिति सम्म",
+  "download_pdf": "PDF डाउनलोड गर्नुहोस्",
+  "download_excel": "Excel डाउनलोड गर्नुहोस्"
+}

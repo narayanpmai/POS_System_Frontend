@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  distDir: 'dist',
   reactStrictMode: false,
   eslint: {
     ignoreDuringBuilds: true,
@@ -8,8 +7,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  experimental: {
-  },
+  output: 'standalone',
 };
 
 module.exports = nextConfig;

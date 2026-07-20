@@ -1,0 +1,18 @@
+{
+  "title": "Customers",
+  "add_customer": "Add Customer",
+  "edit_customer": "Edit Customer",
+  "delete_customer": "Delete Customer",
+  "customer_name": "Customer Name",
+  "loyalty_points": "Loyalty Points",
+  "total_purchases": "Total Purchases",
+  "customer_since": "Customer Since",
+  "purchase_history": "Purchase History",
+  "no_customers": "No customers found",
+  "customer_created": "Customer created successfully!",
+  "customer_updated": "Customer updated successfully!",
+  "customer_deleted": "Customer deleted successfully!",
+  "search_customers": "Search customers...",
+  "points_earned": "Points Earned",
+  "redeem_points": "Redeem Points"
+}

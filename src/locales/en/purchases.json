@@ -1,0 +1,16 @@
+{
+  "title": "Purchases",
+  "add_purchase": "Add Purchase",
+  "loading_purchases": "Loading purchases...",
+  "no_purchases": "No purchases found. Click \"Add Purchase\" to create one.",
+  "purchase_date": "Date",
+  "supplier": "Supplier",
+  "total_amount": "Total Amount",
+  "payment_status": "Payment Status",
+  "actions": "Actions",
+  "view_purchase": "View Purchase",
+  "delete_purchase": "Delete",
+  "confirm_delete": "Are you sure you want to delete this purchase?",
+  "success_delete": "Purchase deleted successfully",
+  "error_delete": "Error deleting purchase"
+}

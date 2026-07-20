@@ -1,0 +1,11 @@
+{
+  "title": "Reports",
+  "sales_report": "Sales Report",
+  "inventory_report": "Inventory Report",
+  "financial_report": "Financial Report",
+  "generate_report": "Generate Report",
+  "from_date": "From Date",
+  "to_date": "To Date",
+  "download_pdf": "Download PDF",
+  "download_excel": "Download Excel"
+}

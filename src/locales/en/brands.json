@@ -1,0 +1,17 @@
+{
+  "title": "Brands",
+  "add_brand": "Add Brand",
+  "slug": "Slug",
+  "loading_brands": "Loading brands...",
+  "no_brands": "No brands found. Click \"Add Brand\" to create one.",
+  "edit_brand": "Edit Brand",
+  "brand_name": "Brand Name",
+  "brand_placeholder": "E.g. Apple, Samsung, Local Product",
+  "save_brand": "Save Brand",
+  "save_changes": "Save Changes",
+  "success_add": "Brand created successfully",
+  "success_update": "Brand updated successfully",
+  "success_delete": "Brand deleted successfully",
+  "error_delete": "Cannot delete brand with associated products",
+  "confirm_delete": "Are you sure you want to delete this brand?"
+}

@@ -15,6 +15,7 @@ interface User {
     name: string;
     description?: string;
   };
+  companyId: number;
 }
 
 export interface FiscalYear {
@@ -54,18 +55,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
   });
-
-  // Inject tenant domain header for multi-tenancy dynamically
-  api.interceptors.request.use((config) => {
-    if (typeof window !== 'undefined') {
-      config.headers['x-tenant-domain'] = window.location.hostname;
-    }
-    return config;
-  });
-
-  if (typeof window !== 'undefined') {
-    axios.defaults.headers.common['x-tenant-domain'] = window.location.hostname;
-  }
 
   const refreshFiscalYear = async () => {
     if (!token) return;

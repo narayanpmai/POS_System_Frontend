@@ -1,0 +1,16 @@
+{
+  "title": "Incomes",
+  "add_income": "Add Income",
+  "loading_incomes": "Loading incomes...",
+  "no_incomes": "No incomes found.",
+  "edit_income": "Edit Income",
+  "income_category": "Income Category",
+  "income_amount": "Amount",
+  "income_date": "Date",
+  "income_notes": "Notes",
+  "save_income": "Save Income",
+  "success_add": "Income recorded successfully",
+  "success_update": "Income updated successfully",
+  "success_delete": "Income deleted successfully",
+  "confirm_delete": "Are you sure you want to delete this income record?"
+}

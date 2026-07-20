@@ -1,0 +1,17 @@
+{
+  "title": "Fiscal Years",
+  "add_fiscal_year": "Add Fiscal Year",
+  "loading_fiscal_years": "Loading fiscal years...",
+  "no_fiscal_years": "No fiscal years found.",
+  "edit_fiscal_year": "Edit Fiscal Year",
+  "new_fiscal_year": "New Fiscal Year",
+  "year_name": "Fiscal Year (e.g. 2080/81)",
+  "start_date": "Start Date",
+  "end_date": "End Date",
+  "is_active": "Is Active?",
+  "save_fiscal_year": "Save Fiscal Year",
+  "success_add": "Fiscal year created successfully",
+  "success_update": "Fiscal year updated successfully",
+  "success_delete": "Fiscal year deleted successfully",
+  "confirm_delete": "Are you sure you want to delete this fiscal year?"
+}

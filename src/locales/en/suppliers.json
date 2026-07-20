@@ -1,0 +1,14 @@
+{
+  "title": "Suppliers",
+  "add_supplier": "Add Supplier",
+  "loading_suppliers": "Loading suppliers...",
+  "no_suppliers": "No suppliers found. Click \"Add Supplier\" to create one.",
+  "edit_supplier": "Edit Supplier",
+  "new_supplier": "New Supplier",
+  "save_supplier": "Save Supplier",
+  "success_add": "Supplier profile created successfully",
+  "success_update": "Supplier profile updated successfully",
+  "success_delete": "Supplier deleted successfully",
+  "error_delete": "Cannot delete supplier with transaction history",
+  "confirm_delete": "Are you sure you want to delete this supplier?"
+}

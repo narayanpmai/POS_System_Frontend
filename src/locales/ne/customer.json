@@ -1,0 +1,18 @@
+{
+  "title": "ग्राहकहरू",
+  "add_customer": "ग्राहक थप्नुस्",
+  "edit_customer": "ग्राहक सम्पादन गर्नुस्",
+  "delete_customer": "ग्राहक मेट्नुस्",
+  "customer_name": "ग्राहकको नाम",
+  "loyalty_points": "लोयल्टी अंकहरू",
+  "total_purchases": "कुल खरिद",
+  "customer_since": "ग्राहक भएदेखि",
+  "purchase_history": "खरिद इतिहास",
+  "no_customers": "कुनै ग्राहक फेला परेन",
+  "customer_created": "ग्राहक सफलतापूर्वक बनाइयो!",
+  "customer_updated": "ग्राहक सफलतापूर्वक अपडेट गरियो!",
+  "customer_deleted": "ग्राहक सफलतापूर्वक मेटियो!",
+  "search_customers": "ग्राहक खोज्नुस्...",
+  "points_earned": "अर्जित अंकहरू",
+  "redeem_points": "अंकहरू भुनाउनुस्"
+}

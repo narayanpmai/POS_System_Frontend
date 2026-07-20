@@ -1,0 +1,16 @@
+{
+  "title": "Expenses",
+  "add_expense": "Add Expense",
+  "loading_expenses": "Loading expenses...",
+  "no_expenses": "No expenses found.",
+  "edit_expense": "Edit Expense",
+  "expense_category": "Expense Category",
+  "expense_amount": "Amount",
+  "expense_date": "Date",
+  "expense_notes": "Notes",
+  "save_expense": "Save Expense",
+  "success_add": "Expense recorded successfully",
+  "success_update": "Expense updated successfully",
+  "success_delete": "Expense deleted successfully",
+  "confirm_delete": "Are you sure you want to delete this expense record?"
+}

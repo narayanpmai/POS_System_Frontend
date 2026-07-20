@@ -1,0 +1,23 @@
+{
+  "title": "Inventory",
+  "transactions": "Transactions",
+  "stock_level": "Stock Level",
+  "adjust": "Adjust Inventory",
+  "in_stock": "In Stock",
+  "out_of_stock": "Out of Stock",
+  "low_stock": "Low Stock",
+  "stock_history": "Stock History",
+  "transaction_type": "Transaction Type",
+  "transaction_date": "Transaction Date",
+  "adjusted_by": "Adjusted By",
+  "reason": "Reason",
+  "purchase": "Purchase",
+  "sale": "Sale",
+  "damage": "Damage",
+  "return": "Return",
+  "manual_adjustment": "Manual Adjustment",
+  "no_transactions": "No transactions found",
+  "current_stock": "Current Stock",
+  "reorder_level": "Reorder Level",
+  "last_updated": "Last Updated"
+}

@@ -1,0 +1,16 @@
+{
+  "title": "खर्चहरू",
+  "add_expense": "खर्च थप्नुहोस्",
+  "loading_expenses": "खर्चहरू लोड हुँदैछ...",
+  "no_expenses": "कुनै खर्चहरू फेला परेनन्।",
+  "edit_expense": "खर्च सम्पादन गर्नुहोस्",
+  "expense_category": "खर्चको वर्ग",
+  "expense_amount": "रकम",
+  "expense_date": "मिति",
+  "expense_notes": "नोटहरू",
+  "save_expense": "खर्च सेभ गर्नुहोस्",
+  "success_add": "खर्च सफलतापूर्वक रेकर्ड गरियो",
+  "success_update": "खर्च सफलतापूर्वक अपडेट गरियो",
+  "success_delete": "खर्च सफलतापूर्वक मेटाइयो",
+  "confirm_delete": "के तपाईं यो खर्च रेकर्ड मेटाउन निश्चित हुनुहुन्छ?"
+}

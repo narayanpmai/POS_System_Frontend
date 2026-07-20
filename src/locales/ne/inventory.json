@@ -1,0 +1,23 @@
+{
+  "title": "इन्भेन्टरी",
+  "transactions": "कारोबारहरू",
+  "stock_level": "मौज्दात स्तर",
+  "adjust": "इन्भेन्टरी समायोजन गर्नुस्",
+  "in_stock": "मौज्दातमा छ",
+  "out_of_stock": "मौज्दात सकियो",
+  "low_stock": "कम मौज्दात",
+  "stock_history": "मौज्दात इतिहास",
+  "transaction_type": "कारोबार प्रकार",
+  "transaction_date": "कारोबार मिति",
+  "adjusted_by": "समायोजन गरे",
+  "reason": "कारण",
+  "purchase": "खरिद",
+  "sale": "बिक्री",
+  "damage": "क्षति",
+  "return": "फिर्ता",
+  "manual_adjustment": "हस्तचालित समायोजन",
+  "no_transactions": "कुनै कारोबार फेला परेन",
+  "current_stock": "हालको मौज्दात",
+  "reorder_level": "पुनः अर्डर स्तर",
+  "last_updated": "अन्तिम अपडेट"
+}
