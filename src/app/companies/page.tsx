@@ -130,7 +130,7 @@ export default function CompaniesPage() {
       <div className="p-4">
         <div className="d-flex justify-content-between align-items-center mb-4">
         <h2 className="mb-0">🏢 {t('companies', 'title') || 'Companies (Super Admin)'}</h2>
-        <div className="d-flex gap-2">
+        <div className="d-flex flex-wrap gap-2">
           <button className="btn btn-secondary" onClick={() => router.back()}>
             <i className="bi bi-arrow-left me-2"></i> {t('companies', 'back') || 'Back'}
           </button>

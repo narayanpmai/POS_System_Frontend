@@ -129,7 +129,7 @@ export default function SalesHistoryPage() {
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
           <h4 className="fw-bold m-0 text-dark">{t('sales', 'title')}</h4>
-          <div className="d-flex gap-2">
+          <div className="d-flex flex-wrap gap-2">
             <button 
               className="btn btn-outline-success fw-semibold d-flex align-items-center gap-2 px-3 py-2" 
               style={{ borderRadius: '8px' }} 
@@ -162,7 +162,7 @@ export default function SalesHistoryPage() {
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
-          <div className="d-flex gap-2">
+          <div className="d-flex flex-wrap gap-2">
             <button className="btn btn-primary btn-sm px-3" onClick={loadData}>
               <i className="bi bi-funnel"></i> Filter
             </button>

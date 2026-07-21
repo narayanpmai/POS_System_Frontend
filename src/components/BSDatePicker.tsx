@@ -19,8 +19,12 @@ export default function BSDatePicker({ value, onChange, className, placeholder }
     if (value) {
       try {
         const adDate = new Date(value);
-        const nepDate = new NepaliDate(adDate);
-        setBsDefault(nepDate.format('YYYY-MM-DD'));
+        if (!isNaN(adDate.getTime())) {
+          const formattedAd = `${adDate.getFullYear()}-${String(adDate.getMonth() + 1).padStart(2, '0')}-${String(adDate.getDate()).padStart(2, '0')}`;
+          const converter = new NepaliDate(formattedAd);
+          const bsDate = converter.toBs();
+          setBsDefault(`${bsDate.year}-${String(bsDate.month).padStart(2, '0')}-${String(bsDate.date).padStart(2, '0')}`);
+        }
       } catch (e) {
         console.error("Date conversion error", e);
       }

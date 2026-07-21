@@ -37,14 +37,44 @@ export default function AccountingDashboard() {
   const totalDebit = trialBalance.reduce((sum, acc) => sum + (acc.balance > 0 && (acc.type === 'ASSET' || acc.type === 'EXPENSE') ? acc.balance : 0), 0);
   const totalCredit = trialBalance.reduce((sum, acc) => sum + (acc.balance > 0 && (acc.type === 'LIABILITY' || acc.type === 'REVENUE' || acc.type === 'EQUITY') ? acc.balance : 0), 0);
 
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleDownloadPDF = async () => {
+    const element = document.getElementById('accounting-content');
+    if (!element) return;
+    
+    // Dynamically import html2pdf to avoid SSR issues
+    const html2pdf = (await import('html2pdf.js')).default;
+    
+    const opt: any = {
+      margin:       10,
+      filename:     `accounting_report_${activeTab}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2 },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    
+    html2pdf().set(opt).from(element).save();
+  };
+
   return (
     <AuthLayout>
-      <div className="p-4">
+      <div className="p-4" id="accounting-content">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>📊 {t('accounting', 'title') || 'Accounting Dashboard'}</h2>
+        <div className="d-flex flex-wrap gap-2 d-print-none">
+          <button className="btn btn-outline-secondary d-flex align-items-center gap-2" onClick={handlePrint}>
+            <i className="bi bi-printer"></i> Print
+          </button>
+          <button className="btn btn-outline-danger d-flex align-items-center gap-2" onClick={handleDownloadPDF}>
+            <i className="bi bi-file-earmark-pdf"></i> Download PDF
+          </button>
+        </div>
       </div>
 
-      <ul className="nav nav-tabs mb-4">
+      <ul className="nav nav-tabs mb-4 d-print-none">
         <li className="nav-item">
           <button 
             className={`nav-link ${activeTab === 'trial_balance' ? 'active' : ''}`}

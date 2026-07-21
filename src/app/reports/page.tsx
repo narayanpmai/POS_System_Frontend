@@ -145,7 +145,7 @@ export default function ReportsPage() {
     setLoading(true);
     try {
       const res = await api.get('/sales/deleted');
-      setDeletedSales(res.data);
+      setDeletedSales(res.data.items || res.data || []);
     } catch (err) {
       console.error('Error fetching deleted sales:', err);
     } finally {

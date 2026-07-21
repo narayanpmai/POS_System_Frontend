@@ -172,7 +172,7 @@ export default function UserControlPage() {
               <label className="form-label fw-semibold">{t('auth', 'password') || 'New Password'}</label>
               <input required type="password" minLength={6} className="form-control w-50" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
             </div>
-            <div className="d-flex gap-2">
+            <div className="d-flex flex-wrap gap-2">
               <button type="button" className="btn btn-light border" onClick={() => setShowResetModal(false)}>{t('common', 'cancel')}</button>
               <button type="submit" className="btn btn-danger fw-bold">{t('common', 'save') || 'Confirm Reset'}</button>
             </div>

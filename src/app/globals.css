@@ -81,6 +81,10 @@ body {
   overflow-x: hidden;
 }
 
+.table {
+  white-space: nowrap;
+}
+
 /* Dark Mode Support */
 [data-theme='dark'] {
   --light-bg: var(--dark-bg);
@@ -243,19 +247,10 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Sidebar Custom Styling */
 .custom-sidebar {
-  width: 260px;
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  color: var(--text-dark);
-  position: fixed;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 1000; /* Increased z-index to be above everything */
-  display: flex;
-  flex-direction: column;
-  box-shadow: var(--glass-shadow);
+  width: 250px;
+  background-color: var(--glass-bg);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
   border-right: 1px solid var(--glass-border);
   transition: transform 0.3s ease;
 }

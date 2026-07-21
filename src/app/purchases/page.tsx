@@ -398,7 +398,19 @@ export default function PurchasesPage() {
                 <tr key={p.id}>
                   <td className="fw-bold text-primary">{p.poNumber}</td>
                   <td>{formatAdToBs(p.purchaseDate)}</td>
-                  <td>{p.items?.length || 0} products</td>
+                  <td>
+                    {p.items?.length > 0 ? (
+                      <div className="d-flex flex-column gap-1">
+                        {p.items.map((item: any, idx: number) => (
+                          <div key={idx} style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                            📦 {item.product?.name || 'Unknown'} (x{item.quantity}) Rs. {item.costPrice?.toFixed(2)}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-muted">0 products</span>
+                    )}
+                  </td>
                   <td className="fw-bold">Rs. {p.totalAmount.toFixed(2)}</td>
                   <td>
                     <span className="badge bg-success-subtle text-success px-2 py-1 rounded-pill">{p.status}</span>

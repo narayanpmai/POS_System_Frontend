@@ -56,6 +56,7 @@ export default function ProductsPage() {
   const [page, setPage] = useState(1);
   const [selectedProductForView, setSelectedProductForView] = useState<any>(null);
   const [selectedProductForBarcode, setSelectedProductForBarcode] = useState<any>(null);
+  const [allProductsForBarcode, setAllProductsForBarcode] = useState<Product[]>([]);
   const [totalPages, setTotalPages] = useState(1);
 
   // Active Tab
@@ -188,6 +189,21 @@ export default function ProductsPage() {
       const bootstrap = require('bootstrap');
       const modal = new bootstrap.Modal(modalElement);
       modal.show();
+    }
+  };
+
+  const handleBulkPrintBarcodes = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/products?limit=5000');
+      setAllProductsForBarcode(res.data.items || res.data || []);
+      setLoading(false);
+      setTimeout(() => {
+        window.print();
+      }, 1000);
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
     }
   };
 
@@ -410,7 +426,16 @@ export default function ProductsPage() {
         {isAdmin && (
           <div>
             {activeTab === 'products' ? (
-              <div className="d-flex gap-2">
+              <div className="d-flex flex-wrap gap-2 d-print-none">
+                <button
+                  className="btn btn-outline-dark d-flex align-items-center gap-2 fw-bold px-3 py-2"
+                  style={{ borderRadius: '20px' }}
+                  onClick={handleBulkPrintBarcodes}
+                  title="Bulk Print Barcodes"
+                >
+                  <i className="bi bi-upc-scan"></i>
+                  <span>Print Barcodes</span>
+                </button>
                 <button
                   className="btn btn-outline-success d-flex align-items-center gap-2 fw-bold px-3 py-2"
                   style={{ borderRadius: '20px' }}
@@ -639,6 +664,24 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
+
+      {/* ==========================================
+          BULK PRINT BARCODES CONTAINER (HIDDEN)
+          ========================================== */}
+      <div className="d-none d-print-block">
+        <h4 className="text-center mb-4">Bulk Barcodes</h4>
+        <div className="row g-4">
+          {allProductsForBarcode.map((p) => (
+            <div className="col-4 text-center" key={p.id}>
+              <div className="border p-2 rounded">
+                <div className="fw-bold fs-7 mb-1">{p.name}</div>
+                <Barcode value={p.barcode || p.SKU} width={1.5} height={40} fontSize={12} />
+                <div className="text-muted fs-8 mt-1">Rs. {p.price?.toLocaleString()}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* ==========================================
           MODAL 1: ADD/EDIT PRODUCT MODAL
