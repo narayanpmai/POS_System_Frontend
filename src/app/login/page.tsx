@@ -30,16 +30,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleDemoFill = (role: 'admin' | 'cashier') => {
-    clearError();
-    if (role === 'admin') {
-      setEmail('admin@pos.com');
-      setPassword('admin123');
-    } else {
-      setEmail('cashier@pos.com');
-      setPassword('cashier123');
-    }
-  };
 
   return (
     <div className="d-flex align-items-center justify-content-center min-vh-100" style={{ background: 'linear-gradient(135deg, #0b1329 0%, #1c2a4a 100%)' }}>
@@ -103,18 +93,6 @@ export default function LoginPage() {
             <span>{t('auth', 'login') || 'Sign In'}</span>
           </button>
         </form>
-
-        <div className="mt-4 pt-3 border-top border-secondary text-center">
-          <p className="text-light mb-2" style={{ fontSize: '0.8rem' }}>Click below to instantly fill Demo accounts:</p>
-          <div className="d-flex justify-content-center gap-2">
-            <button className="btn btn-sm btn-outline-primary text-white border-primary" onClick={() => handleDemoFill('admin')} style={{ fontSize: '0.75rem' }}>
-              <i className="bi bi-key me-1"></i>Admin Demo
-            </button>
-            <button className="btn btn-sm btn-outline-warning text-white border-warning" onClick={() => handleDemoFill('cashier')} style={{ fontSize: '0.75rem' }}>
-              <i className="bi bi-person me-1"></i>Cashier Demo
-            </button>
-          </div>
-        </div>
 
         <p className="mt-4 mb-0 text-center text-light" style={{ fontSize: '0.85rem' }}>
           {t('auth', 'dont_have_account') || "Don't have cashier account?"} <Link href="/register" className="text-warning text-decoration-none">{t('auth', 'register') || 'Register here'}</Link>
