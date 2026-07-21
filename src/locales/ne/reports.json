@@ -7,5 +7,14 @@
   "from_date": "मिति देखि",
   "to_date": "मिति सम्म",
   "download_pdf": "PDF डाउनलोड गर्नुहोस्",
-  "download_excel": "Excel डाउनलोड गर्नुहोस्"
+  "download_excel": "Excel डाउनलोड गर्नुहोस्",
+  "daily_reports": "दैनिक रिपोर्टहरू",
+  "closing_stock": "अन्तिम स्टक",
+  "closing_balance": "अन्तिम मौज्दात",
+  "deleted_sales": "मेटिएका बिक्री",
+  "total_income": "कुल आय (बिक्री)",
+  "total_expenses": "कुल खर्च",
+  "total_purchases": "कुल खरिद",
+  "net_profit_loss": "खुद नाफा / घाटा",
+  "filter_report": "फिल्टर गर्नुहोस्"
 }
