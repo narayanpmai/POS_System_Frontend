@@ -106,7 +106,11 @@ export default function UserControlPage() {
         alert(t('users', 'success_update') || 'User updated successfully');
       } else {
         if (!formData.password) return alert('Password is required for new users');
-        await api.post('/users', formData);
+        const payload = {
+          ...formData,
+          companyId: selectedCompanyId ? parseInt(selectedCompanyId, 10) : undefined
+        };
+        await api.post('/users', payload);
         alert(t('users', 'success_add') || 'User created successfully');
       }
       setShowForm(false);
