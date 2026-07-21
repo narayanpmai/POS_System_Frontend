@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import NepaliClock from './NepaliClock';
 
-export default function Navbar() {
+export default function Navbar({ toggleMobileSidebar }: { toggleMobileSidebar?: () => void }) {
   const { user, logout, activeFiscalYear } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -40,7 +40,17 @@ export default function Navbar() {
   const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
 
   return (
-    <nav className="custom-navbar">
+    <nav className="custom-navbar d-flex justify-content-between align-items-center">
+      <div className="d-flex align-items-center">
+        {/* Mobile Sidebar Toggle */}
+        <button 
+          className="btn btn-link d-lg-none text-dark p-0 me-3" 
+          onClick={toggleMobileSidebar}
+        >
+          <i className="bi bi-list fs-3"></i>
+        </button>
+      </div>
+
       <div className="d-flex align-items-center gap-4">
         {/* Fiscal Year Badge */}
         {activeFiscalYear && (

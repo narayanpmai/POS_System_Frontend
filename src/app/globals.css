@@ -252,11 +252,18 @@ h1, h2, h3, h4, h5, h6 {
   top: 0;
   bottom: 0;
   left: 0;
-  z-index: 100;
+  z-index: 1000; /* Increased z-index to be above everything */
   display: flex;
   flex-direction: column;
   box-shadow: var(--glass-shadow);
   border-right: 1px solid var(--glass-border);
+  transition: transform 0.3s ease;
+}
+
+.custom-sidebar.mobile-open {
+  background: var(--light-card) !important; /* Solid background on mobile */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .sidebar-header {
