@@ -668,14 +668,14 @@ export default function ProductsPage() {
       {/* ==========================================
           BULK PRINT BARCODES CONTAINER (HIDDEN)
           ========================================== */}
-      <div className="d-none d-print-block">
+      <div id="bulk-barcodes-container" className="d-none d-print-block w-100">
         <h4 className="text-center mb-4">Bulk Barcodes</h4>
         <div className="row g-4">
           {allProductsForBarcode.map((p) => (
             <div className="col-4 text-center" key={p.id}>
               <div className="border p-2 rounded">
                 <div className="fw-bold fs-7 mb-1">{p.name}</div>
-                <Barcode value={p.barcode || p.SKU} width={1.5} height={40} fontSize={12} />
+                <Barcode value={p.barcode || p.SKU || p.id.toString() || '0000'} width={1.5} height={40} fontSize={12} />
                 <div className="text-muted fs-8 mt-1">Rs. {p.price?.toLocaleString()}</div>
               </div>
             </div>
