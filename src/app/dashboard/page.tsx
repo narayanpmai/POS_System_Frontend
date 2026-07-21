@@ -71,6 +71,12 @@ export default function DashboardPage() {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
 
   useEffect(() => {
+    if (user && user.companyId && !selectedCompanyId) {
+      setSelectedCompanyId(String(user.companyId));
+    }
+  }, [user, selectedCompanyId]);
+
+  useEffect(() => {
     if (user?.role?.name === 'Super Admin') {
       const fetchCompanies = async () => {
         try {
@@ -183,7 +189,7 @@ export default function DashboardPage() {
               value={selectedCompanyId}
               onChange={(e) => setSelectedCompanyId(e.target.value)}
             >
-              <option value="">{t('common', 'all_companies') || 'All Companies'}</option>
+              <option disabled value="">{t('common', 'select_company') || 'Select Company'}</option>
               {companies.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
