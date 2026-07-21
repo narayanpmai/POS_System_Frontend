@@ -503,20 +503,23 @@ export default function ProductsPage() {
             <table className="table mb-0 align-middle">
               <thead>
                 <tr style={{ backgroundColor: 'var(--light-bg)' }}>
-                  <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top" style={{ width: '15%' }}>{t('common', 'sku')}</th>
-                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '50%' }}>{t('common', 'name')}</th>
-                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '15%' }}>{t('common', 'status')}</th>
+                  <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top" style={{ width: '10%' }}>{t('common', 'sku')}</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '25%' }}>{t('common', 'name')}</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-end" style={{ width: '12%' }}>Selling Price</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-center" style={{ width: '10%' }}>Stock Qty</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-center" style={{ width: '10%' }}>Alert Qty</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '13%' }}>{t('common', 'status')}</th>
                   {isAdmin && <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-center" style={{ width: '20%' }}>{t('common', 'actions')}</th>}
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={isAdmin ? 4 : 3} className="text-center py-5 text-muted">{t('common', 'loading')}</td>
+                    <td colSpan={isAdmin ? 7 : 6} className="text-center py-5 text-muted">{t('common', 'loading')}</td>
                   </tr>
                 ) : products.length === 0 ? (
                   <tr>
-                    <td colSpan={isAdmin ? 4 : 3} className="text-center py-5 text-muted">{t('product', 'no_products')}</td>
+                    <td colSpan={isAdmin ? 7 : 6} className="text-center py-5 text-muted">{t('product', 'no_products')}</td>
                   </tr>
                 ) : (
                   products.map((prod) => (
@@ -526,6 +529,21 @@ export default function ProductsPage() {
                       </td>
                       <td className="border-bottom fw-bold text-dark">
                         {prod.name}
+                      </td>
+                      <td className="border-bottom text-end pe-3">
+                        <span className="fw-semibold" style={{ color: 'var(--primary)' }}>
+                          Rs. {prod.price?.toLocaleString() ?? '—'}
+                        </span>
+                      </td>
+                      <td className="border-bottom text-center">
+                        <span className={`badge ${ (prod.stock ?? 0) <= (prod.minStockAlert ?? 0) ? 'bg-danger' : 'bg-primary-subtle text-primary border border-primary-subtle' }`} style={{ borderRadius: '6px', fontSize: '12px' }}>
+                          {prod.stock ?? 0}
+                        </span>
+                      </td>
+                      <td className="border-bottom text-center">
+                        <span className="badge bg-warning-subtle text-warning border border-warning-subtle" style={{ borderRadius: '6px', fontSize: '12px' }}>
+                          {prod.minStockAlert ?? '—'}
+                        </span>
                       </td>
                       <td className="border-bottom">
                         <span className="badge bg-success" style={{ borderRadius: '4px', fontSize: '11px' }}>
