@@ -13,5 +13,8 @@
   "success_add": "Fiscal year created successfully",
   "success_update": "Fiscal year updated successfully",
   "success_delete": "Fiscal year deleted successfully",
-  "confirm_delete": "Are you sure you want to delete this fiscal year?"
+  "confirm_delete": "Are you sure you want to delete this fiscal year?",
+  "fy_name": "FY Name",
+  "edit_fy": "Edit FY",
+  "add_fy": "Add FY"
 }

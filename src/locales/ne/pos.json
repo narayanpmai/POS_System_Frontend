@@ -22,5 +22,15 @@
   "checkout_success": "POS चेकआउट सफल",
   "loyalty_points": "प्राप्त लोयल्टी पोइन्टहरू",
   "points_balance": "कुल पोइन्ट ब्यालेन्स",
-  "pts": "pts"
+  "pts": "pts",
+  "search_product": "सामान खोज्नुस्",
+  "stock": "स्टक",
+  "walk_in_customer": "वाक-इन ग्राहक",
+  "cart_empty": "कार्ट खाली छ",
+  "sub_total": "उपजम्मा",
+  "discount": "छुट",
+  "cash": "नगद",
+  "card": "कार्ड",
+  "qr": "क्यु.आर. (QR)",
+  "register_customer": "ग्राहक दर्ता गर्नुस्"
 }

@@ -22,5 +22,15 @@
   "checkout_success": "POS Checkout Success",
   "loyalty_points": "Loyalty points earned",
   "points_balance": "Total Points Balance",
-  "pts": "pts"
+  "pts": "pts",
+  "search_product": "Search Product",
+  "stock": "Stock",
+  "walk_in_customer": "Walk-In Customer",
+  "cart_empty": "Cart Empty",
+  "sub_total": "Sub Total",
+  "discount": "Discount",
+  "cash": "Cash",
+  "card": "Card",
+  "qr": "QR",
+  "register_customer": "Register Customer"
 }

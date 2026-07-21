@@ -106,5 +106,10 @@
   "required_field": "This field is required",
   "invalid_email": "Please enter a valid email address",
   "min_length": "Must be at least {{min}} characters",
-  "max_length": "Must not exceed {{max}} characters"
+  "max_length": "Must not exceed {{max}} characters",
+  "id": "ID",
+  "start_date": "Start Date",
+  "end_date": "End Date",
+  "saving": "Saving...",
+  "items": "Items"
 }
