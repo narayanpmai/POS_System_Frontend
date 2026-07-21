@@ -1,18 +1,18 @@
 import DateConverter from '@remotemerge/nepali-date-converter';
 
 const nepaliMonths = [
-  'Baishakh',
-  'Jestha',
-  'Ashadh',
-  'Shrawan',
-  'Bhadra',
-  'Ashwin',
-  'Kartik',
-  'Mangsir',
-  'Poush',
-  'Magh',
-  'Falgun',
-  'Chaitra'
+  'बैशाख',
+  'जेठ',
+  'असार',
+  'साउन',
+  'भदौ',
+  'असोज',
+  'कात्तिक',
+  'मंसिर',
+  'पुस',
+  'माघ',
+  'फागुन',
+  'चैत'
 ];
 
 const nepaliDays = {
@@ -25,8 +25,14 @@ const nepaliDays = {
   'Saturday': 'शनिबार'
 };
 
+const nepaliDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+
+export function toDevanagariDigits(numStr: string | number): string {
+  return String(numStr).replace(/[0-9]/g, (match) => nepaliDigits[parseInt(match)]);
+}
+
 /**
- * Converts a Gregorian (AD) Date string or Date object into a BS date string (e.g. "2083/02/13")
+ * Converts a Gregorian (AD) Date string or Date object into a BS date string (e.g. "२०८३/०२/१३")
  */
 export function formatAdToBs(dateInput: string | Date | undefined | null): string {
   if (!dateInput) return '';
@@ -47,7 +53,7 @@ export function formatAdToBs(dateInput: string | Date | undefined | null): strin
     const bsMonth = String(bsDate.month).padStart(2, '0');
     const bsDayNum = String(bsDate.date).padStart(2, '0');
     
-    return `${bsYear}/${bsMonth}/${bsDayNum}`;
+    return toDevanagariDigits(`${bsYear}/${bsMonth}/${bsDayNum}`);
   } catch (err) {
     console.error('Error converting date to BS:', err);
     return '';
@@ -55,7 +61,7 @@ export function formatAdToBs(dateInput: string | Date | undefined | null): strin
 }
 
 /**
- * Converts a Gregorian (AD) Date string or Date object into a BS date string with Nepali month name (e.g. "Jestha 13, 2083")
+ * Converts a Gregorian (AD) Date string or Date object into a BS date string with Nepali month name (e.g. "जेठ १३, २०८३")
  */
 export function formatAdToBsFull(dateInput: string | Date | undefined | null): string {
   if (!dateInput) return '';
@@ -78,9 +84,9 @@ export function formatAdToBsFull(dateInput: string | Date | undefined | null): s
     const hours = String(date.getHours() % 12 || 12).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const ampm = date.getHours() >= 12 ? 'PM' : 'AM';
-    const timeStr = `${hours}:${minutes} ${ampm}`;
+    const timeStr = toDevanagariDigits(`${hours}:${minutes}`) + ` ${ampm}`;
     
-    return `${bsDate.year} ${monthName} ${bsDate.date} - ${nepaliDayName} ${timeStr}`;
+    return `${monthName} ${toDevanagariDigits(bsDate.date)}, ${toDevanagariDigits(bsDate.year)} - ${nepaliDayName} ${timeStr}`;
   } catch (err) {
     console.error('Error converting date to BS Full:', err);
     return '';
@@ -88,7 +94,7 @@ export function formatAdToBsFull(dateInput: string | Date | undefined | null): s
 }
 
 /**
- * Converts a Gregorian (AD) Date string or Date object into a BS date string with short Nepali month name (e.g. "Jestha 13")
+ * Converts a Gregorian (AD) Date string or Date object into a BS date string with short Nepali month name (e.g. "जेठ १३")
  */
 export function formatAdToBsShort(dateInput: string | Date | undefined | null): string {
   if (!dateInput) return '';
@@ -105,7 +111,7 @@ export function formatAdToBsShort(dateInput: string | Date | undefined | null): 
     const bsDate = converter.toBs();
     
     const monthName = nepaliMonths[bsDate.month - 1] || '';
-    return `${monthName} ${bsDate.date}`;
+    return `${monthName} ${toDevanagariDigits(bsDate.date)}`;
   } catch (err) {
     console.error('Error converting date to BS Short:', err);
     return '';

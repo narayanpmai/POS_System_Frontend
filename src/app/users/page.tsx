@@ -33,7 +33,7 @@ export default function UserControlPage() {
 
   useEffect(() => {
     if (!token) return;
-    if (user && user.role.name !== 'Admin') {
+    if (user && user.role.name !== 'Admin' && user.role.name !== 'Super Admin') {
       window.location.href = '/dashboard';
       return;
     }

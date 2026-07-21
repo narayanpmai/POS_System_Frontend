@@ -67,9 +67,10 @@ export default function BSDatePicker({ value, onChange, className, placeholder }
        className={className || "form-control"} 
        onChange={handleDateChange} 
        theme="default"
-       placeholder={placeholder || "Select Date"}
+       placeholder={placeholder || "मिति छान्नुहोस्"}
        defaultDate={bsDefault}
        hideDefaultValue={!value}
+       language="ne"
     />
   );
 }
