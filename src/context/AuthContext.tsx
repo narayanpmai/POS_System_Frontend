@@ -69,8 +69,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Effect to load session on start
   useEffect(() => {
     const initAuth = async () => {
-      const storedToken = localStorage.getItem('smartpos_token');
-      const storedUser = localStorage.getItem('smartpos_user');
+      const storedToken = sessionStorage.getItem('smartpos_token');
+      const storedUser = sessionStorage.getItem('smartpos_user');
 
       if (storedToken && storedUser) {
         setToken(storedToken);
@@ -99,8 +99,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const res = await api.post('/auth/login', { email, password });
       const { access_token, user: loggedUser } = res.data;
 
-      localStorage.setItem('smartpos_token', access_token);
-      localStorage.setItem('smartpos_user', JSON.stringify(loggedUser));
+      sessionStorage.setItem('smartpos_token', access_token);
+      sessionStorage.setItem('smartpos_user', JSON.stringify(loggedUser));
 
       setToken(access_token);
       setUser(loggedUser);
@@ -131,8 +131,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const res = await api.post('/auth/register', { name, email, password, role: 'Cashier' });
       const { access_token, user: registeredUser } = res.data;
 
-      localStorage.setItem('smartpos_token', access_token);
-      localStorage.setItem('smartpos_user', JSON.stringify(registeredUser));
+      sessionStorage.setItem('smartpos_token', access_token);
+      sessionStorage.setItem('smartpos_user', JSON.stringify(registeredUser));
 
       setToken(access_token);
       setUser(registeredUser);
@@ -152,8 +152,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('smartpos_token');
-    localStorage.removeItem('smartpos_user');
+    sessionStorage.removeItem('smartpos_token');
+    sessionStorage.removeItem('smartpos_user');
     setToken(null);
     setUser(null);
     delete api.defaults.headers.common['Authorization'];

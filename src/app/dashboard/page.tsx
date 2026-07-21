@@ -59,19 +59,38 @@ interface ChartTimelineItem {
 }
 
 export default function DashboardPage() {
-  const { token, api, activeFiscalYear } = useAuth();
+  const { token, api, activeFiscalYear, user } = useAuth();
   const { t } = useLanguage();
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [chartData, setChartData] = useState<ChartTimelineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [chartLoading, setChartLoading] = useState(true);
+  
+  // Super Admin filtering
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
 
   useEffect(() => {
-    if (!token) return;
+    if (user?.role?.name === 'Super Admin') {
+      const fetchCompanies = async () => {
+        try {
+          const res = await api.get('/companies');
+          setCompanies(res.data);
+        } catch (err) {
+          console.error('Failed to fetch companies', err);
+        }
+      };
+      fetchCompanies();
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!token || !activeFiscalYear) return;
 
     const fetchSummary = async () => {
       try {
-        const res = await api.get('/reports/dashboard-summary');
+        const query = selectedCompanyId ? `?companyId=${selectedCompanyId}` : '';
+        const res = await api.get(`/reports/dashboard-summary${query}`);
         setSummary(res.data);
         setLoading(false);
       } catch (err) {
@@ -82,7 +101,8 @@ export default function DashboardPage() {
 
     const fetchSalesTimeline = async () => {
       try {
-        const res = await api.get('/reports/sales');
+        const query = selectedCompanyId ? `?companyId=${selectedCompanyId}` : '';
+        const res = await api.get(`/reports/sales${query}`);
         setChartData(res.data.timeline || []);
         setChartLoading(false);
       } catch (err) {
@@ -93,7 +113,7 @@ export default function DashboardPage() {
 
     fetchSummary();
     fetchSalesTimeline();
-  }, [token, activeFiscalYear]);
+  }, [token, activeFiscalYear, selectedCompanyId]);
 
   // Chart configuration
   const lineChartData = {
@@ -155,6 +175,25 @@ export default function DashboardPage() {
 
   return (
     <AuthLayout>
+      {user?.role?.name === 'Super Admin' && (
+        <div className="row mb-4">
+          <div className="col-12 col-md-4 ms-auto">
+            <select
+              className="form-select form-select-sm"
+              value={selectedCompanyId}
+              onChange={(e) => setSelectedCompanyId(e.target.value)}
+            >
+              <option value="">{t('common', 'all_companies') || 'All Companies'}</option>
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
       {/* 1. Stat Grid */}
       <div className="row g-4 mb-4 animate-fade-in-up">
         <div className="col-12 col-sm-6 col-xl-3">

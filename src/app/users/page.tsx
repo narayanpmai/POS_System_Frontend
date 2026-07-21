@@ -31,6 +31,24 @@ export default function UserControlPage() {
   const [resetUserId, setResetUserId] = useState<number | null>(null);
   const [newPassword, setNewPassword] = useState('');
 
+  // Super Admin filtering
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
+
+  useEffect(() => {
+    if (user?.role?.name === 'Super Admin') {
+      const fetchCompanies = async () => {
+        try {
+          const res = await api.get('/companies');
+          setCompanies(res.data);
+        } catch (err) {
+          console.error('Failed to fetch companies', err);
+        }
+      };
+      fetchCompanies();
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!token) return;
     if (user && user.role.name !== 'Admin' && user.role.name !== 'Super Admin') {
@@ -38,13 +56,14 @@ export default function UserControlPage() {
       return;
     }
     loadData();
-  }, [token, user]);
+  }, [token, user, selectedCompanyId]);
 
   const loadData = async () => {
     setLoading(true);
     try {
+      const query = selectedCompanyId ? `?companyId=${selectedCompanyId}` : '';
       const [usersRes, rolesRes] = await Promise.all([
-        api.get('/users'),
+        api.get(`/users${query}`),
         api.get('/users/roles'),
       ]);
       setUsers(usersRes.data);
@@ -115,11 +134,30 @@ export default function UserControlPage() {
 
   return (
     <AuthLayout>
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <h4 className="fw-bold m-0">{t('users', 'title')}</h4>
-        <button className="btn btn-primary fw-bold px-4" onClick={handleAddClick}>
-          <i className="bi bi-plus-lg me-1"></i> {t('users', 'add_user')}
-        </button>
+        
+        <div className="d-flex gap-3">
+          {user?.role?.name === 'Super Admin' && (
+            <select
+              className="form-select"
+              value={selectedCompanyId}
+              onChange={(e) => setSelectedCompanyId(e.target.value)}
+              style={{ minWidth: '200px' }}
+            >
+              <option value="">{t('common', 'all_companies') || 'All Companies'}</option>
+              {companies.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          )}
+
+          <button className="btn btn-primary fw-bold px-4 text-nowrap" onClick={handleAddClick}>
+            <i className="bi bi-plus-lg me-1"></i> {t('users', 'add_user')}
+          </button>
+        </div>
       </div>
 
       {showForm && (
