@@ -6,6 +6,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useRouter } from 'next/navigation';
 
 import AuthLayout from '@/components/AuthLayout';
+import { formatAdToBs } from '@/utils/nepaliDate';
 
 interface Company {
   id: number;
@@ -172,7 +173,7 @@ export default function CompaniesPage() {
                           <span className="badge bg-danger">{t('companies', 'inactive') || 'Inactive'}</span>
                         )}
                       </td>
-                      <td>{new Date(c.createdAt).toLocaleDateString()}</td>
+                      <td>{formatAdToBs(c.createdAt)}</td>
                       <td>
                         <button className="btn btn-sm btn-outline-primary" onClick={() => handleOpenEditModal(c)}>
                           <i className="bi bi-pencil"></i>
