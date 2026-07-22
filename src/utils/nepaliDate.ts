@@ -60,6 +60,11 @@ export function formatAdToBs(dateInput: string | Date | undefined | null): strin
   }
 }
 
+const nepaliAdMonths = [
+  'जनवरी', 'फेब्रुअरी', 'मार्च', 'अप्रिल', 'मे', 'जुन',
+  'जुलाई', 'अगस्ट', 'सेप्टेम्बर', 'अक्टोबर', 'नोभेम्बर', 'डिसेम्बर'
+];
+
 /**
  * Converts a Gregorian (AD) Date string or Date object into a BS date string with Nepali month name (e.g. "जेठ १३, २०८३")
  */
@@ -80,13 +85,31 @@ export function formatAdToBsFull(dateInput: string | Date | undefined | null): s
     const monthName = nepaliMonths[bsDate.month - 1] || '';
     const nepaliDayName = nepaliDays[bsDate.day as keyof typeof nepaliDays] || bsDate.day;
     
-    // Add time if it's a full date string and user wants it (we can just append time)
-    const hours = String(date.getHours() % 12 || 12).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const ampm = date.getHours() >= 12 ? 'PM' : 'AM';
-    const timeStr = toDevanagariDigits(`${hours}:${minutes}`) + ` ${ampm}`;
+    const bsYear = toDevanagariDigits(bsDate.year);
+    const bsMonth = monthName;
+    const bsDay = toDevanagariDigits(bsDate.date);
     
-    return `${monthName} ${toDevanagariDigits(bsDate.date)}, ${toDevanagariDigits(bsDate.year)} - ${nepaliDayName} ${timeStr}`;
+    const adYear = toDevanagariDigits(date.getFullYear());
+    const adMonthName = nepaliAdMonths[date.getMonth()];
+    const adDay = toDevanagariDigits(date.getDate());
+    
+    const hour = date.getHours();
+    let timePeriod = '';
+    if (hour >= 4 && hour < 12) {
+      timePeriod = 'बिहानको';
+    } else if (hour >= 12 && hour < 16) {
+      timePeriod = 'दिउँसोको';
+    } else if (hour >= 16 && hour < 20) {
+      timePeriod = 'बेलुकाको';
+    } else {
+      timePeriod = 'रातिको';
+    }
+    
+    const hours12 = hour % 12 || 12;
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const formattedTime = toDevanagariDigits(`${hours12}:${minutes}`);
+    
+    return `मिति: ${bsYear} ${bsMonth} ${bsDay} गते, ${nepaliDayName} (${adDay} ${adMonthName} ${adYear}), समय: ${timePeriod} ${formattedTime} बजे`;
   } catch (err) {
     console.error('Error converting date to BS Full:', err);
     return '';
