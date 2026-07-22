@@ -302,17 +302,19 @@ export default function SalesHistoryPage() {
                 <table className="w-100 font-mono" style={{ fontSize: '11px', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px dashed #666' }}>
-                      <th align="left">Item</th>
-                      <th align="center">Qty</th>
-                      <th align="right">Total</th>
+                      <th align="left" style={{ paddingBottom: '4px' }}>Item</th>
+                      <th align="center" style={{ paddingBottom: '4px' }}>Rate</th>
+                      <th align="center" style={{ paddingBottom: '4px' }}>Qty</th>
+                      <th align="right" style={{ paddingBottom: '4px' }}>Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {selectedSale?.items?.map((item: any, idx: number) => (
-                      <tr key={idx} style={{ verticalAlign: 'top' }}>
-                        <td>{item.product?.name}</td>
-                        <td align="center">x{item.quantity}</td>
-                        <td align="right">Rs. {Number(item.total).toFixed(2)}</td>
+                      <tr key={idx} style={{ verticalAlign: 'top', borderBottom: '1px dotted #ddd' }}>
+                        <td style={{ paddingTop: '3px', paddingBottom: '3px' }}>{item.product?.name}</td>
+                        <td align="center" style={{ paddingTop: '3px', paddingBottom: '3px' }}>Rs. {Number(item.price).toFixed(2)}</td>
+                        <td align="center" style={{ paddingTop: '3px', paddingBottom: '3px' }}>x{item.quantity}</td>
+                        <td align="right" style={{ paddingTop: '3px', paddingBottom: '3px' }}>Rs. {Number(item.total).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
