@@ -91,7 +91,13 @@ export default function DashboardPage() {
   }, [user]);
 
   useEffect(() => {
-    if (!token || !activeFiscalYear) return;
+    if (!token) return;
+
+    if (!activeFiscalYear) {
+      setLoading(false);
+      setChartLoading(false);
+      return;
+    }
 
     const fetchSummary = async () => {
       try {
@@ -197,6 +203,23 @@ export default function DashboardPage() {
               ))}
             </select>
           </div>
+        </div>
+      )}
+
+      {!activeFiscalYear && (
+        <div className="alert alert-warning border-0 shadow-sm d-flex align-items-center justify-content-between p-4 mb-4 animate-fade-in-up">
+          <div className="d-flex align-items-center gap-3">
+            <i className="bi bi-exclamation-triangle-fill text-warning fs-3"></i>
+            <div>
+              <h5 className="alert-heading mb-1 fw-bold">Active Fiscal Year Missing (आर्थिक वर्ष आवश्यक)</h5>
+              <p className="mb-0 text-muted">
+                There is no active fiscal year configured. Telemetry and reporting features require an active fiscal year.
+              </p>
+            </div>
+          </div>
+          <Link href="/fiscal-years" className="btn btn-warning fw-semibold px-4 py-2">
+            Configure Fiscal Year
+          </Link>
         </div>
       )}
 
