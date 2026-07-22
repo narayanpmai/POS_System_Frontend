@@ -85,6 +85,39 @@ export function formatAdToBsFull(dateInput: string | Date | undefined | null): s
     const monthName = nepaliMonths[bsDate.month - 1] || '';
     const nepaliDayName = nepaliDays[bsDate.day as keyof typeof nepaliDays] || bsDate.day;
     
+    // Add time if it's a full date string and user wants it (we can just append time)
+    const hours = String(date.getHours() % 12 || 12).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const ampm = date.getHours() >= 12 ? 'PM' : 'AM';
+    const timeStr = toDevanagariDigits(`${hours}:${minutes}`) + ` ${ampm}`;
+    
+    return `${monthName} ${toDevanagariDigits(bsDate.date)}, ${toDevanagariDigits(bsDate.year)} - ${nepaliDayName} ${timeStr}`;
+  } catch (err) {
+    console.error('Error converting date to BS Full:', err);
+    return '';
+  }
+}
+
+/**
+ * Converts date to a detailed Nepali format strictly for the Navbar Clock display
+ */
+export function formatAdToBsClock(dateInput: string | Date | undefined | null): string {
+  if (!dateInput) return '';
+  try {
+    const date = new Date(dateInput);
+    if (isNaN(date.getTime())) return '';
+    
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const formattedAd = `${yyyy}-${mm}-${dd}`;
+    
+    const converter = new DateConverter(formattedAd);
+    const bsDate = converter.toBs();
+    
+    const monthName = nepaliMonths[bsDate.month - 1] || '';
+    const nepaliDayName = nepaliDays[bsDate.day as keyof typeof nepaliDays] || bsDate.day;
+    
     const bsYear = toDevanagariDigits(bsDate.year);
     const bsMonth = monthName;
     const bsDay = toDevanagariDigits(bsDate.date);
@@ -111,7 +144,7 @@ export function formatAdToBsFull(dateInput: string | Date | undefined | null): s
     
     return `मिति: ${bsYear} ${bsMonth} ${bsDay} गते, ${nepaliDayName} (${adDay} ${adMonthName} ${adYear}), समय: ${timePeriod} ${formattedTime} बजे`;
   } catch (err) {
-    console.error('Error converting date to BS Full:', err);
+    console.error('Error converting date to BS Clock:', err);
     return '';
   }
 }

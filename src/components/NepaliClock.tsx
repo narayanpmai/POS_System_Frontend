@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { formatAdToBsFull } from '@/utils/nepaliDate';
+import { formatAdToBsClock } from '@/utils/nepaliDate';
 
 export default function NepaliClock() {
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
@@ -28,7 +28,7 @@ export default function NepaliClock() {
   }
 
   // Get formatted BS date with time
-  const formattedBs = formatAdToBsFull(currentDate);
+  const formattedBs = formatAdToBsClock(currentDate);
 
   return (
     <div className="d-flex align-items-center gap-2 text-dark fs-7 px-3 py-1 bg-white rounded-pill border shadow-sm">
