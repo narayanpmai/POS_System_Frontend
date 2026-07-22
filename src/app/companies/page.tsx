@@ -122,6 +122,23 @@ export default function CompaniesPage() {
     }
   };
 
+  const handleDeleteCompany = async (id: number) => {
+    if (id === 1) {
+      alert(t('companies', 'cannot_delete_default') || 'Cannot delete the default company.');
+      return;
+    }
+    
+    if (window.confirm(t('companies', 'confirm_delete') || 'Are you sure you want to delete this company? This will permanently delete all associated users and data.')) {
+      try {
+        await api.delete(`/companies/${id}`);
+        fetchCompanies();
+      } catch (err: any) {
+        console.error('Error deleting company:', err);
+        alert(err.response?.data?.message || 'Failed to delete company');
+      }
+    }
+  };
+
   if (!isSuperAdmin) {
     return <AuthLayout><div className="p-4">{t('companies', 'access_denied') || 'Access Denied. Only Super Admin can view this page.'}</div></AuthLayout>;
   }
@@ -175,9 +192,14 @@ export default function CompaniesPage() {
                       </td>
                       <td>{formatAdToBs(c.createdAt)}</td>
                       <td>
-                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleOpenEditModal(c)}>
+                        <button className="btn btn-sm btn-outline-primary me-2" onClick={() => handleOpenEditModal(c)}>
                           <i className="bi bi-pencil"></i>
                         </button>
+                        {c.id !== 1 && (
+                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteCompany(c.id)}>
+                            <i className="bi bi-trash"></i>
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
