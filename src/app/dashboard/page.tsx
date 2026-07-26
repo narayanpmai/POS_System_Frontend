@@ -67,23 +67,15 @@ export default function DashboardPage() {
   const [chartLoading, setChartLoading] = useState(true);
 
   // Super Admin specific state
-  const [companies, setCompanies] = useState<any[]>([]);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
+  // Using global filter from Navbar, so no local company selection needed
 
-  useEffect(() => {
-    if (user?.role?.name === 'Super Admin') {
-      api.get('/companies').then(res => setCompanies(res.data)).catch(console.error);
-    }
-  }, [user]);
 
   useEffect(() => {
     if (!token) return;
 
     const fetchSummary = async () => {
       try {
-        const res = await api.get('/reports/dashboard-summary', {
-          params: { companyId: selectedCompanyId || undefined }
-        });
+        const res = await api.get('/reports/dashboard-summary');
         setSummary(res.data);
         setLoading(false);
       } catch (err) {
@@ -94,9 +86,7 @@ export default function DashboardPage() {
 
     const fetchSalesTimeline = async () => {
       try {
-        const res = await api.get('/reports/sales', {
-          params: { companyId: selectedCompanyId || undefined }
-        });
+        const res = await api.get('/reports/sales');
         setChartData(res.data.timeline || []);
         setChartLoading(false);
       } catch (err) {
@@ -107,7 +97,7 @@ export default function DashboardPage() {
 
     fetchSummary();
     fetchSalesTimeline();
-  }, [token, activeFiscalYear, selectedCompanyId]);
+  }, [token, activeFiscalYear]);
 
   // Chart configuration
   const lineChartData = {
@@ -169,22 +159,7 @@ export default function DashboardPage() {
 
   return (
     <AuthLayout>
-      {user?.role?.name === 'Super Admin' && (
-        <div className="mb-4 d-flex align-items-center gap-3 bg-white p-3 rounded-4 shadow-sm border border-primary border-opacity-10">
-          <label className="fw-bold text-secondary mb-0"><i className="bi bi-buildings me-2 text-primary"></i>{t('common', 'select_company') || 'Select Company'}:</label>
-          <select 
-            className="form-select w-auto shadow-none border-secondary-subtle fw-medium" 
-            value={selectedCompanyId || user?.companyId} 
-            onChange={(e) => {
-              setLoading(true);
-              setChartLoading(true);
-              setSelectedCompanyId(Number(e.target.value));
-            }}
-          >
-            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </div>
-      )}
+
 
       {/* 1. Stat Grid */}
       <div className="row g-4 mb-4 animate-fade-in-up">

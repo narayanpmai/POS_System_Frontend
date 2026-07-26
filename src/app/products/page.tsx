@@ -55,14 +55,8 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
 
   // Super Admin specific state
-  const [companies, setCompanies] = useState<any[]>([]);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
+  // Using global filter from Navbar, so no local company selection needed
 
-  useEffect(() => {
-    if (user?.role?.name === 'Super Admin') {
-      api.get('/companies').then(res => setCompanies(res.data)).catch(console.error);
-    }
-  }, [user]);
 
   // Pagination & Filters
   const [search, setSearch] = useState('');
@@ -111,11 +105,10 @@ export default function ProductsPage() {
     setLoading(true);
     try {
       const catUrl = categoryId ? `&categoryId=${categoryId}` : '';
-      const compUrl = selectedCompanyId ? `&companyId=${selectedCompanyId}` : '';
       const [prodRes, categoriesRes, brandsRes, settingsRes] = await Promise.all([
-        api.get(`/products?page=${page}&limit=${rowsPerPage}&search=${search}${catUrl}${compUrl}`),
-        api.get(`/products/categories?${compUrl.replace('&', '')}`),
-        api.get(`/brands?${compUrl.replace('&', '')}`),
+        api.get(`/products?page=${page}&limit=${rowsPerPage}&search=${search}${catUrl}`),
+        api.get(`/products/categories`),
+        api.get(`/brands`),
         api.get('/settings')
       ]);
       setProducts(prodRes.data.items || []);
@@ -132,7 +125,7 @@ export default function ProductsPage() {
 
   useEffect(() => {
     loadCatalogs();
-  }, [token, page, rowsPerPage, search, categoryId, selectedCompanyId]);
+  }, [token, page, rowsPerPage, search, categoryId]);
 
   // Handle Product CRUD
   const handleProductSubmit = async (e: React.FormEvent) => {
@@ -528,7 +521,7 @@ export default function ProductsPage() {
           
           {/* Filters Bar */}
           <div className="row g-3 align-items-center mb-4">
-            <div className={`col-12 ${user?.role?.name === 'Super Admin' ? 'col-md-4' : 'col-md-8'}`}>
+            <div className="col-12 col-md-8">
               <input
                 type="text"
                 className="form-control"
@@ -537,20 +530,6 @@ export default function ProductsPage() {
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               />
             </div>
-            {user?.role?.name === 'Super Admin' && (
-              <div className="col-12 col-md-4">
-                <select
-                  className="form-select"
-                  value={selectedCompanyId || ''}
-                  onChange={(e) => { setSelectedCompanyId(e.target.value ? Number(e.target.value) : null); setPage(1); }}
-                >
-                  <option value="">{t('common', 'all_companies') || 'All Companies'}</option>
-                  {companies.map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
             <div className="col-12 col-md-4">
               <select
                 className="form-select"
