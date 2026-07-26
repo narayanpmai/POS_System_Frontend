@@ -33,27 +33,45 @@ export default function BSDatePicker({ value, onChange, className, placeholder }
     setReady(true);
   }, [value]);
 
-  const handleDateChange = ({ bsDate, adDate }: any) => {
+  const handleDateChange = (arg: any) => {
     try {
-      let iso = "";
-      if (typeof adDate === 'string') {
-          // If adDate is provided by library
-          const d = new Date(adDate);
-          d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-          iso = d.toISOString().split('T')[0];
-      } else if (adDate instanceof Date) {
-          const d = new Date(adDate);
-          d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-          iso = d.toISOString().split('T')[0];
-      } else {
-          // Fallback if adDate is weird
-          try {
-            const adObj = new NepaliDate(bsDate).toAd();
-            iso = `${adObj.year}-${String(adObj.month).padStart(2, '0')}-${String(adObj.date).padStart(2, '0')}`;
-          } catch(err) {
-            iso = new Date().toISOString().split('T')[0];
-          }
+      let bsDateStr = "";
+      let adDateStr = "";
+      
+      if (arg && arg.bsDate) {
+        bsDateStr = arg.bsDate;
+        adDateStr = arg.adDate;
+      } else if (typeof arg === 'string') {
+        bsDateStr = arg;
       }
+
+      if (!bsDateStr) {
+         if (adDateStr) {
+             const d = new Date(adDateStr);
+             d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+             onChange(d.toISOString().split('T')[0]);
+             return;
+         }
+         onChange(new Date().toISOString().split('T')[0]);
+         return;
+      }
+
+      // Parse safely using NepaliDate library to avoid mismatched calendar adDates
+      const adObj = new NepaliDate(bsDateStr).toAd();
+      const adDate = new Date(adObj.year, adObj.month - 1, adObj.date);
+      adDate.setMinutes(adDate.getMinutes() - adDate.getTimezoneOffset());
+      
+      let iso = adDate.toISOString().split('T')[0];
+      let backToBs = new NepaliDate(iso).toBs();
+      const expectedMonth = parseInt(bsDateStr.split('-')[1]);
+
+      // If date overflowed (e.g., 2084-03-32 capped to 31), step back to remain in correct month
+      while (backToBs.month !== expectedMonth && adDate.getTime() > 0) {
+         adDate.setDate(adDate.getDate() - 1);
+         iso = adDate.toISOString().split('T')[0];
+         backToBs = new NepaliDate(iso).toBs();
+      }
+
       onChange(iso);
     } catch (e) {
       console.error(e);
