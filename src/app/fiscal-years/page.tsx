@@ -174,82 +174,96 @@ export default function FiscalYearsPage() {
           </div>
         </div>
 
-        {/* 1-CLICK QUICK NEPALI FY SETUP BANNER */}
-        <div
-          className="card border-0 shadow-lg mb-4 text-white overflow-hidden"
-          style={{
-            background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1c3b70 100%)',
-            borderRadius: '16px'
-          }}
-        >
-          <div className="card-body p-4">
-            <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
-              <div>
-                <span className="badge bg-warning text-dark px-3 py-1 rounded-pill fw-bold mb-2 shadow-sm">
-                  <i className="bi bi-lightning-charge-fill me-1"></i> {language === 'ne' ? '१-क्लिक छिटो सेटअप' : '1-Click Quick Setup'}
-                </span>
-                <h5 className="fw-bold mb-1">
-                  {language === 'ne' ? 'नेपाली आर्थिक वर्ष १-क्लिकमा सक्रिय गर्नुहोस्' : 'Quick Activate Nepali Fiscal Year'}
-                </h5>
-                <p className="text-white-50 small mb-0">
-                  {language === 'ne'
-                    ? 'मितिहरू आफैँ नछानी तलको बटन थिचेर एक सेकेन्डमै चालु आर्थिक वर्ष सुरु गर्नुहोस्।'
-                    : 'No need to select dates manually. Click a button below to activate instant fiscal year.'}
-                </p>
-              </div>
+        {/* CURRENT ACTIVE FISCAL YEAR BANNER */}
+        {(() => {
+          const activeFY = fiscalYears.find((fy) => fy.isActive);
+          return (
+            <div
+              className="card border-0 shadow-lg mb-4 text-white overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #1c3b70 100%)',
+                borderRadius: '16px'
+              }}
+            >
+              <div className="card-body p-4">
+                <div className="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                  <div>
+                    <span className="badge bg-warning text-dark px-3 py-1 rounded-pill fw-bold mb-2 shadow-sm">
+                      <i className="bi bi-shield-check me-1"></i>
+                      {language === 'ne' ? 'सक्रिय स्थिति' : 'Active Status'}
+                    </span>
+                    <h5 className="fw-bold mb-1">
+                      {language === 'ne' ? 'चालु सक्रिय आर्थिक वर्ष' : 'Current Active Fiscal Year'}
+                    </h5>
+                    <p className="text-white-50 small mb-0">
+                      {language === 'ne'
+                        ? 'प्रणालीमा बिक्री, खरिद र सम्पूर्ण रिपोर्टिङका लागि हाल सक्रिय रहेको आर्थिक वर्ष।'
+                        : 'Fiscal year currently active in the system for all transactions and reporting.'}
+                    </p>
+                  </div>
 
-              <div className="d-flex flex-wrap gap-2">
-                {/* 2081/082 - RECOMMENDED */}
-                <button
-                  type="button"
-                  className="btn btn-warning fw-bold px-4 py-2 text-dark shadow-sm d-flex align-items-center hover-lift"
-                  style={{ borderRadius: '12px', border: '2px solid rgba(255,255,255,0.4)' }}
-                  onClick={() => handleQuickSetup('२०८१/०८२', '2024-07-16', '2025-07-15', true)}
-                  disabled={quickLoading !== null}
-                >
-                  {quickLoading === '२०८१/०८२' ? (
-                    <span className="spinner-border spinner-border-sm me-2"></span>
-                  ) : (
-                    <i className="bi bi-star-fill me-2 text-danger"></i>
-                  )}
-                  {language === 'ne' ? '२०८१/०८२ सक्रिय गर्नुहोस् (चालु वर्ष)' : 'Activate 2081/082 (Current)'}
-                </button>
-
-                {/* 2082/083 - UPCOMING */}
-                <button
-                  type="button"
-                  className="btn btn-light fw-bold px-3 py-2 text-dark shadow-sm d-flex align-items-center hover-lift"
-                  style={{ borderRadius: '12px' }}
-                  onClick={() => handleQuickSetup('२०८२/०८३', '2025-07-16', '2026-07-15', true)}
-                  disabled={quickLoading !== null}
-                >
-                  {quickLoading === '२०८२/०८३' ? (
-                    <span className="spinner-border spinner-border-sm me-2"></span>
-                  ) : (
-                    <i className="bi bi-calendar-plus me-2 text-primary"></i>
-                  )}
-                  {language === 'ne' ? '२०८२/०८३ सेट गर्नुहोस् (आगामी)' : 'Activate 2082/083 (Next)'}
-                </button>
-
-                {/* 2080/081 - PREVIOUS */}
-                <button
-                  type="button"
-                  className="btn btn-outline-light fw-bold px-3 py-2 shadow-sm d-flex align-items-center hover-lift"
-                  style={{ borderRadius: '12px' }}
-                  onClick={() => handleQuickSetup('२०८०/०८१', '2023-07-17', '2024-07-15', true)}
-                  disabled={quickLoading !== null}
-                >
-                  {quickLoading === '२०८०/०८१' ? (
-                    <span className="spinner-border spinner-border-sm me-2"></span>
-                  ) : (
-                    <i className="bi bi-clock-history me-2"></i>
-                  )}
-                  {language === 'ne' ? '२०८०/०८१ (पुरानो वर्ष)' : '2080/081 (Prev)'}
-                </button>
+                  <div>
+                    {activeFY ? (
+                      <div
+                        className="p-3 px-4 d-flex align-items-center gap-3 shadow-sm"
+                        style={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                          backdropFilter: 'blur(10px)',
+                          border: '1px solid rgba(255, 255, 255, 0.3)',
+                          borderRadius: '16px'
+                        }}
+                      >
+                        <div
+                          className="bg-success text-white rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm"
+                          style={{ width: '48px', height: '48px', flexShrink: 0 }}
+                        >
+                          <i className="bi bi-check-lg fs-3"></i>
+                        </div>
+                        <div>
+                          <div className="text-warning fw-bold small text-uppercase" style={{ letterSpacing: '0.5px', fontSize: '0.75rem' }}>
+                            {language === 'ne' ? 'चालु सक्रिय आर्थिक वर्ष' : 'ACTIVE FISCAL YEAR'}
+                          </div>
+                          <div className="fs-4 fw-bold text-white mb-0" style={{ lineHeight: '1.2' }}>
+                            {activeFY.name}
+                          </div>
+                          <div className="small text-white-50 mt-1 d-flex align-items-center gap-1">
+                            <i className="bi bi-calendar3 me-1"></i>
+                            {renderBsDate(activeFY.startDate).bs} — {renderBsDate(activeFY.endDate).bs}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div
+                        className="p-3 px-4 d-flex align-items-center gap-3 shadow-sm"
+                        style={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                          backdropFilter: 'blur(10px)',
+                          border: '1px dashed rgba(255, 255, 255, 0.4)',
+                          borderRadius: '16px'
+                        }}
+                      >
+                        <div
+                          className="bg-danger text-white rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm"
+                          style={{ width: '44px', height: '44px', flexShrink: 0 }}
+                        >
+                          <i className="bi bi-exclamation-triangle-fill fs-5"></i>
+                        </div>
+                        <div>
+                          <div className="text-warning fw-bold small text-uppercase" style={{ letterSpacing: '0.5px', fontSize: '0.75rem' }}>
+                            {language === 'ne' ? 'कुनै आर्थिक वर्ष सक्रिय छैन' : 'NO ACTIVE FISCAL YEAR'}
+                          </div>
+                          <div className="small text-white-50 mt-1">
+                            {language === 'ne' ? 'तलको तालिकाबाट आर्थिक वर्ष सक्रिय गर्नुहोस्।' : 'Please activate a fiscal year from the table below.'}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
+          );
+        })()}
 
         <div className="row g-4">
           {/* Add / Edit Form Section (Left) */}
