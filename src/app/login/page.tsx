@@ -47,8 +47,29 @@ export default function LoginPage() {
         
         <div className="text-center mb-4">
           <div className="mb-3 d-flex justify-content-center position-relative">
-            <div className="position-absolute rounded-circle bg-white" style={{ width: '110px', height: '110px', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', opacity: 0.05, filter: 'blur(10px)' }}></div>
-            <img src="/logo.png" alt="कोसेली घर Logo" className="position-relative" style={{ height: '100px', width: '100px', objectFit: 'contain', filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.5))', transition: 'transform 0.3s ease' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'} />
+            <div
+              className="rounded-circle p-2 bg-white shadow-lg position-relative d-flex align-items-center justify-content-center"
+              style={{
+                width: '140px',
+                height: '140px',
+                border: '3px solid rgba(255, 255, 255, 0.9)',
+                boxShadow: '0 12px 30px rgba(0,0,0,0.4), 0 0 20px rgba(255,255,255,0.2)'
+              }}
+            >
+              <img
+                src="/logo.png"
+                alt="कोसेली घर Logo"
+                style={{
+                  height: '124px',
+                  width: '124px',
+                  objectFit: 'contain',
+                  borderRadius: '50%',
+                  transition: 'transform 0.3s ease'
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.06)')}
+                onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+              />
+            </div>
           </div>
           <h2 className="fw-bolder text-white mb-2" style={{ letterSpacing: '0.5px', fontSize: '1.75rem', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
             कोसेली घर POS

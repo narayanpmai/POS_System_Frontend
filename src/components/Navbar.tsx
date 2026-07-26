@@ -154,15 +154,15 @@ export default function Navbar() {
         {/* User Dropdown */}
         <div className="dropdown">
           <button
-            className="btn btn-light rounded-pill border shadow-sm d-flex align-items-center gap-2 px-3 bg-white text-dark hover-lift"
+            className="btn btn-light rounded-pill border shadow-sm d-flex align-items-center gap-2 px-3 bg-white text-dark hover-lift text-nowrap"
             type="button"
             onClick={toggleDropdown}
             onBlur={() => setTimeout(() => setDropdownOpen(false), 200)}
             aria-expanded={dropdownOpen}
-            style={{ height: '38px', fontSize: '0.85rem' }}
+            style={{ height: '38px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
           >
             <i className="bi bi-person-circle fs-5 text-primary"></i>
-            <span className="fw-semibold text-dark fs-7">{user?.name || t('common', 'loading')}</span>
+            <span className="fw-semibold text-dark text-nowrap">{user?.name || t('common', 'loading')}</span>
             <i className="bi bi-caret-down-fill ms-1 text-muted" style={{ fontSize: '0.65rem' }}></i>
           </button>
           
