@@ -387,7 +387,7 @@ export default function FiscalYearsPage() {
                     </p>
                   </div>
                   <div className="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-bold border border-primary border-opacity-25 shadow-sm">
-                    <i className="bi bi-info-circle-fill me-1"></i> {fiscalYears.filter(f => f.isActive).length} {language === 'ne' ? 'सक्रिय वर्ष' : 'Active'}
+                    <i className="bi bi-calendar-event me-1"></i> {fiscalYears.length} {language === 'ne' ? 'आर्थिक वर्षहरू' : 'Total FYs'}
                   </div>
                 </div>
 
@@ -414,35 +414,24 @@ export default function FiscalYearsPage() {
                             </p>
                           </td>
                         </tr>
-                      ) : fiscalYears.filter(f => f.isActive).length === 0 ? (
+                      ) : fiscalYears.length === 0 ? (
                         <tr>
                           <td colSpan={5} className="text-center py-5 text-muted">
                             <div className="p-4 bg-light rounded-circle d-inline-block mb-3 shadow-sm border">
                               <i className="bi bi-calendar-x fs-1 text-primary opacity-75"></i>
                             </div>
                             <h5 className="fw-bold text-dark">
-                              {language === 'ne' ? 'कुनै सक्रिय आर्थिक वर्ष छैन' : 'No active fiscal year found'}
+                              {language === 'ne' ? 'कुनै आर्थिक वर्ष भेटिएन' : 'No fiscal year found'}
                             </h5>
                             <p className="small text-secondary mb-4">
                               {language === 'ne'
-                                ? 'प्रणालीमा बिक्री र रिपोर्टिङ सुरु गर्न कम्तीमा एउटा चालु आर्थिक वर्ष सक्रिय हुनुपर्छ।'
-                                : 'Create your first fiscal year or activate one instantly below:'}
+                                ? 'प्रणालीमा बिक्री र रिपोर्टिङ सुरु गर्न कम्तीमा एउटा आर्थिक वर्ष सिर्जना गर्नुहोस्।'
+                                : 'Create your first fiscal year on the left form:'}
                             </p>
-                            <button
-                              type="button"
-                              className="btn btn-primary btn-lg rounded-pill px-4 py-2 shadow fw-bold hover-lift"
-                              onClick={() => handleQuickSetup('२०८१/०८२', '2024-07-16', '2025-07-15', true)}
-                              disabled={quickLoading !== null}
-                            >
-                              <i className="bi bi-lightning-charge-fill me-2 text-warning"></i>
-                              {language === 'ne'
-                                ? '✨ १-क्लिकमा चालु आर्थिक वर्ष (२०८१/०८२) सक्रिय गर्नुहोस्'
-                                : '✨ 1-Click Activate Current FY (२०८१/०८२)'}
-                            </button>
                           </td>
                         </tr>
                       ) : (
-                        fiscalYears.filter(f => f.isActive).map((fy) => {
+                        fiscalYears.map((fy) => {
                           const startFormatted = renderBsDate(fy.startDate);
                           const endFormatted = renderBsDate(fy.endDate);
 
