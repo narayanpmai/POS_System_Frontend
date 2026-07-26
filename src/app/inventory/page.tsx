@@ -6,8 +6,9 @@ import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import axios from 'axios';
-
+
 import TableControls, { applyPagination } from '@/components/TableControls';
+
 interface InventoryItem {
   id: number;
   name: string;
@@ -180,16 +181,16 @@ export default function InventoryPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={isAdmin ? 8 : 7} className="text-center py-4">
+                  <td colSpan={isAdmin ? 9 : 8} className="text-center py-4">
                     <div className="spinner-border text-primary" role="status"></div>
                   </td>
                 </tr>
               ) : filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={isAdmin ? 8 : 7} className="text-center py-4 text-muted">{t('common', 'no_data')}</td>
+                  <td colSpan={isAdmin ? 9 : 8} className="text-center py-4 text-muted">{t('common', 'no_data')}</td>
                 </tr>
               ) : (
-                applyPagination(filteredItems, currentPage, rowsPerPage).map((item: InventoryItem) => (
+                applyPagination(filteredItems, currentPage, rowsPerPage).map((item: any) => (
                   <tr key={item.id} className={item.isLowStock ? 'table-danger-subtle' : ''}>
                     <td className="fw-bold font-mono fs-8">{item.SKU}</td>
                     <td className="fw-semibold text-dark">{item.name}</td>

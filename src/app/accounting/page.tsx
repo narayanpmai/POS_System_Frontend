@@ -151,7 +151,7 @@ export default function AccountingDashboard() {
       </tbody>
       <tfoot>
         <tr>
-          <td colSpan={3} className="text-end">{t('accounting', 'total')}:</td>
+          <td colSpan={3} className="text-end">{t('accounting', 'total')}</td>
           <td className="text-end">Rs. {totalDebit.toFixed(2)}</td>
           <td className="text-end">Rs. {totalCredit.toFixed(2)}</td>
         </tr>
@@ -203,6 +203,124 @@ export default function AccountingDashboard() {
               <i className="bi bi-arrow-left"></i> {t('common', 'back')}
             </button>
             <h2 className="m-0">📊 {t('accounting', 'title')}</h2>
+          </div>
+          <div className="d-flex gap-2 flex-wrap">
+            <button
+              className="btn btn-outline-secondary d-flex align-items-center gap-2 fw-semibold"
+              style={{ borderRadius: '8px' }}
+              onClick={handlePrint}
+              title={`Print ${tabTitle}`}
+            >
+              <i className="bi bi-printer-fill"></i> {t('common', 'print')} {tabTitle}
+            </button>
+            <button
+              className="btn btn-outline-danger d-flex align-items-center gap-2 fw-semibold"
+              style={{ borderRadius: '8px' }}
+              onClick={handleDownloadPDF}
+              title={`Download ${tabTitle} as PDF`}
+            >
+              <i className="bi bi-file-earmark-pdf-fill"></i> {t('reports', 'download_pdf')}
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <ul className="nav nav-tabs mb-4">
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === 'trial_balance' ? 'active' : ''}`}
+              onClick={() => setActiveTab('trial_balance')}
+            >
+              {t('accounting', 'trial_balance')}
+            </button>
+          </li>
+          <li className="nav-item">
+            <button
+              className={`nav-link ${activeTab === 'journal_entries' ? 'active' : ''}`}
+              onClick={() => setActiveTab('journal_entries')}
+            >
+              {t('accounting', 'journal_entries')}
+            </button>
+          </li>
+        </ul>
+
+        {loading ? (
+          <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
+        ) : activeTab === 'trial_balance' ? (
+          <>
+            {/* Printable hidden ref for Trial Balance */}
+            <div ref={printRef} style={{ display: 'none' }}>
+              {renderTrialBalancePrintable()}
+            </div>
+            <div className="card shadow-sm border-0">
+              <div className="card-body p-0">
+                <table className="table table-hover align-middle mb-0">
+                  <thead className="table-light">
+                    <tr>
+                      <th>{t('accounting', 'code')}</th>
+                      <th>{t('accounting', 'account_name')}</th>
+                      <th>{t('accounting', 'type')}</th>
+                      <th className="text-end">{t('accounting', 'debit')}</th>
+                      <th className="text-end">{t('accounting', 'credit')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trialBalance.map(acc => {
+                      const isDebit = acc.type === 'ASSET' || acc.type === 'EXPENSE';
+                      return (
+                        <tr key={acc.id}>
+                          <td>{acc.code}</td>
+                          <td>{acc.name}</td>
+                          <td><span className="badge bg-secondary">{acc.type}</span></td>
+                          <td className="text-end">{isDebit && acc.balance > 0 ? `Rs. ${acc.balance.toFixed(2)}` : '-'}</td>
+                          <td className="text-end">{!isDebit && acc.balance > 0 ? `Rs. ${acc.balance.toFixed(2)}` : '-'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot className="table-light fw-bold">
+                    <tr>
+                      <td colSpan={3} className="text-end">{t('accounting', 'total')}</td>
+                      <td className="text-end text-primary">Rs. {totalDebit.toFixed(2)}</td>
+                      <td className="text-end text-success">Rs. {totalCredit.toFixed(2)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Printable hidden ref for Journal Entries */}
+            <div ref={printRef} style={{ display: 'none' }}>
+              {renderJournalPrintable()}
+            </div>
+            <div className="accordion" id="journalAccordion">
+              {journalEntries.map((entry, index) => (
+                <div className="accordion-item mb-2 border-0 shadow-sm rounded" key={entry.id}>
+                  <h2 className="accordion-header">
+                    <button className={`accordion-button ${index !== 0 ? 'collapsed' : ''} rounded`} type="button" data-bs-toggle="collapse" data-bs-target={`#collapse${entry.id}`}>
+                      <div className="d-flex justify-content-between w-100 me-3">
+                        <strong>{entry.referenceNo || 'JE-' + entry.id} - {entry.description}</strong>
+                        <span className="text-muted">{formatAdToBs(entry.date)}</span>
+                      </div>
+                    </button>
+                  </h2>
+                  <div id={`collapse${entry.id}`} className={`accordion-collapse collapse ${index === 0 ? 'show' : ''}`} data-bs-parent="#journalAccordion">
+                    <div className="accordion-body p-0">
+                      <table className="table table-sm table-borderless mb-0">
+                        <thead className="table-light">
+                          <tr>
+                            <th>{t('accounting', 'account')}</th>
+                            <th>{t('accounting', 'description')}</th>
+                            <th className="text-end">{t('accounting', 'debit')}</th>
+                            <th className="text-end">{t('accounting', 'credit')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {entry.lines.map((line: any) => (
+                            <tr key={line.id}>
+                              <td>{line.account.code} - {line.account.name}</td>
                               <td>{line.description}</td>
                               <td className="text-end text-primary">{line.debit > 0 ? `Rs. ${line.debit.toFixed(2)}` : ''}</td>
                               <td className="text-end text-success">{line.credit > 0 ? `Rs. ${line.credit.toFixed(2)}` : ''}</td>

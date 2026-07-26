@@ -220,6 +220,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         clearError,
         api,
         activeFiscalYear,
+        superAdminCompanyId,
+        setSuperAdminCompanyId,
         refreshFiscalYear,
       }}
     >
