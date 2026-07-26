@@ -2,9 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import Calendar from '@sbmdkl/nepali-datepicker-reactjs';
 import '@sbmdkl/nepali-datepicker-reactjs/dist/index.css';
-import NepaliDate from '@remotemerge/nepali-date-converter';
 import { useLanguage } from '@/context/LanguageContext';
-import { fromDevanagari } from '@/utils/nepaliDate';
+import { adToBsDate, bsToAdDate, fromDevanagari } from '@/utils/nepaliDate';
 
 interface Props {
   value?: string; // AD Date string e.g., "YYYY-MM-DD" or ISO string
@@ -33,12 +32,16 @@ export default function BSDatePicker({ value, onChange, className, placeholder }
 
             if (yearNum >= 1900 && yearNum < 2070) {
               // It's a Gregorian (AD) date -> convert AD to BS
-              const adDate = new Date(Date.UTC(yearNum, monthNum - 1, dayNum));
-              const isoDate = adDate.toISOString().split('T')[0];
-              const nepDate = new NepaliDate(isoDate).toBs();
-              bsYear = nepDate.year;
-              bsMonth = nepDate.month;
-              bsDay = nepDate.date;
+              const bsDate = adToBsDate(cleanVal);
+              if (bsDate) {
+                bsYear = bsDate.year;
+                bsMonth = bsDate.month;
+                bsDay = bsDate.date;
+              } else {
+                bsYear = yearNum;
+                bsMonth = monthNum;
+                bsDay = dayNum;
+              }
             } else {
               // It's already a BS date (>= 2070 BS)
               bsYear = yearNum;
@@ -82,25 +85,16 @@ export default function BSDatePicker({ value, onChange, className, placeholder }
         return;
       }
 
-      // Convert Devanagari numerals to English digits (e.g., '२०८३-०६-०१' -> '2083-06-01')
+      // Convert Devanagari numerals to English digits (e.g., '२०८४-०३-३२' -> '2084-03-32')
       const engBsDateStr = fromDevanagari(bsDateStr);
+      const parts = engBsDateStr.split('-');
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      const d = parseInt(parts[2], 10);
 
-      // Parse safely using NepaliDate library and treat as UTC to avoid timezone mismatches
-      const adObj = new NepaliDate(engBsDateStr).toAd();
-      const adDate = new Date(Date.UTC(adObj.year, adObj.month - 1, adObj.date));
-
-      let iso = adDate.toISOString().split('T')[0];
-      let backToBs = new NepaliDate(iso).toBs();
-      const expectedMonth = parseInt(engBsDateStr.split('-')[1], 10);
-
-      // If date overflowed (e.g., 2084-03-32 capped to 31), step back to remain in correct month
-      while (backToBs.month !== expectedMonth && adDate.getTime() > 0) {
-        adDate.setUTCDate(adDate.getUTCDate() - 1);
-        iso = adDate.toISOString().split('T')[0];
-        backToBs = new NepaliDate(iso).toBs();
-      }
-
-      onChange(iso);
+      // Convert BS date accurately to AD ISO date string YYYY-MM-DD
+      const isoAdDateStr = bsToAdDate(y, m, d);
+      onChange(isoAdDateStr);
     } catch (e) {
       console.error("BSDatePicker handleDateChange error:", e);
       onChange(new Date().toISOString().split('T')[0]);
@@ -124,4 +118,5 @@ export default function BSDatePicker({ value, onChange, className, placeholder }
     />
   );
 }
+
 
