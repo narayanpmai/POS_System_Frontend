@@ -488,8 +488,7 @@ export default function POSPage() {
               <div className="d-flex justify-content-between mb-2 align-items-center text-secondary fs-7">
                 <span>{t('pos', 'discount') || 'Discount'}:</span>
                 <input
-                  type="number"
-                  min="0"
+                  type="number" min="0" step="any"
                   className="form-control form-control-sm text-end"
                   placeholder="0"
                   value={discountAmount || ''}
@@ -633,22 +632,28 @@ export default function POSPage() {
                 <div className="thermal-receipt-divider" style={{ borderTop: '1px dashed #666', margin: '8px 0' }}></div>
 
                 {/* Items layout */}
-                <table className="w-100 font-mono" style={{ fontSize: '11px', borderCollapse: 'collapse' }}>
+                <table className="w-100 font-mono" style={{ fontSize: '11px', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                  <colgroup>
+                    <col style={{ width: '38%' }} />
+                    <col style={{ width: '27%' }} />
+                    <col style={{ width: '13%' }} />
+                    <col style={{ width: '22%' }} />
+                  </colgroup>
                   <thead>
                     <tr style={{ borderBottom: '1px dashed #666' }}>
-                      <th align="left" style={{ paddingBottom: '4px' }}>Item</th>
-                      <th align="center" style={{ paddingBottom: '4px' }}>Rate</th>
+                      <th align="left" style={{ paddingBottom: '4px', paddingRight: '4px' }}>Item</th>
+                      <th align="right" style={{ paddingBottom: '4px', paddingRight: '4px' }}>Rate</th>
                       <th align="center" style={{ paddingBottom: '4px' }}>Qty</th>
                       <th align="right" style={{ paddingBottom: '4px' }}>Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {checkoutResult?.items?.map((item: any, idx: number) => (
-                      <tr key={idx} style={{ verticalAlign: 'top', borderBottom: '1px dotted #ddd' }}>
-                        <td style={{ paddingTop: '3px', paddingBottom: '3px' }}>{item.product?.name}</td>
-                        <td align="center" style={{ paddingTop: '3px', paddingBottom: '3px' }}>Rs. {Number(item.price).toFixed(2)}</td>
-                        <td align="center" style={{ paddingTop: '3px', paddingBottom: '3px' }}>x{item.quantity}</td>
-                        <td align="right" style={{ paddingTop: '3px', paddingBottom: '3px' }}>Rs. {Number(item.total).toFixed(2)}</td>
+                      <tr key={idx} style={{ verticalAlign: 'top' }}>
+                        <td style={{ paddingTop: '3px', paddingBottom: '3px', paddingRight: '4px', wordBreak: 'break-word' }}>{item.product?.name}</td>
+                        <td align="right" style={{ paddingTop: '3px', paddingBottom: '3px', paddingRight: '4px', whiteSpace: 'nowrap' }}>Rs. {Number(item.price ?? item.unitPrice ?? (Number(item.total) / item.quantity)).toFixed(2)}</td>
+                        <td align="center" style={{ paddingTop: '3px', paddingBottom: '3px', whiteSpace: 'nowrap' }}>x{item.quantity}</td>
+                        <td align="right" style={{ paddingTop: '3px', paddingBottom: '3px', whiteSpace: 'nowrap' }}>Rs. {Number(item.total).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>

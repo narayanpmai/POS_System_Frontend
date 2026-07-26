@@ -20,10 +20,11 @@ export default function BSDatePicker({ value, onChange, className, placeholder }
       try {
         const adDate = new Date(value);
         if (!isNaN(adDate.getTime())) {
-          const formattedAd = `${adDate.getFullYear()}-${String(adDate.getMonth() + 1).padStart(2, '0')}-${String(adDate.getDate()).padStart(2, '0')}`;
-          const converter = new NepaliDate(formattedAd);
-          const bsDate = converter.toBs();
-          setBsDefault(`${bsDate.year}-${String(bsDate.month).padStart(2, '0')}-${String(bsDate.date).padStart(2, '0')}`);
+          // Add timezone offset to prevent shifting day backwards when using toISOString
+          adDate.setMinutes(adDate.getMinutes() - adDate.getTimezoneOffset());
+          const isoDate = adDate.toISOString().split('T')[0];
+          const nepDate = new NepaliDate(isoDate).toBs();
+          setBsDefault(`${nepDate.year}-${String(nepDate.month).padStart(2, '0')}-${String(nepDate.date).padStart(2, '0')}`);
         }
       } catch (e) {
         console.error("Date conversion error", e);
@@ -46,10 +47,12 @@ export default function BSDatePicker({ value, onChange, className, placeholder }
           iso = d.toISOString().split('T')[0];
       } else {
           // Fallback if adDate is weird
-          const parts = bsDate.split('-');
-          const converter = new NepaliDate(bsDate); // This might not work if constructor doesn't take bs string
-          // Just use new Date() as absolute fallback
-          iso = new Date().toISOString().split('T')[0];
+          try {
+            const adObj = new NepaliDate(bsDate).toAd();
+            iso = `${adObj.year}-${String(adObj.month).padStart(2, '0')}-${String(adObj.date).padStart(2, '0')}`;
+          } catch(err) {
+            iso = new Date().toISOString().split('T')[0];
+          }
       }
       onChange(iso);
     } catch (e) {
@@ -67,10 +70,9 @@ export default function BSDatePicker({ value, onChange, className, placeholder }
        className={className || "form-control"} 
        onChange={handleDateChange} 
        theme="default"
-       placeholder={placeholder || "मिति छान्नुहोस्"}
+       placeholder={placeholder || "Select Date"}
        defaultDate={bsDefault}
        hideDefaultValue={!value}
-       language="ne"
     />
   );
 }

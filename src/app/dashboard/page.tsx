@@ -65,44 +65,25 @@ export default function DashboardPage() {
   const [chartData, setChartData] = useState<ChartTimelineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [chartLoading, setChartLoading] = useState(true);
-  
-  // Super Admin filtering
-  const [companies, setCompanies] = useState<any[]>([]);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
 
-  useEffect(() => {
-    if (user && user.companyId && !selectedCompanyId) {
-      setSelectedCompanyId(String(user.companyId));
-    }
-  }, [user, selectedCompanyId]);
+  // Super Admin specific state
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
 
   useEffect(() => {
     if (user?.role?.name === 'Super Admin') {
-      const fetchCompanies = async () => {
-        try {
-          const res = await api.get('/companies');
-          setCompanies(res.data);
-        } catch (err) {
-          console.error('Failed to fetch companies', err);
-        }
-      };
-      fetchCompanies();
+      api.get('/companies').then(res => setCompanies(res.data)).catch(console.error);
     }
   }, [user]);
 
   useEffect(() => {
     if (!token) return;
 
-    if (!activeFiscalYear) {
-      setLoading(false);
-      setChartLoading(false);
-      return;
-    }
-
     const fetchSummary = async () => {
       try {
-        const query = selectedCompanyId ? `?companyId=${selectedCompanyId}` : '';
-        const res = await api.get(`/reports/dashboard-summary${query}`);
+        const res = await api.get('/reports/dashboard-summary', {
+          params: { companyId: selectedCompanyId || undefined }
+        });
         setSummary(res.data);
         setLoading(false);
       } catch (err) {
@@ -113,8 +94,9 @@ export default function DashboardPage() {
 
     const fetchSalesTimeline = async () => {
       try {
-        const query = selectedCompanyId ? `?companyId=${selectedCompanyId}` : '';
-        const res = await api.get(`/reports/sales${query}`);
+        const res = await api.get('/reports/sales', {
+          params: { companyId: selectedCompanyId || undefined }
+        });
         setChartData(res.data.timeline || []);
         setChartLoading(false);
       } catch (err) {
@@ -188,38 +170,19 @@ export default function DashboardPage() {
   return (
     <AuthLayout>
       {user?.role?.name === 'Super Admin' && (
-        <div className="row mb-4">
-          <div className="col-12 col-md-4 ms-auto">
-            <select
-              className="form-select form-select-sm"
-              value={selectedCompanyId}
-              onChange={(e) => setSelectedCompanyId(e.target.value)}
-            >
-              <option disabled value="">{t('common', 'select_company') || 'Select Company'}</option>
-              {companies.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      )}
-
-      {!activeFiscalYear && (
-        <div className="alert alert-warning border-0 shadow-sm d-flex align-items-center justify-content-between p-4 mb-4 animate-fade-in-up">
-          <div className="d-flex align-items-center gap-3">
-            <i className="bi bi-exclamation-triangle-fill text-warning fs-3"></i>
-            <div>
-              <h5 className="alert-heading mb-1 fw-bold">Active Fiscal Year Missing (आर्थिक वर्ष आवश्यक)</h5>
-              <p className="mb-0 text-muted">
-                There is no active fiscal year configured. Telemetry and reporting features require an active fiscal year.
-              </p>
-            </div>
-          </div>
-          <Link href="/fiscal-years" className="btn btn-warning fw-semibold px-4 py-2">
-            Configure Fiscal Year
-          </Link>
+        <div className="mb-4 d-flex align-items-center gap-3 bg-white p-3 rounded-4 shadow-sm border border-primary border-opacity-10">
+          <label className="fw-bold text-secondary mb-0"><i className="bi bi-buildings me-2 text-primary"></i>{t('common', 'select_company') || 'Select Company'}:</label>
+          <select 
+            className="form-select w-auto shadow-none border-secondary-subtle fw-medium" 
+            value={selectedCompanyId || user?.companyId} 
+            onChange={(e) => {
+              setLoading(true);
+              setChartLoading(true);
+              setSelectedCompanyId(Number(e.target.value));
+            }}
+          >
+            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
         </div>
       )}
 

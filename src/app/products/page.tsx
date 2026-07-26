@@ -48,6 +48,7 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [storeSettings, setStoreSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   // Pagination & Filters
@@ -56,11 +57,11 @@ export default function ProductsPage() {
   const [page, setPage] = useState(1);
   const [selectedProductForView, setSelectedProductForView] = useState<any>(null);
   const [selectedProductForBarcode, setSelectedProductForBarcode] = useState<any>(null);
-  const [allProductsForBarcode, setAllProductsForBarcode] = useState<Product[]>([]);
   const [totalPages, setTotalPages] = useState(1);
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<'products' | 'categories'>('products');
+  const [printMode, setPrintMode] = useState<'single' | 'bulk' | null>(null);
 
   // Edit / Add states
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -76,7 +77,7 @@ export default function ProductsPage() {
   const [selectedBrand, setSelectedBrand] = useState('');
   const [purchasePrice, setPurchasePrice] = useState<number | string>('');
   const [sellingPrice, setSellingPrice] = useState<number | string>('');
-  const [stockQty, setStockQty] = useState<number | string>('');
+  const [stockQty, setStockQty] = useState<number | string>(0);
   const [alertQty, setAlertQty] = useState<number | string>(5);
   const [description, setDescription] = useState('');
   const [barcode, setBarcode] = useState('');
@@ -92,15 +93,17 @@ export default function ProductsPage() {
     setLoading(true);
     try {
       const catUrl = categoryId ? `&categoryId=${categoryId}` : '';
-      const [prodRes, categoriesRes, brandsRes] = await Promise.all([
+      const [prodRes, categoriesRes, brandsRes, settingsRes] = await Promise.all([
         api.get(`/products?page=${page}&limit=10&search=${search}${catUrl}`),
         api.get('/products/categories'),
-        api.get('/brands')
+        api.get('/brands'),
+        api.get('/settings')
       ]);
       setProducts(prodRes.data.items || []);
       setTotalPages(prodRes.data.totalPages || 1);
       setCategories(categoriesRes.data || []);
       setBrands(brandsRes.data || []);
+      setStoreSettings(settingsRes.data || null);
     } catch (err) {
       console.error('Error fetching catalog data:', err);
     }
@@ -129,7 +132,7 @@ export default function ProductsPage() {
       minStockAlert: Number(alertQty),
       categoryId: Number(selectedCategory),
       brandId: selectedBrand ? Number(selectedBrand) : null,
-      taxRate: 13.0, // default Nepal VAT rate
+      taxRate: storeSettings?.taxRateDefault || 0,
       unit,
       description
     };
@@ -151,7 +154,7 @@ export default function ProductsPage() {
       setSelectedBrand('');
       setPurchasePrice('');
       setSellingPrice('');
-      setStockQty('');
+      setStockQty(0);
       setAlertQty(5);
       setDescription('');
       setBarcode('');
@@ -192,23 +195,20 @@ export default function ProductsPage() {
     }
   };
 
-  const handleBulkPrintBarcodes = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get('/products?limit=5000');
-      setAllProductsForBarcode(res.data.items || res.data || []);
-      setLoading(false);
-      setTimeout(() => {
-        window.print();
-      }, 1000);
-    } catch (err) {
-      console.error(err);
-      setLoading(false);
-    }
+  const printBarcodeNow = () => {
+    setPrintMode('single');
+    setTimeout(() => {
+      window.print();
+      setPrintMode(null);
+    }, 100);
   };
 
-  const printBarcodeNow = () => {
-    window.print();
+  const handlePrintAllBarcodes = () => {
+    setPrintMode('bulk');
+    setTimeout(() => {
+      window.print();
+      setPrintMode(null);
+    }, 100);
   };
 
   const handleEditProductClick = (prod: Product) => {
@@ -356,7 +356,7 @@ export default function ProductsPage() {
             minStockAlert: Number(item['Alert Qty'] || 5),
             categoryId: categories.find(c => c.name === item.Category)?.id || (categories[0]?.id || 1),
             brandId: brands.find(b => b.name === item.Brand)?.id || null,
-            taxRate: 13.0,
+            taxRate: storeSettings?.taxRateDefault || 0,
             unit: item.Unit || 'pcs',
             description: ''
           };
@@ -426,12 +426,12 @@ export default function ProductsPage() {
         {isAdmin && (
           <div>
             {activeTab === 'products' ? (
-              <div className="d-flex flex-wrap gap-2 d-print-none">
+              <div className="d-flex gap-2 flex-wrap">
                 <button
-                  className="btn btn-outline-dark d-flex align-items-center gap-2 fw-bold px-3 py-2"
+                  className="btn btn-outline-secondary d-flex align-items-center gap-2 fw-bold px-3 py-2"
                   style={{ borderRadius: '20px' }}
-                  onClick={handleBulkPrintBarcodes}
-                  title="Bulk Print Barcodes"
+                  onClick={handlePrintAllBarcodes}
+                  title="Print Current Barcodes"
                 >
                   <i className="bi bi-upc-scan"></i>
                   <span>Print Barcodes</span>
@@ -528,23 +528,22 @@ export default function ProductsPage() {
             <table className="table mb-0 align-middle">
               <thead>
                 <tr style={{ backgroundColor: 'var(--light-bg)' }}>
-                  <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top" style={{ width: '10%' }}>{t('common', 'sku')}</th>
-                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '25%' }}>{t('common', 'name')}</th>
-                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-end" style={{ width: '12%' }}>Selling Price</th>
-                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-center" style={{ width: '10%' }}>Stock Qty</th>
-                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-center" style={{ width: '10%' }}>Alert Qty</th>
-                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '13%' }}>{t('common', 'status')}</th>
-                  {isAdmin && <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-center" style={{ width: '20%' }}>{t('common', 'actions')}</th>}
+                  <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top">{t('common', 'sku')}</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top">{t('common', 'name')}</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top">Selling Price</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top">Alert Qty</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top">{t('common', 'status')}</th>
+                  {isAdmin && <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-center">{t('common', 'actions')}</th>}
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={isAdmin ? 7 : 6} className="text-center py-5 text-muted">{t('common', 'loading')}</td>
+                    <td colSpan={isAdmin ? 6 : 5} className="text-center py-5 text-muted">{t('common', 'loading')}</td>
                   </tr>
                 ) : products.length === 0 ? (
                   <tr>
-                    <td colSpan={isAdmin ? 7 : 6} className="text-center py-5 text-muted">{t('product', 'no_products')}</td>
+                    <td colSpan={isAdmin ? 6 : 5} className="text-center py-5 text-muted">{t('product', 'no_products')}</td>
                   </tr>
                 ) : (
                   products.map((prod) => (
@@ -555,20 +554,11 @@ export default function ProductsPage() {
                       <td className="border-bottom fw-bold text-dark">
                         {prod.name}
                       </td>
-                      <td className="border-bottom text-end pe-3">
-                        <span className="fw-semibold" style={{ color: 'var(--primary)' }}>
-                          Rs. {prod.price?.toLocaleString() ?? '—'}
-                        </span>
+                      <td className="border-bottom text-dark fw-bold">
+                        Rs. {prod.price?.toLocaleString() || 0}
                       </td>
-                      <td className="border-bottom text-center">
-                        <span className={`badge ${ (prod.stock ?? 0) <= (prod.minStockAlert ?? 0) ? 'bg-danger' : 'bg-primary-subtle text-primary border border-primary-subtle' }`} style={{ borderRadius: '6px', fontSize: '12px' }}>
-                          {prod.stock ?? 0}
-                        </span>
-                      </td>
-                      <td className="border-bottom text-center">
-                        <span className="badge bg-warning-subtle text-warning border border-warning-subtle" style={{ borderRadius: '6px', fontSize: '12px' }}>
-                          {prod.minStockAlert ?? '—'}
-                        </span>
+                      <td className="border-bottom text-danger fw-bold">
+                        {prod.minStockAlert?.toLocaleString() || 0}
                       </td>
                       <td className="border-bottom">
                         <span className="badge bg-success" style={{ borderRadius: '4px', fontSize: '11px' }}>
@@ -664,24 +654,6 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
-
-      {/* ==========================================
-          BULK PRINT BARCODES CONTAINER (HIDDEN)
-          ========================================== */}
-      <div id="bulk-barcodes-container" className="d-none d-print-block w-100">
-        <h4 className="text-center mb-4">Bulk Barcodes</h4>
-        <div className="row g-4">
-          {allProductsForBarcode.map((p) => (
-            <div className="col-4 text-center" key={p.id}>
-              <div className="border p-2 rounded">
-                <div className="fw-bold fs-7 mb-1">{p.name}</div>
-                <Barcode value={p.barcode || p.SKU || p.id.toString() || '0000'} width={1.5} height={40} fontSize={12} />
-                <div className="text-muted fs-8 mt-1">Rs. {p.price?.toLocaleString()}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
       {/* ==========================================
           MODAL 1: ADD/EDIT PRODUCT MODAL
@@ -814,7 +786,7 @@ export default function ProductsPage() {
 
                 {/* Row 3 */}
                 <div className="row g-3 mb-3">
-                  <div className="col-6 col-md-3">
+                  <div className="col-12 col-md-4">
                     <label className="form-label fw-bold text-secondary fs-8 mb-1">Purchase Price <span className="text-danger">*</span></label>
                     <div className="input-group">
                       <span className="input-group-text bg-light text-secondary border-end-0" style={{ fontSize: '0.9rem' }}>Rs.</span>
@@ -828,7 +800,7 @@ export default function ProductsPage() {
                       />
                     </div>
                   </div>
-                  <div className="col-6 col-md-3">
+                  <div className="col-12 col-md-4">
                     <label className="form-label fw-bold text-secondary fs-8 mb-1">Selling Price <span className="text-danger">*</span></label>
                     <div className="input-group">
                       <span className="input-group-text bg-light text-secondary border-end-0" style={{ fontSize: '0.9rem' }}>Rs.</span>
@@ -842,22 +814,10 @@ export default function ProductsPage() {
                       />
                     </div>
                   </div>
-                  <div className="col-6 col-md-3">
-                    <label className="form-label fw-bold text-secondary fs-8 mb-1">Stock Qty <span className="text-danger">*</span></label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      value={stockQty}
-                      onChange={(e) => setStockQty(e.target.value === '' ? '' : Number(e.target.value))}
-                      required
-                      disabled={!!editingProduct}
-                    />
-                  </div>
-                  <div className="col-6 col-md-3">
+                  <div className="col-12 col-md-4">
                     <label className="form-label fw-bold text-secondary fs-8 mb-1">Alert Qty</label>
                     <input
-                      type="number"
-                      className="form-control"
+                      type="number" step="any" className="form-control"
                       value={alertQty}
                       onChange={(e) => setAlertQty(e.target.value === '' ? '' : Number(e.target.value))}
                     />
@@ -971,14 +931,12 @@ export default function ProductsPage() {
                     <p className="text-muted mb-1 fs-8">Selling Price</p>
                     <p className="fw-bold text-success">Rs. {selectedProductForView.price.toFixed(2)}</p>
                   </div>
-                  <div className="col-6">
-                    <p className="text-muted mb-1 fs-8">Current Stock</p>
-                    <p className="fw-bold">{selectedProductForView.stock} {selectedProductForView.unit}</p>
-                  </div>
-                  <div className="col-6">
-                    <p className="text-muted mb-1 fs-8">Tax Rate</p>
-                    <p className="fw-bold">{selectedProductForView.taxRate}%</p>
-                  </div>
+                  {storeSettings && storeSettings.taxRateDefault > 0 && (
+                    <div className="col-6">
+                      <p className="text-muted mb-1 fs-8">Tax Rate</p>
+                      <p className="fw-bold">{storeSettings.taxRateDefault}%</p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1025,6 +983,85 @@ export default function ProductsPage() {
         </div>
       </div>
 
+      {/* Hidden Bulk Print Area */}
+      {printMode === 'bulk' && (
+        <div id="bulk-barcode-print" className="bulk-print-only">
+          <div className="bulk-barcode-grid">
+            {products.map((prod, index) => (
+              <div key={`${prod.id}-${index}`} className="bulk-barcode-item">
+                <div className="bulk-barcode-name">{prod.name}</div>
+                <div className="bulk-barcode-category">{prod.category?.name || 'Store'}</div>
+                <Barcode value={prod.barcode || prod.SKU || 'UNKNOWN'} width={1.5} height={40} fontSize={12} margin={5} />
+                <div className="bulk-barcode-price">Rs. {Number(prod.price).toFixed(2)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Print Styles */}
+      <style jsx global>{`
+        @media print {
+          ${printMode === 'bulk' ? `
+          body * {
+            visibility: hidden;
+          }
+          #bulk-barcode-print, #bulk-barcode-print * {
+            visibility: visible;
+          }
+          #bulk-barcode-print {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+          }
+          /* Hide the single print modal if it was open */
+          #printBarcodeModal { display: none !important; }
+          #printable-receipt-modal { display: none !important; }
+          .no-print { display: none !important; }
+          ` : ''}
+
+          ${printMode === 'single' ? `
+          /* Hide the bulk print area */
+          #bulk-barcode-print { display: none !important; }
+          ` : ''}
+        }
+
+        .bulk-barcode-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 15px;
+          width: 100%;
+          padding: 10px;
+        }
+        .bulk-barcode-item {
+          border: 1px dashed #ccc;
+          padding: 10px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          page-break-inside: avoid;
+          background: white;
+          border-radius: 8px;
+        }
+        .bulk-barcode-name {
+          font-size: 14px;
+          font-weight: bold;
+          margin-bottom: 2px;
+        }
+        .bulk-barcode-category {
+          font-size: 10px;
+          color: #666;
+          margin-bottom: 5px;
+        }
+        .bulk-barcode-price {
+          font-size: 14px;
+          font-weight: bold;
+          margin-top: 5px;
+        }
+      `}</style>
     </AuthLayout>
   );
 }

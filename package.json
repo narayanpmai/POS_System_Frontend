@@ -5,11 +5,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "next build",
+    "build": "next build && node -e \"const fs=require('fs'); try{fs.cpSync('.next/static','.next/standalone/.next/static',{recursive:true});fs.cpSync('public','.next/standalone/public',{recursive:true});}catch(e){}\"",
     "start": "next start -p 3001"
   },
   "dependencies": {
-    "@popperjs/core": "^2.11.8",
     "@remotemerge/nepali-date-converter": "^1.2.0",
     "@sbmdkl/nepali-datepicker-reactjs": "^1.2.5",
     "axios": "^1.6.2",

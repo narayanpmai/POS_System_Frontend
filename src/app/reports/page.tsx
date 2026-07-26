@@ -7,6 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { Bar } from 'react-chartjs-2';
 import { formatAdToBsShort } from '@/utils/nepaliDate';
 import BSDatePicker from '@/components/BSDatePicker';
+import Barcode from 'react-barcode';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -54,7 +55,12 @@ export default function ReportsPage() {
   const { token, api, activeFiscalYear } = useAuth();
   const { t } = useLanguage();
 
-  const [activeTab, setActiveTab] = useState<'daily' | 'closing_stock' | 'closing_balance' | 'deleted_sales'>('daily');
+  const [activeTab, setActiveTab] = useState<'daily' | 'closing_stock' | 'closing_balance' | 'deleted_sales' | 'barcodes'>('daily');
+
+  // Barcodes State
+  const [products, setProducts] = useState<any[]>([]);
+  const [selectedBarcodes, setSelectedBarcodes] = useState<Set<number>>(new Set());
+  const [barcodeSearch, setBarcodeSearch] = useState('');
 
   // Daily Report States
   const todayStr = new Date().toISOString().split('T')[0];
@@ -145,9 +151,22 @@ export default function ReportsPage() {
     setLoading(true);
     try {
       const res = await api.get('/sales/deleted');
-      setDeletedSales(res.data.items || res.data || []);
+      setDeletedSales(res.data);
     } catch (err) {
       console.error('Error fetching deleted sales:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadProductsForBarcodes = async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const res = await api.get('/products');
+      setProducts(res.data?.items || res.data || []);
+    } catch (err) {
+      console.error('Error fetching products:', err);
     } finally {
       setLoading(false);
     }
@@ -162,6 +181,8 @@ export default function ReportsPage() {
       loadClosingBalance();
     } else if (activeTab === 'deleted_sales') {
       loadDeletedSales();
+    } else if (activeTab === 'barcodes') {
+      loadProductsForBarcodes();
     }
   }, [token, activeFiscalYear, activeTab]);
 
@@ -258,6 +279,15 @@ export default function ReportsPage() {
             onClick={() => setActiveTab('deleted_sales')}
           >
             <i className="bi bi-trash-fill me-2"></i> {t('reports', 'deleted_sales') || 'Deleted Sales'}
+          </button>
+        </li>
+        <li className="nav-item">
+          <button 
+            className={`nav-link fw-bold ${activeTab === 'barcodes' ? 'active shadow-sm' : 'bg-white text-secondary border'}`}
+            style={{ borderRadius: '8px', padding: '0.6rem 1.2rem' }}
+            onClick={() => setActiveTab('barcodes')}
+          >
+            <i className="bi bi-qr-code-scan me-2"></i> Barcodes
           </button>
         </li>
       </ul>
@@ -505,6 +535,169 @@ export default function ReportsPage() {
           )}
         </div>
       )}
+
+      {/* Barcodes UI */}
+      {activeTab === 'barcodes' && (
+        <div className="card border-0 rounded-md shadow-sm p-4 bg-white" style={{ borderRadius: '10px' }}>
+          <div className="d-flex justify-content-between align-items-center mb-4 no-print">
+            <h5 className="fw-bold text-dark m-0 d-flex align-items-center gap-2">
+              <i className="bi bi-qr-code-scan text-primary"></i>
+              Bulk Barcode Printing
+            </h5>
+            <button 
+              className="btn btn-primary d-flex align-items-center gap-2 rounded-3 no-print shadow-sm px-4" 
+              onClick={() => window.print()}
+              disabled={selectedBarcodes.size === 0}
+            >
+              <i className="bi bi-printer-fill"></i> Print Selected ({selectedBarcodes.size})
+            </button>
+          </div>
+
+          <div className="row mb-4 no-print">
+            <div className="col-12 col-md-6 col-lg-4">
+              <input 
+                type="text" 
+                className="form-control bg-light border-0 shadow-sm" 
+                placeholder="Search products..." 
+                value={barcodeSearch}
+                onChange={e => setBarcodeSearch(e.target.value)}
+              />
+            </div>
+            <div className="col-12 col-md-6 col-lg-8 d-flex align-items-center justify-content-md-end gap-3 mt-3 mt-md-0">
+              <button 
+                className="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold"
+                onClick={() => {
+                  const filtered = products.filter(p => p.name.toLowerCase().includes(barcodeSearch.toLowerCase()) || (p.barcode || p.SKU).toLowerCase().includes(barcodeSearch.toLowerCase()));
+                  setSelectedBarcodes(new Set(filtered.map(p => p.id)));
+                }}
+              >Select All</button>
+              <button 
+                className="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-bold"
+                onClick={() => setSelectedBarcodes(new Set())}
+              >Clear All</button>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="text-center py-5 no-print"><div className="spinner-border text-primary" role="status"></div></div>
+          ) : (
+            <div className="table-responsive no-print border rounded shadow-sm">
+              <table className="table align-middle mb-0 custom-table">
+                <thead className="bg-light">
+                  <tr>
+                    <th className="py-3 ps-3 text-secondary" style={{ width: '50px' }}></th>
+                    <th className="py-3 text-secondary fw-bold">Product Name</th>
+                    <th className="py-3 text-secondary fw-bold">Barcode / SKU</th>
+                    <th className="py-3 text-secondary fw-bold text-end pe-3">Price</th>
+                  </tr>
+                </thead>
+                <tbody className="border-top-0">
+                  {products.filter(p => p.name.toLowerCase().includes(barcodeSearch.toLowerCase()) || (p.barcode || p.SKU).toLowerCase().includes(barcodeSearch.toLowerCase())).map((prod: any) => (
+                    <tr key={prod.id} className={selectedBarcodes.has(prod.id) ? 'table-primary bg-opacity-10' : ''}>
+                      <td className="ps-3 py-3">
+                        <div className="form-check m-0">
+                          <input 
+                            type="checkbox" 
+                            className="form-check-input border-secondary" 
+                            style={{ width: '1.2rem', height: '1.2rem' }}
+                            checked={selectedBarcodes.has(prod.id)}
+                            onChange={(e) => {
+                              const newSet = new Set(selectedBarcodes);
+                              if (e.target.checked) newSet.add(prod.id);
+                              else newSet.delete(prod.id);
+                              setSelectedBarcodes(newSet);
+                            }}
+                          />
+                        </div>
+                      </td>
+                      <td className="py-3 fw-semibold text-dark">{prod.name}</td>
+                      <td className="py-3 text-secondary"><span className="font-monospace bg-light rounded px-2 py-1 border">{prod.barcode || prod.SKU}</span></td>
+                      <td className="py-3 text-end pe-3 fw-bold text-dark">Rs. {Number(prod.price).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                  {products.length === 0 && (
+                    <tr><td colSpan={4} className="text-center py-5 text-muted">No products found.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Hidden Print Area */}
+          <div className="print-only">
+            <div className="barcode-grid">
+              {products.filter(p => selectedBarcodes.has(p.id)).map((prod, index) => (
+                <div key={`${prod.id}-${index}`} className="barcode-item">
+                  <div className="barcode-name">{prod.name}</div>
+                  <div className="barcode-category">{prod.category?.name || 'Store'}</div>
+                  <Barcode value={prod.barcode || prod.SKU || 'UNKNOWN'} width={1.5} height={40} fontSize={12} margin={5} />
+                  <div className="barcode-price">Rs. {Number(prod.price).toFixed(2)}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Print Styles */}
+      <style jsx global>{`
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .print-only, .print-only * {
+            visibility: visible;
+          }
+          .print-only {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+          }
+          .no-print {
+            display: none !important;
+          }
+          .barcode-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            width: 100%;
+            padding: 10px;
+          }
+          .barcode-item {
+            border: 1px dashed #ccc;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            page-break-inside: avoid;
+            background: white;
+            border-radius: 8px;
+          }
+          .barcode-name {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 2px;
+          }
+          .barcode-category {
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 5px;
+          }
+          .barcode-price {
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 5px;
+          }
+        }
+        @media screen {
+          .print-only {
+            display: none;
+          }
+        }
+      `}</style>
     </AuthLayout>
   );
 }

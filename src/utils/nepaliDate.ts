@@ -1,7 +1,7 @@
 import DateConverter from '@remotemerge/nepali-date-converter';
 
 const nepaliMonths = [
-  'बैशाख',
+  'वैशाख',
   'जेठ',
   'असार',
   'साउन',
@@ -25,14 +25,29 @@ const nepaliDays = {
   'Saturday': 'शनिबार'
 };
 
-const nepaliDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
-
-export function toDevanagariDigits(numStr: string | number): string {
-  return String(numStr).replace(/[0-9]/g, (match) => nepaliDigits[parseInt(match)]);
+/**
+ * Converts English numerals (0-9) and AM/PM indicators into Devanagari script
+ */
+export function toDevanagari(str: string | number): string {
+  const map: Record<string, string> = {
+    '0': '०',
+    '1': '१',
+    '2': '२',
+    '3': '३',
+    '4': '४',
+    '5': '५',
+    '6': '६',
+    '7': '७',
+    '8': '८',
+    '9': '९',
+    'AM': 'पूर्वाह्न',
+    'PM': 'अपराह्न'
+  };
+  return String(str).replace(/[0-9]|AM|PM/g, (matched) => map[matched] || matched);
 }
 
 /**
- * Converts a Gregorian (AD) Date string or Date object into a BS date string (e.g. "२०८३/०२/१३")
+ * Converts a Gregorian (AD) Date string or Date object into a BS date string (e.g. "2083/02/13")
  */
 export function formatAdToBs(dateInput: string | Date | undefined | null): string {
   if (!dateInput) return '';
@@ -53,20 +68,15 @@ export function formatAdToBs(dateInput: string | Date | undefined | null): strin
     const bsMonth = String(bsDate.month).padStart(2, '0');
     const bsDayNum = String(bsDate.date).padStart(2, '0');
     
-    return toDevanagariDigits(`${bsYear}/${bsMonth}/${bsDayNum}`);
+    return toDevanagari(`${bsYear}/${bsMonth}/${bsDayNum}`);
   } catch (err) {
     console.error('Error converting date to BS:', err);
     return '';
   }
 }
 
-const nepaliAdMonths = [
-  'जनवरी', 'फेब्रुअरी', 'मार्च', 'अप्रिल', 'मे', 'जुन',
-  'जुलाई', 'अगस्ट', 'सेप्टेम्बर', 'अक्टोबर', 'नोभेम्बर', 'डिसेम्बर'
-];
-
 /**
- * Converts a Gregorian (AD) Date string or Date object into a BS date string with Nepali month name (e.g. "जेठ १३, २०८३")
+ * Converts a Gregorian (AD) Date string or Date object into a BS date string with Nepali month name (e.g. "Jestha 13, 2083")
  */
 export function formatAdToBsFull(dateInput: string | Date | undefined | null): string {
   if (!dateInput) return '';
@@ -89,9 +99,9 @@ export function formatAdToBsFull(dateInput: string | Date | undefined | null): s
     const hours = String(date.getHours() % 12 || 12).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const ampm = date.getHours() >= 12 ? 'PM' : 'AM';
-    const timeStr = toDevanagariDigits(`${hours}:${minutes}`) + ` ${ampm}`;
+    const timeStr = `${hours}:${minutes} ${ampm}`;
     
-    return `${monthName} ${toDevanagariDigits(bsDate.date)}, ${toDevanagariDigits(bsDate.year)} - ${nepaliDayName} ${timeStr}`;
+    return toDevanagari(`${bsDate.year} ${monthName} ${bsDate.date} - ${nepaliDayName} ${timeStr}`);
   } catch (err) {
     console.error('Error converting date to BS Full:', err);
     return '';
@@ -99,58 +109,7 @@ export function formatAdToBsFull(dateInput: string | Date | undefined | null): s
 }
 
 /**
- * Converts date to a detailed Nepali format strictly for the Navbar Clock display
- */
-export function formatAdToBsClock(dateInput: string | Date | undefined | null): string {
-  if (!dateInput) return '';
-  try {
-    const date = new Date(dateInput);
-    if (isNaN(date.getTime())) return '';
-    
-    const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    const formattedAd = `${yyyy}-${mm}-${dd}`;
-    
-    const converter = new DateConverter(formattedAd);
-    const bsDate = converter.toBs();
-    
-    const monthName = nepaliMonths[bsDate.month - 1] || '';
-    const nepaliDayName = nepaliDays[bsDate.day as keyof typeof nepaliDays] || bsDate.day;
-    
-    const bsYear = toDevanagariDigits(bsDate.year);
-    const bsMonth = monthName;
-    const bsDay = toDevanagariDigits(bsDate.date);
-    
-    const adYear = toDevanagariDigits(date.getFullYear());
-    const adMonthName = nepaliAdMonths[date.getMonth()];
-    const adDay = toDevanagariDigits(date.getDate());
-    
-    const hour = date.getHours();
-    let timePeriod = '';
-    if (hour >= 4 && hour < 12) {
-      timePeriod = 'बिहानको';
-    } else if (hour >= 12 && hour < 16) {
-      timePeriod = 'दिउँसोको';
-    } else if (hour >= 16 && hour < 20) {
-      timePeriod = 'बेलुकाको';
-    } else {
-      timePeriod = 'रातिको';
-    }
-    
-    const hours12 = hour % 12 || 12;
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const formattedTime = toDevanagariDigits(`${hours12}:${minutes}`);
-    
-    return `मिति: ${bsYear} ${bsMonth} ${bsDay} गते, ${nepaliDayName} (${adDay} ${adMonthName} ${adYear}), समय: ${timePeriod} ${formattedTime} बजे`;
-  } catch (err) {
-    console.error('Error converting date to BS Clock:', err);
-    return '';
-  }
-}
-
-/**
- * Converts a Gregorian (AD) Date string or Date object into a BS date string with short Nepali month name (e.g. "जेठ १३")
+ * Converts a Gregorian (AD) Date string or Date object into a BS date string with short Nepali month name (e.g. "Jestha 13")
  */
 export function formatAdToBsShort(dateInput: string | Date | undefined | null): string {
   if (!dateInput) return '';
@@ -167,9 +126,64 @@ export function formatAdToBsShort(dateInput: string | Date | undefined | null): 
     const bsDate = converter.toBs();
     
     const monthName = nepaliMonths[bsDate.month - 1] || '';
-    return `${monthName} ${toDevanagariDigits(bsDate.date)}`;
+    return toDevanagari(`${monthName} ${bsDate.date}`);
   } catch (err) {
     console.error('Error converting date to BS Short:', err);
     return '';
   }
 }
+
+/**
+ * Converts a Gregorian (AD) Date object into the requested Nepali Clock Format:
+ * "मिति: २०८३ साउन ७ गते, बुधबार (२२ जुलाई २०२६) समय: बिहानको १०:०५ बजे"
+ */
+export function formatAdToBsClock(dateInput: string | Date | undefined | null): string {
+  if (!dateInput) return '';
+  try {
+    const date = new Date(dateInput);
+    if (isNaN(date.getTime())) return '';
+
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const formattedAd = `${yyyy}-${mm}-${dd}`;
+
+    const converter = new DateConverter(formattedAd);
+    const bsDate = converter.toBs();
+
+    const monthName = nepaliMonths[bsDate.month - 1] || '';
+    const nepaliDayName = nepaliDays[bsDate.day as keyof typeof nepaliDays] || bsDate.day;
+
+    const nepaliAdMonths = [
+      'जनवरी', 'फेब्रुअरी', 'मार्च', 'अप्रिल', 'मे', 'जुन',
+      'जुलाई', 'अगस्ट', 'सेप्टेम्बर', 'अक्टोबर', 'नोभेम्बर', 'डिसेम्बर'
+    ];
+    const adMonthName = nepaliAdMonths[date.getMonth()];
+
+    const rawHours = date.getHours();
+    const displayHours = rawHours % 12 || 12;
+    const displayMinutes = String(date.getMinutes()).padStart(2, '0');
+    const timeStr = `${displayHours}:${displayMinutes}`;
+
+    let timeDesc = 'रातिको';
+    if (rawHours >= 4 && rawHours < 12) {
+      timeDesc = 'बिहानको';
+    } else if (rawHours >= 12 && rawHours < 16) {
+      timeDesc = 'दिउँसोको';
+    } else if (rawHours >= 16 && rawHours < 20) {
+      timeDesc = 'बेलुकाको';
+    }
+
+    const bsYearDev = toDevanagari(bsDate.year);
+    const bsDateDev = toDevanagari(bsDate.date);
+    const adDayDev = toDevanagari(date.getDate());
+    const adYearDev = toDevanagari(date.getFullYear());
+    const timeStrDev = toDevanagari(timeStr);
+
+    return `मिति: ${bsYearDev} ${monthName} ${bsDateDev} गते, ${nepaliDayName} (${adDayDev} ${adMonthName} ${adYearDev}) समय: ${timeDesc} ${timeStrDev} बजे`;
+  } catch (err) {
+    console.error('Error converting date to BS Clock:', err);
+    return '';
+  }
+}
+

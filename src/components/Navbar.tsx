@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useRouter } from 'next/navigation';
 import NepaliClock from './NepaliClock';
 
-export default function Navbar({ toggleMobileSidebar }: { toggleMobileSidebar?: () => void }) {
+export default function Navbar() {
   const { user, logout, activeFiscalYear } = useAuth();
   const { language, setLanguage, t } = useLanguage();
+  const router = useRouter();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
@@ -40,28 +42,46 @@ export default function Navbar({ toggleMobileSidebar }: { toggleMobileSidebar?: 
   const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
 
   return (
-    <nav className="custom-navbar d-flex justify-content-between align-items-center">
-      <div className="d-flex align-items-center">
-        {/* Mobile Sidebar Toggle */}
-        <button 
-          className="btn btn-link d-lg-none text-dark p-0 me-3" 
-          onClick={toggleMobileSidebar}
+    <nav className="custom-navbar d-flex justify-content-between align-items-center px-3 px-md-4">
+      <div className="d-flex align-items-center gap-2 gap-md-4">
+        {/* Back Button */}
+        <button
+          className="btn btn-light border shadow-sm rounded-md d-flex align-items-center justify-content-center"
+          type="button"
+          onClick={() => router.back()}
+          title="Go Back"
+          style={{ width: '40px', height: '40px' }}
         >
-          <i className="bi bi-list fs-3"></i>
+          <i className="bi bi-arrow-left fs-5 text-dark"></i>
         </button>
-      </div>
 
-      <div className="d-flex align-items-center gap-4">
+        {/* Mobile Hamburger Button */}
+        <button 
+          className="btn btn-light d-lg-none border shadow-sm rounded-md d-flex align-items-center justify-content-center"
+          type="button" 
+          data-bs-toggle="offcanvas" 
+          data-bs-target="#mobileSidebar" 
+          aria-controls="mobileSidebar"
+          style={{ width: '40px', height: '40px' }}
+        >
+          <i className="bi bi-list fs-4 text-dark"></i>
+        </button>
+
         {/* Fiscal Year Badge */}
         {activeFiscalYear && (
-          <div className="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2 d-flex align-items-center gap-2">
+          <div className="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2 d-none d-md-flex align-items-center gap-2">
             <i className="bi bi-calendar-check"></i>
             <span className="fw-medium">FY: {activeFiscalYear.name}</span>
           </div>
         )}
 
         {/* Nepali Clock Widget */}
-        <NepaliClock />
+        <div className="d-none d-sm-block">
+          <NepaliClock />
+        </div>
+      </div>
+
+      <div className="d-flex align-items-center gap-2 gap-sm-4">
 
         {/* Language Toggle Button */}
         <button

@@ -16,6 +16,7 @@ interface InventoryItem {
   isLowStock: boolean;
   price: number;
   cost: number;
+  unit: string;
   valuation: number;
   retailValuation: number;
 }
@@ -163,6 +164,7 @@ export default function InventoryPage() {
                 <th>{t('common', 'sku')}</th>
                 <th>{t('product', 'product_name')}</th>
                 <th>{t('common', 'category')}</th>
+                <th>Unit</th>
                 <th>{t('common', 'stock')}</th>
                 <th>{t('common', 'cost_price')}</th>
                 <th>{t('common', 'amount')}</th>
@@ -187,6 +189,7 @@ export default function InventoryPage() {
                     <td className="fw-bold font-mono fs-8">{item.SKU}</td>
                     <td className="fw-semibold text-dark">{item.name}</td>
                     <td><span className="badge bg-secondary-subtle text-secondary px-2.5 py-1 rounded-pill">{item.category}</span></td>
+                    <td className="fw-medium text-dark">{item.unit || 'pcs'}</td>
                     <td>
                       <span className={`badge ${item.isLowStock ? 'badge-low-stock' : 'badge-in-stock'} rounded-pill px-2.5 py-1`}>
                         {item.stock} / alert: {item.minStockAlert}
@@ -242,8 +245,7 @@ export default function InventoryPage() {
                 <div className="mb-3">
                   <label className="form-label fw-semibold">{t('common', 'quantity')}</label>
                   <input
-                    type="number"
-                    className="form-control"
+                    type="number" step="any" className="form-control"
                     min="1"
                     placeholder="E.g. 10"
                     value={adjustQty || ''}

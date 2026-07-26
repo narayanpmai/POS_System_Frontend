@@ -254,11 +254,11 @@ export default function PurchasesPage() {
                       <td className="ps-3 border-bottom py-3">
                         <select className="form-select" value={item.productId} onChange={e => updateCartItem(idx, 'productId', e.target.value)}>
                           <option value="">-- Product --</option>
-                          {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          {products.map(p => <option key={p.id} value={p.id}>{p.SKU ? `[${p.SKU}] ` : ''}{p.name}</option>)}
                         </select>
                       </td>
                       <td className="border-bottom">
-                        <input type="number" min="0" step="0.01" className="form-control" value={item.unitPrice} onChange={e => updateCartItem(idx, 'unitPrice', parseFloat(e.target.value) || 0)} />
+                        <input type="number" min="0" step="any"  className="form-control" value={item.unitPrice} onChange={e => updateCartItem(idx, 'unitPrice', parseFloat(e.target.value) || 0)} />
                       </td>
                       <td className="border-bottom">
                         <select className="form-select" value={item.unit} onChange={e => updateCartItem(idx, 'unit', e.target.value)}>
@@ -296,13 +296,13 @@ export default function PurchasesPage() {
                         </select>
                       </td>
                       <td className="border-bottom">
-                        <input type="number" min="1" className="form-control" value={item.qty} onChange={e => updateCartItem(idx, 'qty', parseInt(e.target.value) || 0)} />
+                        <input type="number" min="0" step="any" className="form-control" value={item.qty} onChange={e => updateCartItem(idx, 'qty', parseFloat(e.target.value) || 0)} />
                       </td>
                       <td className="border-bottom">
                         <input type="text" className="form-control bg-light" readOnly value={`Rs.${((item.unitPrice || 0) * (item.qty || 0)).toFixed(2)}`} />
                       </td>
                       <td className="border-bottom">
-                        <input type="number" min="0" max="100" className="form-control" value={item.discPercent} onChange={e => updateCartItem(idx, 'discPercent', parseFloat(e.target.value) || 0)} />
+                        <input type="number" min="0" step="any" max="100" className="form-control" value={item.discPercent} onChange={e => updateCartItem(idx, 'discPercent', parseFloat(e.target.value) || 0)} />
                       </td>
                       <td className="border-bottom text-center">
                         <button className="btn btn-danger btn-sm p-1 rounded-sm" onClick={() => removeCartItem(idx)} style={{ width: '30px', height: '30px' }}>
@@ -324,11 +324,11 @@ export default function PurchasesPage() {
               <div className="row g-3">
                 <div className="col-6">
                   <label className="form-label fw-bold fs-7 text-dark mb-1">Tax (%)</label>
-                  <input type="number" min="0" className="form-control" value={taxPercent} onChange={e => setTaxPercent(parseFloat(e.target.value) || 0)} />
+                  <input type="number" min="0" step="any" className="form-control" value={taxPercent} onChange={e => setTaxPercent(parseFloat(e.target.value) || 0)} />
                 </div>
                 <div className="col-6">
                   <label className="form-label fw-bold fs-7 text-dark mb-1">Overall Disc (%)</label>
-                  <input type="number" min="0" max="100" className="form-control" value={overallDiscPercent} onChange={e => setOverallDiscPercent(parseFloat(e.target.value) || 0)} />
+                  <input type="number" min="0" step="any" max="100" className="form-control" value={overallDiscPercent} onChange={e => setOverallDiscPercent(parseFloat(e.target.value) || 0)} />
                 </div>
               </div>
             </div>
@@ -383,7 +383,7 @@ export default function PurchasesPage() {
               <tr>
                 <th>{t('common', 'reference')}</th>
                 <th>{t('purchases', 'purchase_date')}</th>
-                <th>{t('common', 'items')}</th>
+                <th>Products & Unit Price</th>
                 <th>{t('purchases', 'total_amount')}</th>
                 <th>{t('common', 'status')}</th>
                 <th>{t('common', 'actions')}</th>
@@ -401,11 +401,15 @@ export default function PurchasesPage() {
                   <td>
                     {p.items?.length > 0 ? (
                       <div className="d-flex flex-column gap-1">
-                        {p.items.map((item: any, idx: number) => (
-                          <div key={idx} style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                            📦 {item.product?.name || 'Unknown'} (x{item.quantity}) Rs. {item.costPrice?.toFixed(2)}
-                          </div>
-                        ))}
+                        {p.items.map((item: any, idx: number) => {
+                          const prodName = products.find(prod => prod.id === item.productId)?.name || 'Unknown Product';
+                          return (
+                            <div key={idx} style={{ fontSize: '0.85rem' }} className="d-flex align-items-center flex-wrap">
+                              <span className="text-dark"><i className="bi bi-box-seam me-1 text-muted"></i>{prodName} (x{item.quantity} {item.measurementUnit || 'pcs'})</span>
+                              <span className="text-primary fw-bold ms-2">Rs. {(item.costPrice || item.unitPrice || 0).toFixed(2)}</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     ) : (
                       <span className="text-muted">0 products</span>

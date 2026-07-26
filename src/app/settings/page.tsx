@@ -540,8 +540,7 @@ export default function SettingsPage() {
           <div className="col-12 col-md-6">
             <label className="form-label fw-semibold text-secondary mb-1" style={{ fontSize: '0.85rem' }}>Low Stock Alert Threshold</label>
             <input
-              type="number"
-              className="form-control"
+              type="number" step="any" className="form-control"
               style={inputStyle}
               min="1"
               value={notifConfig.lowStockThreshold}
@@ -642,8 +641,7 @@ export default function SettingsPage() {
           <div className="col-12 col-md-6">
             <label className="form-label fw-semibold text-secondary mb-1" style={{ fontSize: '0.85rem' }}>Session Automatic Inactivity Timeout (minutes)</label>
             <input
-              type="number"
-              className="form-control"
+              type="number" step="any" className="form-control"
               style={inputStyle}
               min="5"
               value={securityConfig.sessionTimeout}

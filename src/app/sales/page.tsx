@@ -99,7 +99,11 @@ export default function SalesHistoryPage() {
   };
 
   const handleDeleteSale = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this sale and restore stock?')) return;
+    const reason = window.prompt('Are you sure you want to delete this sale and restore stock?\n\nकृपया Delete गर्नुको कारण लेख्नुहोस् (Enter reason to confirm):');
+    if (!reason || reason.trim() === '') {
+      alert('Delete cancelled. Reason is required to delete a sale.');
+      return;
+    }
     try {
       await api.delete(`/sales/${id}`);
       alert('Sale deleted successfully');
@@ -129,7 +133,7 @@ export default function SalesHistoryPage() {
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
           <h4 className="fw-bold m-0 text-dark">{t('sales', 'title')}</h4>
-          <div className="d-flex flex-wrap gap-2">
+          <div className="d-flex gap-2 flex-wrap">
             <button 
               className="btn btn-outline-success fw-semibold d-flex align-items-center gap-2 px-3 py-2" 
               style={{ borderRadius: '8px' }} 
@@ -162,7 +166,7 @@ export default function SalesHistoryPage() {
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
-          <div className="d-flex flex-wrap gap-2">
+          <div className="d-flex gap-2">
             <button className="btn btn-primary btn-sm px-3" onClick={loadData}>
               <i className="bi bi-funnel"></i> Filter
             </button>
@@ -299,22 +303,28 @@ export default function SalesHistoryPage() {
                 <div className="thermal-receipt-divider" style={{ borderTop: '1px dashed #666', margin: '8px 0' }}></div>
 
                 {/* Items layout */}
-                <table className="w-100 font-mono" style={{ fontSize: '11px', borderCollapse: 'collapse' }}>
+                <table className="w-100 font-mono" style={{ fontSize: '11px', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                  <colgroup>
+                    <col style={{ width: '38%' }} />
+                    <col style={{ width: '27%' }} />
+                    <col style={{ width: '13%' }} />
+                    <col style={{ width: '22%' }} />
+                  </colgroup>
                   <thead>
                     <tr style={{ borderBottom: '1px dashed #666' }}>
-                      <th align="left" style={{ paddingBottom: '4px' }}>Item</th>
-                      <th align="center" style={{ paddingBottom: '4px' }}>Rate</th>
+                      <th align="left" style={{ paddingBottom: '4px', paddingRight: '4px' }}>Item</th>
+                      <th align="right" style={{ paddingBottom: '4px', paddingRight: '4px' }}>Rate</th>
                       <th align="center" style={{ paddingBottom: '4px' }}>Qty</th>
                       <th align="right" style={{ paddingBottom: '4px' }}>Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {selectedSale?.items?.map((item: any, idx: number) => (
-                      <tr key={idx} style={{ verticalAlign: 'top', borderBottom: '1px dotted #ddd' }}>
-                        <td style={{ paddingTop: '3px', paddingBottom: '3px' }}>{item.product?.name}</td>
-                        <td align="center" style={{ paddingTop: '3px', paddingBottom: '3px' }}>Rs. {Number(item.price).toFixed(2)}</td>
-                        <td align="center" style={{ paddingTop: '3px', paddingBottom: '3px' }}>x{item.quantity}</td>
-                        <td align="right" style={{ paddingTop: '3px', paddingBottom: '3px' }}>Rs. {Number(item.total).toFixed(2)}</td>
+                      <tr key={idx} style={{ verticalAlign: 'top' }}>
+                        <td style={{ paddingTop: '3px', paddingBottom: '3px', paddingRight: '4px', wordBreak: 'break-word' }}>{item.product?.name}</td>
+                        <td align="right" style={{ paddingTop: '3px', paddingBottom: '3px', paddingRight: '4px', whiteSpace: 'nowrap' }}>Rs. {Number(item.price ?? item.unitPrice ?? (Number(item.total) / item.quantity)).toFixed(2)}</td>
+                        <td align="center" style={{ paddingTop: '3px', paddingBottom: '3px', whiteSpace: 'nowrap' }}>x{item.quantity}</td>
+                        <td align="right" style={{ paddingTop: '3px', paddingBottom: '3px', whiteSpace: 'nowrap' }}>Rs. {Number(item.total).toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>

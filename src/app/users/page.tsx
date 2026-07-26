@@ -11,6 +11,7 @@ export default function UserControlPage() {
   const { t } = useLanguage();
   const [users, setUsers] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
+  const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Form states
@@ -22,7 +23,8 @@ export default function UserControlPage() {
     name: '',
     email: '',
     password: '',
-    roleId: 2, // Default will be updated when roles are fetched
+    roleId: 2, // Default to cashier
+    companyId: '',
     active: true,
   });
 
@@ -31,30 +33,6 @@ export default function UserControlPage() {
   const [resetUserId, setResetUserId] = useState<number | null>(null);
   const [newPassword, setNewPassword] = useState('');
 
-  // Super Admin filtering
-  const [companies, setCompanies] = useState<any[]>([]);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('');
-
-  useEffect(() => {
-    if (user && user.companyId && !selectedCompanyId) {
-      setSelectedCompanyId(String(user.companyId));
-    }
-  }, [user, selectedCompanyId]);
-
-  useEffect(() => {
-    if (user?.role?.name === 'Super Admin') {
-      const fetchCompanies = async () => {
-        try {
-          const res = await api.get('/companies');
-          setCompanies(res.data);
-        } catch (err) {
-          console.error('Failed to fetch companies', err);
-        }
-      };
-      fetchCompanies();
-    }
-  }, [user]);
-
   useEffect(() => {
     if (!token) return;
     if (user && user.role.name !== 'Admin' && user.role.name !== 'Super Admin') {
@@ -62,18 +40,22 @@ export default function UserControlPage() {
       return;
     }
     loadData();
-  }, [token, user, selectedCompanyId]);
+  }, [token, user]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const query = selectedCompanyId ? `?companyId=${selectedCompanyId}` : '';
       const [usersRes, rolesRes] = await Promise.all([
-        api.get(`/users${query}`),
+        api.get('/users'),
         api.get('/users/roles'),
       ]);
       setUsers(usersRes.data);
       setRoles(rolesRes.data);
+
+      if (user?.role?.name === 'Super Admin') {
+        const compRes = await api.get('/companies');
+        setCompanies(compRes.data);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -81,15 +63,13 @@ export default function UserControlPage() {
   };
 
   const handleAddClick = () => {
-    const defaultRole = roles.find(r => r.name === 'Cashier') || roles[0];
-    const defaultRoleId = defaultRole ? defaultRole.id : 2;
-    setFormData({ name: '', email: '', password: '', roleId: defaultRoleId, active: true });
+    setFormData({ name: '', email: '', password: '', roleId: roles.find(r => r.name === 'Cashier')?.id || 2, companyId: '', active: true });
     setIsEditing(false);
     setShowForm(true);
   };
 
   const handleEditClick = (u: any) => {
-    setFormData({ name: u.name, email: u.email, password: '', roleId: u.roleId, active: u.active });
+    setFormData({ name: u.name, email: u.email, password: '', roleId: u.roleId, companyId: u.companyId || '', active: u.active });
     setEditingUserId(u.id);
     setIsEditing(true);
     setShowForm(true);
@@ -101,15 +81,18 @@ export default function UserControlPage() {
       if (isEditing) {
         // Prepare data (only include password if typed)
         const payload: any = { ...formData };
+        if (payload.companyId) payload.companyId = parseInt(payload.companyId as string);
+        else delete payload.companyId;
+        
         if (!payload.password) delete payload.password;
         await api.put(`/users/${editingUserId}`, payload);
         alert(t('users', 'success_update') || 'User updated successfully');
       } else {
         if (!formData.password) return alert('Password is required for new users');
-        const payload = {
-          ...formData,
-          companyId: selectedCompanyId ? parseInt(selectedCompanyId, 10) : undefined
-        };
+        const payload: any = { ...formData };
+        if (payload.companyId) payload.companyId = parseInt(payload.companyId as string);
+        else delete payload.companyId;
+
         await api.post('/users', payload);
         alert(t('users', 'success_add') || 'User created successfully');
       }
@@ -144,30 +127,11 @@ export default function UserControlPage() {
 
   return (
     <AuthLayout>
-      <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+      <div className="d-flex justify-content-between align-items-center mb-4">
         <h4 className="fw-bold m-0">{t('users', 'title')}</h4>
-        
-        <div className="d-flex gap-3">
-          {user?.role?.name === 'Super Admin' && (
-            <select
-              className="form-select"
-              value={selectedCompanyId}
-              onChange={(e) => setSelectedCompanyId(e.target.value)}
-              style={{ minWidth: '200px' }}
-            >
-              <option disabled value="">{t('common', 'select_company') || 'Select Company'}</option>
-              {companies.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          )}
-
-          <button className="btn btn-primary fw-bold px-4 text-nowrap" onClick={handleAddClick}>
-            <i className="bi bi-plus-lg me-1"></i> {t('users', 'add_user')}
-          </button>
-        </div>
+        <button className="btn btn-primary fw-bold px-4" onClick={handleAddClick}>
+          <i className="bi bi-plus-lg me-1"></i> {t('users', 'add_user')}
+        </button>
       </div>
 
       {showForm && (
@@ -193,12 +157,24 @@ export default function UserControlPage() {
 
               <div className="col-12 col-md-6">
                 <label className="form-label fw-semibold">{t('users', 'user_role')}</label>
-                <select className="form-select" value={formData.roleId} onChange={e => setFormData({...formData, roleId: parseInt(e.target.value)})}>
+                <select className="form-select" value={formData.roleId} onChange={e => setFormData({...formData, roleId: parseFloat(e.target.value)})}>
                   {roles.map(r => (
                     <option key={r.id} value={r.id}>{r.name} - {r.description}</option>
                   ))}
                 </select>
               </div>
+              
+              {user?.role?.name === 'Super Admin' && (
+                <div className="col-12 col-md-6">
+                  <label className="form-label fw-semibold">Company</label>
+                  <select className="form-select" value={formData.companyId} onChange={e => setFormData({...formData, companyId: e.target.value})}>
+                    <option value="">Select Company</option>
+                    {companies.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             <div className="d-flex justify-content-end gap-2 mt-4">
@@ -220,7 +196,7 @@ export default function UserControlPage() {
               <label className="form-label fw-semibold">{t('auth', 'password') || 'New Password'}</label>
               <input required type="password" minLength={6} className="form-control w-50" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
             </div>
-            <div className="d-flex flex-wrap gap-2">
+            <div className="d-flex gap-2 flex-wrap">
               <button type="button" className="btn btn-light border" onClick={() => setShowResetModal(false)}>{t('common', 'cancel')}</button>
               <button type="submit" className="btn btn-danger fw-bold">{t('common', 'save') || 'Confirm Reset'}</button>
             </div>
@@ -236,6 +212,7 @@ export default function UserControlPage() {
               <tr>
                 <th>{t('users', 'user_name')}</th>
                 <th>{t('users', 'user_email')}</th>
+                {user?.role?.name === 'Super Admin' && <th>Company</th>}
                 <th>{t('users', 'user_role')}</th>
                 <th>{t('common', 'status')}</th>
                 <th>{t('common', 'date')}</th>
@@ -249,6 +226,7 @@ export default function UserControlPage() {
                 <tr key={u.id}>
                   <td className="fw-bold">{u.name}</td>
                   <td>{u.email}</td>
+                  {user?.role?.name === 'Super Admin' && <td>{u.company?.name || '-'}</td>}
                   <td>
                     <span className={`badge px-2 py-1 rounded-pill ${u.role.name === 'Admin' ? 'bg-danger-subtle text-danger' : u.role.name === 'Manager' ? 'bg-warning-subtle text-warning' : 'bg-primary-subtle text-primary'}`}>
                       {u.role.name}

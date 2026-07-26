@@ -421,9 +421,8 @@ export default function IncomesPage() {
                 <div className="mb-3">
                   <label className="form-label fw-bold text-secondary fs-8 mb-1">{t('common', 'amount')} (Rs.)</label>
                   <input
-                    type="number"
-                    min="0"
-                    step="0.01"
+                    type="number" min="0" step="any"
+                    
                     className="form-control border-1 p-2"
                     placeholder="0.00"
                     value={amount}
