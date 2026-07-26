@@ -7,5 +7,14 @@
   "from_date": "From Date",
   "to_date": "To Date",
   "download_pdf": "Download PDF",
-  "download_excel": "Download Excel"
+  "download_excel": "Download Excel",
+  "daily_reports": "Daily Reports",
+  "closing_stock": "Closing Stock",
+  "closing_balance": "Closing Balance",
+  "deleted_sales": "Deleted Sales",
+  "filter_report": "Filter Report",
+  "total_income": "Total Income (Sales)",
+  "total_expenses": "Total Expenses",
+  "total_purchases": "Total Purchases",
+  "net_profit_loss": "Net Profit / Loss"
 }

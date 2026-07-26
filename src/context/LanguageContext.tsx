@@ -6,7 +6,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 export type Language = 'en' | 'ne';
 
 // All namespaces (matching the JSON files in /locales)
-export type Namespace = 'common' | 'dashboard' | 'sales' | 'product' | 'customer' | 'inventory' | 'settings' | 'brands' | 'suppliers' | 'expenses' | 'incomes' | 'pos' | 'purchases' | 'reports' | 'users' | 'auth' | 'fiscal_years';
+export type Namespace = 'common' | 'dashboard' | 'sales' | 'product' | 'customer' | 'inventory' | 'settings' | 'brands' | 'suppliers' | 'expenses' | 'incomes' | 'pos' | 'purchases' | 'reports' | 'users' | 'auth' | 'fiscal_years' | 'accounting' | 'ai_insights' | 'companies';
 
 // Translation cache: { language: { namespace: { key: value } } }
 type TranslationCache = Partial<Record<Language, Partial<Record<Namespace, Record<string, string>>>>>;
@@ -46,7 +46,7 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
   // Holds all loaded translations for current language
   const [translations, setTranslations] = useState<Partial<Record<Namespace, Record<string, string>>>>({});
 
-  const allNamespaces: Namespace[] = ['common', 'dashboard', 'sales', 'product', 'customer', 'inventory', 'settings', 'brands', 'suppliers', 'expenses', 'incomes', 'pos', 'purchases', 'reports', 'users', 'auth', 'fiscal_years'];
+  const allNamespaces: Namespace[] = ['common', 'dashboard', 'sales', 'product', 'customer', 'inventory', 'settings', 'brands', 'suppliers', 'expenses', 'incomes', 'pos', 'purchases', 'reports', 'users', 'auth', 'fiscal_years', 'accounting', 'ai_insights', 'companies'];
 
   // Load all namespaces for a given language
   const loadAllTranslations = useCallback(async (lang: Language) => {

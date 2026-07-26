@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import AuthLayout from '@/components/AuthLayout';
 import { formatAdToBs } from '@/utils/nepaliDate';
-
+import { useLanguage } from '@/context/LanguageContext';
 import TableControls, { applyPagination } from '@/components/TableControls';
+
 export default function AccountingDashboard() {
   const router = useRouter();
   const { api } = useAuth();
+  const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'trial_balance' | 'journal_entries'>('trial_balance');
   const [trialBalance, setTrialBalance] = useState<any[]>([]);
   const [journalEntries, setJournalEntries] = useState<any[]>([]);
@@ -42,7 +44,7 @@ export default function AccountingDashboard() {
   const totalDebit = trialBalance.reduce((sum, acc) => sum + (acc.balance > 0 && (acc.type === 'ASSET' || acc.type === 'EXPENSE') ? acc.balance : 0), 0);
   const totalCredit = trialBalance.reduce((sum, acc) => sum + (acc.balance > 0 && (acc.type === 'LIABILITY' || acc.type === 'REVENUE' || acc.type === 'EQUITY') ? acc.balance : 0), 0);
 
-  const tabTitle = activeTab === 'trial_balance' ? 'Trial Balance' : 'Journal Entries';
+  const tabTitle = activeTab === 'trial_balance' ? t('accounting', 'trial_balance') : t('accounting', 'journal_entries');
 
   const handlePrint = () => {
     const printContent = printRef.current?.innerHTML;
@@ -73,7 +75,7 @@ export default function AccountingDashboard() {
         </head>
         <body>
           <h2>${tabTitle}</h2>
-          <div class="subtitle">Printed on: ${formatAdToBs(new Date())}</div>
+          <div class="subtitle">${t('common', 'printed_on')}: ${formatAdToBs(new Date())}</div>
           ${printContent}
         </body>
       </html>
@@ -108,7 +110,7 @@ export default function AccountingDashboard() {
         </head>
         <body>
           <h2>${tabTitle}</h2>
-          <div class="subtitle">Downloaded on: ${formatAdToBs(new Date())}</div>
+          <div class="subtitle">${t('common', 'downloaded_on')}: ${formatAdToBs(new Date())}</div>
           ${printContent}
         </body>
       </html>
@@ -126,11 +128,11 @@ export default function AccountingDashboard() {
     <table>
       <thead>
         <tr>
-          <th>Code</th>
-          <th>Account Name</th>
-          <th>Type</th>
-          <th className="text-end">Debit (Dr)</th>
-          <th className="text-end">Credit (Cr)</th>
+          <th>{t('accounting', 'code')}</th>
+          <th>{t('accounting', 'account_name')}</th>
+          <th>{t('accounting', 'type')}</th>
+          <th className="text-end">{t('accounting', 'debit')}</th>
+          <th className="text-end">{t('accounting', 'credit')}</th>
         </tr>
       </thead>
       <tbody>
@@ -149,7 +151,7 @@ export default function AccountingDashboard() {
       </tbody>
       <tfoot>
         <tr>
-          <td colSpan={3} className="text-end">Total:</td>
+          <td colSpan={3} className="text-end">{t('accounting', 'total')}:</td>
           <td className="text-end">Rs. {totalDebit.toFixed(2)}</td>
           <td className="text-end">Rs. {totalCredit.toFixed(2)}</td>
         </tr>
@@ -168,10 +170,10 @@ export default function AccountingDashboard() {
           <table>
             <thead>
               <tr>
-                <th>Account</th>
-                <th>Description</th>
-                <th className="text-end">Debit</th>
-                <th className="text-end">Credit</th>
+                <th>{t('accounting', 'account')}</th>
+                <th>{t('accounting', 'description')}</th>
+                <th className="text-end">{t('accounting', 'debit')}</th>
+                <th className="text-end">{t('accounting', 'credit')}</th>
               </tr>
             </thead>
             <tbody>
@@ -187,7 +189,7 @@ export default function AccountingDashboard() {
           </table>
         </div>
       ))}
-      {journalEntries.length === 0 && <p style={{ textAlign: 'center', color: '#888' }}>No journal entries found.</p>}
+      {journalEntries.length === 0 && <p style={{ textAlign: 'center', color: '#888' }}>{t('accounting', 'no_entries')}</p>}
     </div>
   );
 
@@ -197,128 +199,10 @@ export default function AccountingDashboard() {
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
           <div className="d-flex align-items-center gap-2">
-            <button className="btn btn-outline-secondary btn-sm" onClick={() => router.back()} title="Go back">
-              <i className="bi bi-arrow-left"></i> Back
+            <button className="btn btn-outline-secondary btn-sm" onClick={() => router.back()} title={t('common', 'back')}>
+              <i className="bi bi-arrow-left"></i> {t('common', 'back')}
             </button>
-            <h2 className="m-0">📊 Accounting Dashboard</h2>
-          </div>
-          <div className="d-flex gap-2 flex-wrap">
-            <button
-              className="btn btn-outline-secondary d-flex align-items-center gap-2 fw-semibold"
-              style={{ borderRadius: '8px' }}
-              onClick={handlePrint}
-              title={`Print ${tabTitle}`}
-            >
-              <i className="bi bi-printer-fill"></i> Print {tabTitle}
-            </button>
-            <button
-              className="btn btn-outline-danger d-flex align-items-center gap-2 fw-semibold"
-              style={{ borderRadius: '8px' }}
-              onClick={handleDownloadPDF}
-              title={`Download ${tabTitle} as PDF`}
-            >
-              <i className="bi bi-file-earmark-pdf-fill"></i> Download PDF
-            </button>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <ul className="nav nav-tabs mb-4">
-          <li className="nav-item">
-            <button
-              className={`nav-link ${activeTab === 'trial_balance' ? 'active' : ''}`}
-              onClick={() => setActiveTab('trial_balance')}
-            >
-              Trial Balance
-            </button>
-          </li>
-          <li className="nav-item">
-            <button
-              className={`nav-link ${activeTab === 'journal_entries' ? 'active' : ''}`}
-              onClick={() => setActiveTab('journal_entries')}
-            >
-              Journal Entries
-            </button>
-          </li>
-        </ul>
-
-        {loading ? (
-          <div className="text-center py-5"><div className="spinner-border text-primary"></div></div>
-        ) : activeTab === 'trial_balance' ? (
-          <>
-            {/* Printable hidden ref for Trial Balance */}
-            <div ref={printRef} style={{ display: 'none' }}>
-              {renderTrialBalancePrintable()}
-            </div>
-            <div className="card shadow-sm border-0">
-              <div className="card-body p-0">
-                <table className="table table-hover align-middle mb-0">
-                  <thead className="table-light">
-                    <tr>
-                      <th>Code</th>
-                      <th>Account Name</th>
-                      <th>Type</th>
-                      <th className="text-end">Debit (Dr)</th>
-                      <th className="text-end">Credit (Cr)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {trialBalance.map(acc => {
-                      const isDebit = acc.type === 'ASSET' || acc.type === 'EXPENSE';
-                      return (
-                        <tr key={acc.id}>
-                          <td>{acc.code}</td>
-                          <td>{acc.name}</td>
-                          <td><span className="badge bg-secondary">{acc.type}</span></td>
-                          <td className="text-end">{isDebit && acc.balance > 0 ? `Rs. ${acc.balance.toFixed(2)}` : '-'}</td>
-                          <td className="text-end">{!isDebit && acc.balance > 0 ? `Rs. ${acc.balance.toFixed(2)}` : '-'}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                  <tfoot className="table-light fw-bold">
-                    <tr>
-                      <td colSpan={3} className="text-end">Total:</td>
-                      <td className="text-end text-primary">Rs. {totalDebit.toFixed(2)}</td>
-                      <td className="text-end text-success">Rs. {totalCredit.toFixed(2)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Printable hidden ref for Journal Entries */}
-            <div ref={printRef} style={{ display: 'none' }}>
-              {renderJournalPrintable()}
-            </div>
-            <div className="accordion" id="journalAccordion">
-              {journalEntries.map((entry, index) => (
-                <div className="accordion-item mb-2 border-0 shadow-sm rounded" key={entry.id}>
-                  <h2 className="accordion-header">
-                    <button className={`accordion-button ${index !== 0 ? 'collapsed' : ''} rounded`} type="button" data-bs-toggle="collapse" data-bs-target={`#collapse${entry.id}`}>
-                      <div className="d-flex justify-content-between w-100 me-3">
-                        <strong>{entry.referenceNo || 'JE-' + entry.id} - {entry.description}</strong>
-                        <span className="text-muted">{formatAdToBs(entry.date)}</span>
-                      </div>
-                    </button>
-                  </h2>
-                  <div id={`collapse${entry.id}`} className={`accordion-collapse collapse ${index === 0 ? 'show' : ''}`} data-bs-parent="#journalAccordion">
-                    <div className="accordion-body p-0">
-                      <table className="table table-sm table-borderless mb-0">
-                        <thead className="table-light">
-                          <tr>
-                            <th>Account</th>
-                            <th>Description</th>
-                            <th className="text-end">Debit</th>
-                            <th className="text-end">Credit</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {entry.lines.map((line: any) => (
-                            <tr key={line.id}>
-                              <td>{line.account.code} - {line.account.name}</td>
+            <h2 className="m-0">📊 {t('accounting', 'title')}</h2>
                               <td>{line.description}</td>
                               <td className="text-end text-primary">{line.debit > 0 ? `Rs. ${line.debit.toFixed(2)}` : ''}</td>
                               <td className="text-end text-success">{line.credit > 0 ? `Rs. ${line.credit.toFixed(2)}` : ''}</td>
@@ -331,7 +215,7 @@ export default function AccountingDashboard() {
                 </div>
               ))}
               {journalEntries.length === 0 && (
-                <div className="text-center py-5 text-muted">No journal entries found.</div>
+                <div className="text-center py-5 text-muted">{t('accounting', 'no_entries')}</div>
               )}
             </div>
           </>

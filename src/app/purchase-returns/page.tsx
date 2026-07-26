@@ -6,12 +6,12 @@ import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBsFull } from '@/utils/nepaliDate';
-
 import TableControls, { applyPagination } from '@/components/TableControls';
+
 export default function PurchaseReturnsPage() {
   const router = useRouter();
   const { token, api } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [returns, setReturns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -52,11 +52,11 @@ export default function PurchaseReturnsPage() {
         }))
       };
       await api.post('/purchase-returns', payload);
-      alert('Purchase Return processed successfully!');
+      alert(language === 'ne' ? 'खरिद फिर्ता सफलतापूर्वक प्रशोधन गरियो!' : 'Purchase Return processed successfully!');
       setShowModal(false);
       loadData();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error processing purchase return');
+      alert(err.response?.data?.message || (language === 'ne' ? 'खरिद फिर्ता प्रशोधन गर्दा त्रुटि भयो' : 'Error processing purchase return'));
     }
   };
 
@@ -81,16 +81,16 @@ export default function PurchaseReturnsPage() {
       <div className="container-fluid p-4">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div className="d-flex align-items-center gap-2">
-            <button className="btn btn-outline-secondary btn-sm" onClick={() => router.back()} title="Go back">
-              <i className="bi bi-arrow-left"></i> Back
+            <button className="btn btn-outline-secondary btn-sm" onClick={() => router.back()} title={t('common', 'back')}>
+              <i className="bi bi-arrow-left"></i> {t('common', 'back')}
             </button>
             <h2 className="text-dark fw-bold m-0">
               <i className="bi bi-cart-x text-danger me-2"></i>
-              {(t as any).en === 'Dashboard' ? (t as any).ne ? 'खरिद फिर्ता' : 'Purchase Returns' : 'Purchase Returns'}
+              {language === 'ne' ? 'खरिद फिर्ता' : 'Purchase Returns'}
             </h2>
           </div>
           <button className="btn btn-danger shadow-sm rounded-pill px-4" onClick={() => setShowModal(true)}>
-            <i className="bi bi-plus-circle me-2"></i> Create Return
+            <i className="bi bi-plus-circle me-2"></i> {language === 'ne' ? 'फिर्ता सिर्जना गर्नुहोस्' : 'Create Return'}
           </button>
         </div>
 
@@ -99,22 +99,24 @@ export default function PurchaseReturnsPage() {
             <table className="table table-hover align-middle mb-0">
               <thead className="table-light">
                 <tr>
-                  <th>Return No</th>
-                  <th>PO Number</th>
-                  <th>Supplier</th>
-                  <th>Date</th>
-                  <th>Reason</th>
-                  <th>Total Refund</th>
+                  <th>{language === 'ne' ? 'फिर्ता नं.' : 'Return No'}</th>
+                  <th>{language === 'ne' ? 'PO नं.' : 'PO Number'}</th>
+                  <th>{language === 'ne' ? 'आपूर्तिकर्ता' : 'Supplier'}</th>
+                  <th>{t('common', 'date')}</th>
+                  <th>{language === 'ne' ? 'कारण' : 'Reason'}</th>
+                  <th>{language === 'ne' ? 'कुल फिर्ता' : 'Total Refund'}</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-4 text-muted">Loading...</td>
+                    <td colSpan={6} className="text-center py-4 text-muted">{t('common', 'loading')}</td>
                   </tr>
                 ) : returns.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-4 text-muted">No returns found</td>
+                    <td colSpan={6} className="text-center py-4 text-muted">
+                      {language === 'ne' ? 'कुनै फिर्ता फेला परेन' : 'No returns found'}
+                    </td>
                   </tr>
                 ) : (
                   applyPagination(returns, currentPage, rowsPerPage).map((ret) => (
@@ -134,14 +136,13 @@ export default function PurchaseReturnsPage() {
               </tbody>
             </table>
           </div>
-
-        <TableControls
-          total={items.length}
-          currentPage={currentPage}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(n) => { setRowsPerPage(n); setCurrentPage(1); }}
-          onPageChange={setCurrentPage}
-        />
+          <TableControls
+            total={returns.length}
+            currentPage={currentPage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(n) => { setRowsPerPage(n); setCurrentPage(1); }}
+            onPageChange={setCurrentPage}
+          />
         </div>
 
         {/* Modal */}
@@ -150,41 +151,49 @@ export default function PurchaseReturnsPage() {
             <div className="modal-dialog modal-lg">
               <div className="modal-content border-0 shadow rounded-4">
                 <div className="modal-header border-bottom-0 bg-light rounded-top-4">
-                  <h5 className="modal-title fw-bold text-dark">Process Purchase Return</h5>
+                  <h5 className="modal-title fw-bold text-dark">
+                    {language === 'ne' ? 'खरिद फिर्ता प्रशोधन' : 'Process Purchase Return'}
+                  </h5>
                   <button type="button" className="btn-close shadow-none" onClick={() => setShowModal(false)}></button>
                 </div>
                 <div className="modal-body p-4">
                   <form onSubmit={handleCreateReturn}>
                     <div className="row g-3 mb-3">
                       <div className="col-md-6">
-                        <label className="form-label text-muted small fw-semibold">Purchase ID (Internal ID)</label>
+                        <label className="form-label text-muted small fw-semibold">
+                          {language === 'ne' ? 'खरिद ID' : 'Purchase ID (Internal ID)'}
+                        </label>
                         <input
                           type="number" step="any" className="form-control rounded-3"
                           value={purchaseId}
                           onChange={(e) => setPurchaseId(e.target.value)}
                           required
                         />
-                        <small className="text-muted">Enter the database ID of the purchase</small>
+                        <small className="text-muted">
+                          {language === 'ne' ? 'खरिदको डेटाबेस ID दिनुहोस्' : 'Enter the database ID of the purchase'}
+                        </small>
                       </div>
                       <div className="col-md-6">
-                        <label className="form-label text-muted small fw-semibold">Reason</label>
+                        <label className="form-label text-muted small fw-semibold">
+                          {language === 'ne' ? 'कारण' : 'Reason'}
+                        </label>
                         <input
                           type="text"
                           className="form-control rounded-3"
                           value={reason}
                           onChange={(e) => setReason(e.target.value)}
-                          placeholder="e.g. Expired goods"
+                          placeholder={language === 'ne' ? 'उदा: मियाद सकिएको सामान' : 'e.g. Expired goods'}
                         />
                       </div>
                     </div>
 
-                    <h6 className="fw-bold mt-4 mb-3">Return Items</h6>
-                    {applyPagination(items, currentPage, rowsPerPage).map((item, index) => (
+                    <h6 className="fw-bold mt-4 mb-3">{language === 'ne' ? 'फिर्ता वस्तुहरू' : 'Return Items'}</h6>
+                    {items.map((item, index) => (
                       <div className="row g-2 mb-2 align-items-center" key={index}>
                         <div className="col-md-5">
                           <input
                             type="number" step="any" className="form-control rounded-3"
-                            placeholder="Purchase Item ID"
+                            placeholder={language === 'ne' ? 'खरिद वस्तु ID' : 'Purchase Item ID'}
                             value={item.purchaseItemId}
                             onChange={(e) => updateItem(index, 'purchaseItemId', e.target.value)}
                             required
@@ -193,7 +202,7 @@ export default function PurchaseReturnsPage() {
                         <div className="col-md-5">
                           <input
                             type="number" step="any" className="form-control rounded-3"
-                            placeholder="Quantity to Return"
+                            placeholder={language === 'ne' ? 'फिर्ता परिमाण' : 'Quantity to Return'}
                             value={item.quantity}
                             onChange={(e) => updateItem(index, 'quantity', e.target.value)}
                             min="1"
@@ -212,17 +221,17 @@ export default function PurchaseReturnsPage() {
                         </div>
                       </div>
                     ))}
-                    
+
                     <button type="button" className="btn btn-sm btn-outline-primary rounded-pill mt-2 mb-4" onClick={addItemRow}>
-                      <i className="bi bi-plus"></i> Add Item
+                      <i className="bi bi-plus"></i> {language === 'ne' ? 'वस्तु थप्नुहोस्' : 'Add Item'}
                     </button>
 
                     <div className="text-end border-top pt-3 mt-2">
                       <button type="button" className="btn btn-light rounded-pill px-4 me-2" onClick={() => setShowModal(false)}>
-                        Cancel
+                        {t('common', 'cancel')}
                       </button>
                       <button type="submit" className="btn btn-danger rounded-pill px-4">
-                        Process Return
+                        {language === 'ne' ? 'फिर्ता प्रशोधन गर्नुहोस्' : 'Process Return'}
                       </button>
                     </div>
                   </form>

@@ -111,5 +111,9 @@
   "start_date": "Start Date",
   "end_date": "End Date",
   "saving": "Saving...",
-  "items": "Items"
+  "items": "Items",
+  "companies": "Companies",
+  "printed_on": "Printed on",
+  "downloaded_on": "Downloaded on",
+  "back": "Back"
 }
