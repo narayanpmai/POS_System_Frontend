@@ -7,6 +7,7 @@ import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import * as XLSX from 'xlsx';
+import TableControls, { applyPagination } from '@/components/TableControls';
 
 interface Category {
   id: number;
@@ -53,13 +54,28 @@ export default function ProductsPage() {
   const [storeSettings, setStoreSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  // Super Admin specific state
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (user?.role?.name === 'Super Admin') {
+      api.get('/companies').then(res => setCompanies(res.data)).catch(console.error);
+    }
+  }, [user]);
+
   // Pagination & Filters
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<string>('');
   const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [selectedProductForView, setSelectedProductForView] = useState<any>(null);
   const [selectedProductForBarcode, setSelectedProductForBarcode] = useState<any>(null);
   const [totalPages, setTotalPages] = useState(1);
+
+  const [categoryPage, setCategoryPage] = useState(1);
+  const [categoryRowsPerPage, setCategoryRowsPerPage] = useState(10);
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<'products' | 'categories'>('products');
@@ -95,14 +111,16 @@ export default function ProductsPage() {
     setLoading(true);
     try {
       const catUrl = categoryId ? `&categoryId=${categoryId}` : '';
+      const compUrl = selectedCompanyId ? `&companyId=${selectedCompanyId}` : '';
       const [prodRes, categoriesRes, brandsRes, settingsRes] = await Promise.all([
-        api.get(`/products?page=${page}&limit=10&search=${search}${catUrl}`),
-        api.get('/products/categories'),
-        api.get('/brands'),
+        api.get(`/products?page=${page}&limit=${rowsPerPage}&search=${search}${catUrl}${compUrl}`),
+        api.get(`/products/categories?${compUrl.replace('&', '')}`),
+        api.get(`/brands?${compUrl.replace('&', '')}`),
         api.get('/settings')
       ]);
       setProducts(prodRes.data.items || []);
       setTotalPages(prodRes.data.totalPages || 1);
+      setTotalProducts(prodRes.data.total || 0);
       setCategories(categoriesRes.data || []);
       setBrands(brandsRes.data || []);
       setStoreSettings(settingsRes.data || null);
@@ -114,7 +132,7 @@ export default function ProductsPage() {
 
   useEffect(() => {
     loadCatalogs();
-  }, [token, page, search, categoryId]);
+  }, [token, page, rowsPerPage, search, categoryId, selectedCompanyId]);
 
   // Handle Product CRUD
   const handleProductSubmit = async (e: React.FormEvent) => {
@@ -510,7 +528,7 @@ export default function ProductsPage() {
           
           {/* Filters Bar */}
           <div className="row g-3 align-items-center mb-4">
-            <div className="col-12 col-md-8">
+            <div className={`col-12 ${user?.role?.name === 'Super Admin' ? 'col-md-4' : 'col-md-8'}`}>
               <input
                 type="text"
                 className="form-control"
@@ -519,6 +537,20 @@ export default function ProductsPage() {
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               />
             </div>
+            {user?.role?.name === 'Super Admin' && (
+              <div className="col-12 col-md-4">
+                <select
+                  className="form-select"
+                  value={selectedCompanyId || ''}
+                  onChange={(e) => { setSelectedCompanyId(e.target.value ? Number(e.target.value) : null); setPage(1); }}
+                >
+                  <option value="">{t('common', 'all_companies') || 'All Companies'}</option>
+                  {companies.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="col-12 col-md-4">
               <select
                 className="form-select"
@@ -601,6 +633,14 @@ export default function ProductsPage() {
                 )}
               </tbody>
             </table>
+
+            <TableControls
+              total={totalProducts}
+              currentPage={page}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(n) => { setRowsPerPage(n); setPage(1); }}
+              onPageChange={setPage}
+            />
           </div>
 
 
@@ -628,7 +668,7 @@ export default function ProductsPage() {
                     <td colSpan={isAdmin ? 4 : 3} className="text-center py-4 text-muted">No categories created in the system</td>
                   </tr>
                 ) : (
-                  categories.map((cat) => (
+                  applyPagination(categories, categoryPage, categoryRowsPerPage).map((cat) => (
                     <tr key={cat.id}>
                       <td className="fw-bold text-dark">{cat.name}</td>
                       <td className="text-muted">{cat.description || 'No description provided'}</td>
@@ -650,6 +690,14 @@ export default function ProductsPage() {
                 )}
               </tbody>
             </table>
+
+            <TableControls
+              total={categories.length}
+              currentPage={categoryPage}
+              rowsPerPage={categoryRowsPerPage}
+              onRowsPerPageChange={(n) => { setCategoryRowsPerPage(n); setCategoryPage(1); }}
+              onPageChange={setCategoryPage}
+            />
           </div>
         </div>
       )}
