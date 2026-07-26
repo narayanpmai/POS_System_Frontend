@@ -55,11 +55,10 @@ export function formatAdToBs(dateInput: string | Date | undefined | null): strin
     const date = new Date(dateInput);
     if (isNaN(date.getTime())) return '';
     
-    // Format to YYYY-MM-DD for the converter
-    const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    const formattedAd = `${yyyy}-${mm}-${dd}`;
+    // Format to YYYY-MM-DD for the converter using Nepal timezone explicitly
+    const formattedAd = new Intl.DateTimeFormat('en-CA', { 
+      timeZone: 'Asia/Kathmandu', year: 'numeric', month: '2-digit', day: '2-digit' 
+    }).format(date);
     
     const converter = new DateConverter(formattedAd);
     const bsDate = converter.toBs(); // returns { year: 2083, month: 2, day: 13 }
@@ -84,10 +83,9 @@ export function formatAdToBsFull(dateInput: string | Date | undefined | null): s
     const date = new Date(dateInput);
     if (isNaN(date.getTime())) return '';
     
-    const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    const formattedAd = `${yyyy}-${mm}-${dd}`;
+    const formattedAd = new Intl.DateTimeFormat('en-CA', { 
+      timeZone: 'Asia/Kathmandu', year: 'numeric', month: '2-digit', day: '2-digit' 
+    }).format(date);
     
     const converter = new DateConverter(formattedAd);
     const bsDate = converter.toBs();
@@ -117,10 +115,9 @@ export function formatAdToBsShort(dateInput: string | Date | undefined | null): 
     const date = new Date(dateInput);
     if (isNaN(date.getTime())) return '';
     
-    const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    const formattedAd = `${yyyy}-${mm}-${dd}`;
+    const formattedAd = new Intl.DateTimeFormat('en-CA', { 
+      timeZone: 'Asia/Kathmandu', year: 'numeric', month: '2-digit', day: '2-digit' 
+    }).format(date);
     
     const converter = new DateConverter(formattedAd);
     const bsDate = converter.toBs();
@@ -143,10 +140,9 @@ export function formatAdToBsClock(dateInput: string | Date | undefined | null): 
     const date = new Date(dateInput);
     if (isNaN(date.getTime())) return '';
 
-    const yyyy = date.getFullYear();
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const dd = String(date.getDate()).padStart(2, '0');
-    const formattedAd = `${yyyy}-${mm}-${dd}`;
+    const formattedAd = new Intl.DateTimeFormat('en-CA', { 
+      timeZone: 'Asia/Kathmandu', year: 'numeric', month: '2-digit', day: '2-digit' 
+    }).format(date);
 
     const converter = new DateConverter(formattedAd);
     const bsDate = converter.toBs();

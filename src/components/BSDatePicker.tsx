@@ -23,9 +23,10 @@ export default function BSDatePicker({ value, onChange, className, placeholder }
       try {
         const adDate = new Date(value);
         if (!isNaN(adDate.getTime())) {
-          // Add timezone offset to prevent shifting day backwards when using toISOString
-          adDate.setMinutes(adDate.getMinutes() - adDate.getTimezoneOffset());
-          const isoDate = adDate.toISOString().split('T')[0];
+          // Extract the date as it appears in Nepal timezone to prevent shifting
+          const isoDate = new Intl.DateTimeFormat('en-CA', { 
+            timeZone: 'Asia/Kathmandu', year: 'numeric', month: '2-digit', day: '2-digit' 
+          }).format(adDate);
           const nepDate = new NepaliDate(isoDate).toBs();
           setBsDefault(`${nepDate.year}-${String(nepDate.month).padStart(2, '0')}-${String(nepDate.date).padStart(2, '0')}`);
         }
@@ -59,10 +60,9 @@ export default function BSDatePicker({ value, onChange, className, placeholder }
          return;
       }
 
-      // Parse safely using NepaliDate library to avoid mismatched calendar adDates
+      // Parse safely using NepaliDate library and treat as UTC to avoid mismatched calendar adDates
       const adObj = new NepaliDate(bsDateStr).toAd();
-      const adDate = new Date(adObj.year, adObj.month - 1, adObj.date);
-      adDate.setMinutes(adDate.getMinutes() - adDate.getTimezoneOffset());
+      const adDate = new Date(Date.UTC(adObj.year, adObj.month - 1, adObj.date));
       
       let iso = adDate.toISOString().split('T')[0];
       let backToBs = new NepaliDate(iso).toBs();
@@ -70,7 +70,7 @@ export default function BSDatePicker({ value, onChange, className, placeholder }
 
       // If date overflowed (e.g., 2084-03-32 capped to 31), step back to remain in correct month
       while (backToBs.month !== expectedMonth && adDate.getTime() > 0) {
-         adDate.setDate(adDate.getDate() - 1);
+         adDate.setUTCDate(adDate.getUTCDate() - 1);
          iso = adDate.toISOString().split('T')[0];
          backToBs = new NepaliDate(iso).toBs();
       }
