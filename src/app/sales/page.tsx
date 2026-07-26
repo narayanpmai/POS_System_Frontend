@@ -2,18 +2,23 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBsFull } from '@/utils/nepaliDate';
 import * as XLSX from 'xlsx';
 import BSDatePicker from '@/components/BSDatePicker';
+import TableControls, { applyPagination } from '@/components/TableControls';
 
 export default function SalesHistoryPage() {
+  const router = useRouter();
   const { token, api, activeFiscalYear, user } = useAuth();
   const { t } = useLanguage();
   const [sales, setSales] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   
   // For the invoice modal
   const [selectedSale, setSelectedSale] = useState<any>(null);
@@ -132,7 +137,12 @@ export default function SalesHistoryPage() {
       <div className="card border-0 rounded-md shadow-sm p-4" style={{ backgroundColor: 'var(--light-card)' }}>
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-          <h4 className="fw-bold m-0 text-dark">{t('sales', 'title')}</h4>
+          <div className="d-flex align-items-center gap-2">
+            <button className="btn btn-outline-secondary btn-sm" onClick={() => router.back()} title="Go back">
+              <i className="bi bi-arrow-left"></i> Back
+            </button>
+            <h4 className="fw-bold m-0 text-dark">{t('sales', 'title')}</h4>
+          </div>
           <div className="d-flex gap-2 flex-wrap">
             <button 
               className="btn btn-outline-success fw-semibold d-flex align-items-center gap-2 px-3 py-2" 
@@ -211,7 +221,7 @@ export default function SalesHistoryPage() {
                   <td colSpan={7} className="text-center py-5 text-muted">{t('sales', 'no_sales')}</td>
                 </tr>
               ) : (
-                sales.map((sale) => (
+                applyPagination(sales, currentPage, rowsPerPage).map((sale) => (
                   <tr key={sale.id}>
                     <td className="ps-3 border-bottom py-3">
                       <span className="fw-bold text-dark">{sale.invoiceNo}</span>
@@ -262,6 +272,13 @@ export default function SalesHistoryPage() {
             </tbody>
           </table>
         </div>
+        <TableControls
+          total={sales.length}
+          currentPage={currentPage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(n) => { setRowsPerPage(n); setCurrentPage(1); }}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* ==============================================

@@ -1,16 +1,21 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import AuthLayout from '@/components/AuthLayout';
 import { formatAdToBs } from '@/utils/nepaliDate';
-
+
+import TableControls, { applyPagination } from '@/components/TableControls';
 export default function AccountingDashboard() {
+  const router = useRouter();
   const { api } = useAuth();
   const [activeTab, setActiveTab] = useState<'trial_balance' | 'journal_entries'>('trial_balance');
   const [trialBalance, setTrialBalance] = useState<any[]>([]);
   const [journalEntries, setJournalEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -191,7 +196,12 @@ export default function AccountingDashboard() {
       <div className="p-4">
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-          <h2 className="m-0">📊 Accounting Dashboard</h2>
+          <div className="d-flex align-items-center gap-2">
+            <button className="btn btn-outline-secondary btn-sm" onClick={() => router.back()} title="Go back">
+              <i className="bi bi-arrow-left"></i> Back
+            </button>
+            <h2 className="m-0">📊 Accounting Dashboard</h2>
+          </div>
           <div className="d-flex gap-2 flex-wrap">
             <button
               className="btn btn-outline-secondary d-flex align-items-center gap-2 fw-semibold"

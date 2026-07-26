@@ -1,16 +1,21 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBsFull } from '@/utils/nepaliDate';
+import TableControls, { applyPagination } from '@/components/TableControls';
 
 export default function SalesReturnsPage() {
+  const router = useRouter();
   const { token, api } = useAuth();
   const { t } = useLanguage();
   const [returns, setReturns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // New return form
   const [showModal, setShowModal] = useState(false);
@@ -75,10 +80,15 @@ export default function SalesReturnsPage() {
     <AuthLayout>
       <div className="container-fluid p-4">
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <h2 className="text-dark fw-bold m-0">
-            <i className="bi bi-receipt-cutoff text-danger me-2"></i>
-            {(t as any).en === 'Dashboard' ? (t as any).ne ? 'बिक्री फिर्ता' : 'Sales Returns' : 'Sales Returns'}
-          </h2>
+          <div className="d-flex align-items-center gap-2">
+            <button className="btn btn-outline-secondary btn-sm" onClick={() => router.back()} title="Go back">
+              <i className="bi bi-arrow-left"></i> Back
+            </button>
+            <h2 className="text-dark fw-bold m-0">
+              <i className="bi bi-receipt-cutoff text-danger me-2"></i>
+              {(t as any).en === 'Dashboard' ? (t as any).ne ? 'बिक्री फिर्ता' : 'Sales Returns' : 'Sales Returns'}
+            </h2>
+          </div>
           <button className="btn btn-danger shadow-sm rounded-pill px-4" onClick={() => setShowModal(true)}>
             <i className="bi bi-plus-circle me-2"></i> Create Return
           </button>
@@ -106,7 +116,7 @@ export default function SalesReturnsPage() {
                     <td colSpan={5} className="text-center py-4 text-muted">No returns found</td>
                   </tr>
                 ) : (
-                  returns.map((ret) => (
+                  applyPagination(returns, currentPage, rowsPerPage).map((ret) => (
                     <tr key={ret.id}>
                       <td className="fw-bold">{ret.returnNo}</td>
                       <td>{ret.sale?.invoiceNo || '-'}</td>
@@ -122,6 +132,13 @@ export default function SalesReturnsPage() {
               </tbody>
             </table>
           </div>
+          <TableControls
+            total={returns.length}
+            currentPage={currentPage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(n) => { setRowsPerPage(n); setCurrentPage(1); }}
+            onPageChange={setCurrentPage}
+          />
         </div>
 
         {/* Modal */}

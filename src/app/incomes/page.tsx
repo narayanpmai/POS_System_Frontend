@@ -1,13 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBs } from '@/utils/nepaliDate';
 import BSDatePicker from '@/components/BSDatePicker';
-
+
+import TableControls, { applyPagination } from '@/components/TableControls';
 export default function IncomesPage() {
+  const router = useRouter();
   const { token, api, activeFiscalYear } = useAuth();
   const { t } = useLanguage();
   
@@ -18,6 +21,8 @@ export default function IncomesPage() {
   const [selectedIncome, setSelectedIncome] = useState<any>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Income Form State
   const [isEditing, setIsEditing] = useState(false);
@@ -226,6 +231,12 @@ export default function IncomesPage() {
 
   return (
     <AuthLayout>
+      <div className="d-flex align-items-center gap-2 mb-3">
+        <button className="btn btn-outline-secondary btn-sm" onClick={() => router.back()} title="Go back">
+          <i className="bi bi-arrow-left"></i> Back
+        </button>
+        <h4 className="fw-bold m-0 text-dark">{t('incomes', 'title') || 'Incomes'}</h4>
+      </div>
       {/* Tab Selectors & Header Action */}
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <ul className="nav nav-pills border-0 bg-white p-1 rounded-pill shadow-sm" style={{ border: '1px solid #dee2e6' }}>

@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import axios from 'axios';
-
+
+import TableControls, { applyPagination } from '@/components/TableControls';
 interface InventoryItem {
   id: number;
   name: string;
@@ -22,12 +24,15 @@ interface InventoryItem {
 }
 
 export default function InventoryPage() {
+  const router = useRouter();
   const { user, token, api } = useAuth();
   const { t } = useLanguage();
   const isAdmin = user?.role?.name === 'Admin' || user?.role?.name === 'Super Admin';
 
   const [ledger, setLedger] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const [filterLowStock, setFilterLowStock] = useState(false);
 
   // Stock Adjustment Form

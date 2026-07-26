@@ -1,16 +1,21 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-
+
+import TableControls, { applyPagination } from '@/components/TableControls';
 export default function SettingsPage() {
+  const router = useRouter();
   const { user, token, api } = useAuth();
   const { t, language, setLanguage } = useLanguage();
   const isAdmin = user?.role?.name === 'Admin' || user?.role?.name === 'Super Admin';
 
   const [loading, setLoading] = useState(true);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const [submitting, setSubmitting] = useState(false);
 
   // Submenu Selection
@@ -1139,6 +1144,12 @@ export default function SettingsPage() {
 
   return (
     <AuthLayout>
+      <div className="d-flex align-items-center gap-2 mb-3">
+        <button className="btn btn-outline-secondary btn-sm" onClick={() => router.back()} title="Go back">
+          <i className="bi bi-arrow-left"></i> Back
+        </button>
+        <h4 className="fw-bold m-0 text-dark">{t('settings', 'title') || 'Settings'}</h4>
+      </div>
       <div className="row g-4 justify-content-center">
         <div className="col-12 col-xl-11">
           

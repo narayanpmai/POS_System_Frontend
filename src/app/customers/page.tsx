@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBs } from '@/utils/nepaliDate';
 import axios from 'axios';
-
+
+import TableControls, { applyPagination } from '@/components/TableControls';
 interface Customer {
   id: number;
   name: string;
@@ -24,11 +26,14 @@ interface Customer {
 }
 
 export default function CustomersPage() {
+  const router = useRouter();
   const { token, api } = useAuth();
   const { t } = useLanguage();
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -133,6 +138,12 @@ export default function CustomersPage() {
 
   return (
     <AuthLayout>
+      <div className="d-flex align-items-center gap-2 mb-3">
+        <button className="btn btn-outline-secondary btn-sm" onClick={() => router.back()} title="Go back">
+          <i className="bi bi-arrow-left"></i> Back
+        </button>
+        <h4 className="fw-bold m-0 text-dark">{t('customer', 'title') || 'Customers'}</h4>
+      </div>
       {/* Search and Action Bar */}
       <div className="card p-3 border-none rounded-lg shadow-sm mb-4" style={{ backgroundColor: 'var(--light-card)', border: '1px solid var(--border-color)' }}>
         <div className="row g-3 align-items-center">

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import Barcode from 'react-barcode';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
@@ -40,6 +41,7 @@ interface Product {
 }
 
 export default function ProductsPage() {
+  const router = useRouter();
   const { user, token, api } = useAuth();
   const { t } = useLanguage();
   const isAdmin = user?.role?.name === 'Admin' || user?.role?.name === 'Super Admin';
@@ -401,6 +403,13 @@ export default function ProductsPage() {
 
   return (
     <AuthLayout>
+      {/* Back Button */}
+      <div className="d-flex align-items-center gap-2 mb-3">
+        <button className="btn btn-outline-secondary btn-sm" onClick={() => router.back()} title="Go back">
+          <i className="bi bi-arrow-left"></i> Back
+        </button>
+        <h4 className="fw-bold m-0 text-dark">{t('product', 'title') || 'Products'}</h4>
+      </div>
       {/* Tab Selectors */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <ul className="nav nav-pills border-0 bg-white p-1 rounded-pill shadow-sm" style={{ border: '1px solid var(--border-color)' }}>

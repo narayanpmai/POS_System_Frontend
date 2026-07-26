@@ -1,18 +1,23 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBs } from '@/utils/nepaliDate';
-
+
+import TableControls, { applyPagination } from '@/components/TableControls';
 export default function UserControlPage() {
+  const router = useRouter();
   const { token, api, user } = useAuth();
   const { t } = useLanguage();
   const [users, setUsers] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Form states
   const [showForm, setShowForm] = useState(false);
@@ -128,7 +133,12 @@ export default function UserControlPage() {
   return (
     <AuthLayout>
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h4 className="fw-bold m-0">{t('users', 'title')}</h4>
+        <div className="d-flex align-items-center gap-2">
+            <button className="btn btn-outline-secondary btn-sm" onClick={() => router.back()} title="Go back">
+              <i className="bi bi-arrow-left"></i> Back
+            </button>
+            <h4 className="fw-bold m-0">{t('users', 'title')}</h4>
+          </div>
         <button className="btn btn-primary fw-bold px-4" onClick={handleAddClick}>
           <i className="bi bi-plus-lg me-1"></i> {t('users', 'add_user')}
         </button>

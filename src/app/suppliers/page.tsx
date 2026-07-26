@@ -1,15 +1,20 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-
+
+import TableControls, { applyPagination } from '@/components/TableControls';
 export default function SuppliersPage() {
+  const router = useRouter();
   const { token, api } = useAuth();
   const { t } = useLanguage();
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Form State
   const [isEditing, setIsEditing] = useState(false);
@@ -126,7 +131,12 @@ export default function SuppliersPage() {
       <div className="card border-0 rounded-md shadow-sm p-4" style={{ backgroundColor: 'var(--light-card)' }}>
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4">
-          <h4 className="fw-bold m-0 text-dark">{t('suppliers', 'title')}</h4>
+          <div className="d-flex align-items-center gap-2">
+            <button className="btn btn-outline-secondary btn-sm" onClick={() => router.back()} title="Go back">
+              <i className="bi bi-arrow-left"></i> Back
+            </button>
+            <h4 className="fw-bold m-0 text-dark">{t('suppliers', 'title')}</h4>
+          </div>
           <button className="btn btn-primary fw-bold d-flex align-items-center gap-2 px-3 py-2" style={{ backgroundColor: '#0d6efd', borderRadius: '20px' }} onClick={handleAddClick}>
             <i className="bi bi-plus-circle"></i> {t('suppliers', 'add_supplier')}
           </button>
@@ -155,7 +165,7 @@ export default function SuppliersPage() {
                   <td colSpan={6} className="text-center py-5 text-muted">{t('suppliers', 'no_suppliers')}</td>
                 </tr>
               ) : (
-                suppliers.map((supp) => (
+                applyPagination(suppliers, currentPage, rowsPerPage).map((supp) => (
                   <tr key={supp.id}>
                     <td className="ps-3 border-bottom py-3 text-secondary">{supp.id}</td>
                     <td className="border-bottom fw-semibold text-dark">{supp.name}</td>
@@ -178,6 +188,13 @@ export default function SuppliersPage() {
             </tbody>
           </table>
         </div>
+        <TableControls
+          total={suppliers.length}
+          currentPage={currentPage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(n) => { setRowsPerPage(n); setCurrentPage(1); }}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* Supplier Form Modal */}
