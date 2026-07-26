@@ -603,16 +603,6 @@ export default function ProductsPage() {
             </table>
           </div>
 
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
-            <div className="d-flex justify-content-between align-items-center mt-4">
-              <span className="text-muted fs-7">Showing page {page} of {totalPages}</span>
-              <div className="btn-group">
-                <button className="btn btn-sm btn-outline-secondary" disabled={page === 1} onClick={() => setPage(page - 1)}>Prev</button>
-                <button className="btn btn-sm btn-outline-secondary" disabled={page === totalPages} onClick={() => setPage(page + 1)}>Next</button>
-              </div>
-            </div>
-          )}
 
         </div>
       )}

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import NepaliClock from './NepaliClock';
 
 export default function Navbar() {
-  const { user, logout, activeFiscalYear } = useAuth();
+  const { user, logout, activeFiscalYear, api, superAdminCompanyId, setSuperAdminCompanyId } = useAuth();
   const { language, setLanguage, t } = useLanguage();
   const router = useRouter();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
@@ -32,6 +32,14 @@ export default function Navbar() {
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
   };
+
+  const [companies, setCompanies] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (user?.role?.name === 'Super Admin') {
+      api.get('/companies').then(res => setCompanies(res.data)).catch(console.error);
+    }
+  }, [user]);
 
   const toggleLanguage = () => {
     setLanguage(language === 'en' ? 'ne' : 'en');
@@ -91,6 +99,26 @@ export default function Navbar() {
 
       <div className="d-flex align-items-center gap-2 gap-sm-4">
 
+        
+        {/* Super Admin Global Company Selector */}
+        {user?.role?.name === 'Super Admin' && (
+          <select 
+            className="form-select form-select-sm border-danger text-danger fw-bold rounded-pill shadow-sm"
+            style={{ minWidth: '180px', fontSize: '0.8rem' }}
+            value={superAdminCompanyId || ''}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSuperAdminCompanyId(val ? parseInt(val, 10) : null);
+              setTimeout(() => window.location.reload(), 100);
+            }}
+          >
+            <option value="">Global Filter: Default</option>
+            {companies.map(c => (
+              <option key={c.id} value={c.id}>🌍 {c.name}</option>
+            ))}
+          </select>
+        )}
+  
         {/* Language Toggle Button */}
         <button
           className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 px-2 py-1 rounded-pill"

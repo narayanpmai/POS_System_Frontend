@@ -38,6 +38,8 @@ interface AuthContextType {
   clearError: () => void;
   api: AxiosInstance;
   activeFiscalYear: FiscalYear | null;
+  superAdminCompanyId: number | null;
+  setSuperAdminCompanyId: (id: number | null) => void;
   refreshFiscalYear: () => Promise<void>;
 }
 
@@ -49,12 +51,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeFiscalYear, setActiveFiscalYear] = useState<FiscalYear | null>(null);
+  const [superAdminCompanyId, setSuperAdminCompanyId] = useState<number | null>(null);
   const router = useRouter();
 
   // Unified configured Axios instance
   const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
   });
+
+  useEffect(() => {
+    if (superAdminCompanyId) {
+      localStorage.setItem('smartpos_superadmin_company', superAdminCompanyId.toString());
+      api.defaults.headers.common['x-company-id'] = superAdminCompanyId.toString();
+      axios.defaults.headers.common['x-company-id'] = superAdminCompanyId.toString();
+    } else {
+      localStorage.removeItem('smartpos_superadmin_company');
+      delete api.defaults.headers.common['x-company-id'];
+      delete axios.defaults.headers.common['x-company-id'];
+    }
+  }, [superAdminCompanyId]);
 
   const refreshFiscalYear = async () => {
     if (!token) return;
@@ -71,6 +86,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const initAuth = async () => {
       const storedToken = localStorage.getItem('smartpos_token');
       const storedUser = localStorage.getItem('smartpos_user');
+      const storedCompanyId = localStorage.getItem('smartpos_superadmin_company');
 
       if (storedToken && storedUser) {
         setToken(storedToken);
@@ -79,6 +95,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Attach bearer token to axios common header
         api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
         axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+        
+        if (storedCompanyId) {
+          setSuperAdminCompanyId(parseInt(storedCompanyId, 10));
+          api.defaults.headers.common['x-company-id'] = storedCompanyId;
+          axios.defaults.headers.common['x-company-id'] = storedCompanyId;
+        }
         
         try {
           const fyRes = await api.get('/fiscal-years/active');
