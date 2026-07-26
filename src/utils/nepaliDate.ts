@@ -47,6 +47,25 @@ export function toDevanagari(str: string | number): string {
 }
 
 /**
+ * Converts Devanagari numerals (०-९) back to English digits (0-9)
+ */
+export function fromDevanagari(str: string | number): string {
+  const map: Record<string, string> = {
+    '०': '0',
+    '१': '1',
+    '२': '2',
+    '३': '3',
+    '४': '4',
+    '५': '5',
+    '६': '6',
+    '७': '7',
+    '८': '8',
+    '९': '9'
+  };
+  return String(str).replace(/[०-९]/g, (matched) => map[matched] || matched);
+}
+
+/**
  * Converts a Gregorian (AD) Date string or Date object into a BS date string (e.g. "2083/02/13")
  */
 export function formatAdToBs(dateInput: string | Date | undefined | null): string {
