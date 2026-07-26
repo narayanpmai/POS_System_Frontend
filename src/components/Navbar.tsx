@@ -97,14 +97,12 @@ export default function Navbar() {
         </div>
       </div>
 
-      <div className="d-flex align-items-center gap-2 gap-sm-4">
-
-        
+      <div className="d-flex align-items-center gap-2 gap-sm-3">
         {/* Super Admin Global Company Selector */}
         {user?.role?.name === 'Super Admin' && (
           <select 
             className="form-select form-select-sm border-danger text-danger fw-bold rounded-pill shadow-sm"
-            style={{ minWidth: '180px', fontSize: '0.8rem' }}
+            style={{ minWidth: '180px', height: '38px', fontSize: '0.8rem' }}
             value={superAdminCompanyId || ''}
             onChange={(e) => {
               const val = e.target.value;
@@ -121,43 +119,54 @@ export default function Navbar() {
   
         {/* Language Toggle Button */}
         <button
-          className="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 px-2 py-1 rounded-pill"
+          type="button"
+          className="btn btn-light border shadow-sm rounded-pill d-flex align-items-center gap-2 px-3 text-dark hover-lift"
           onClick={toggleLanguage}
           title={language === 'en' ? 'नेपालीमा बदल्नुस्' : 'Switch to English'}
-          style={{ fontSize: '0.78rem', fontWeight: 600, minWidth: '60px' }}
+          style={{
+            height: '38px',
+            fontSize: '0.82rem',
+            fontWeight: 600,
+            backgroundColor: '#ffffff',
+            transition: 'all 0.2s ease',
+            whiteSpace: 'nowrap'
+          }}
         >
-          <i className="bi bi-translate" style={{ fontSize: '0.85rem' }}></i>
+          <i className="bi bi-translate text-primary" style={{ fontSize: '1rem' }}></i>
           <span>{language === 'en' ? 'नेपाली' : 'English'}</span>
         </button>
 
         {/* Dark mode toggle */}
         <button 
-          className="btn btn-link text-dark p-0 border-0 fs-5 d-flex align-items-center justify-content-center theme-toggle-btn"
+          type="button"
+          className="btn btn-light border shadow-sm rounded-circle d-flex align-items-center justify-content-center hover-lift"
           onClick={toggleTheme}
           title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
+          style={{ width: '38px', height: '38px', backgroundColor: '#ffffff', padding: 0 }}
         >
           {theme === 'light' ? (
-            <i className="bi bi-moon-stars-fill text-secondary"></i>
+            <i className="bi bi-moon-stars-fill text-secondary" style={{ fontSize: '0.95rem' }}></i>
           ) : (
-            <i className="bi bi-sun-fill text-warning"></i>
+            <i className="bi bi-sun-fill text-warning" style={{ fontSize: '0.95rem' }}></i>
           )}
         </button>
 
         {/* User Dropdown */}
         <div className="dropdown">
           <button
-            className="btn btn-light rounded-pill border-0 d-flex align-items-center gap-2 px-3 py-1 bg-white border shadow-sm"
+            className="btn btn-light rounded-pill border shadow-sm d-flex align-items-center gap-2 px-3 bg-white text-dark hover-lift"
             type="button"
             onClick={toggleDropdown}
             onBlur={() => setTimeout(() => setDropdownOpen(false), 200)}
             aria-expanded={dropdownOpen}
+            style={{ height: '38px', fontSize: '0.85rem' }}
           >
-            <i className="bi bi-person-circle fs-5 text-secondary"></i>
+            <i className="bi bi-person-circle fs-5 text-primary"></i>
             <span className="fw-semibold text-dark fs-7">{user?.name || t('common', 'loading')}</span>
-            <i className="bi bi-caret-down-fill ms-1" style={{ fontSize: '0.65rem' }}></i>
+            <i className="bi bi-caret-down-fill ms-1 text-muted" style={{ fontSize: '0.65rem' }}></i>
           </button>
           
-          <ul className={`dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-md p-2 mt-2 ${dropdownOpen ? 'show' : ''}`} style={{ position: 'absolute' }}>
+          <ul className={`dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-md p-2 mt-2 ${dropdownOpen ? 'show' : ''}`} style={{ position: 'absolute' }}>
             <li className="p-3 border-bottom">
               <h6 className="m-0 fw-bold">{user?.name || t('common', 'profile')}</h6>
               <small className="text-primary fw-semibold">{user?.role?.name || 'Cashier'}</small>
