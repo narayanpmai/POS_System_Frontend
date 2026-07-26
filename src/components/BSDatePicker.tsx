@@ -11,7 +11,10 @@ interface Props {
   placeholder?: string;
 }
 
+import { useLanguage } from '@/context/LanguageContext';
+
 export default function BSDatePicker({ value, onChange, className, placeholder }: Props) {
+  const { language } = useLanguage();
   const [bsDefault, setBsDefault] = useState<string | undefined>(undefined);
   const [ready, setReady] = useState(false);
   
@@ -91,6 +94,7 @@ export default function BSDatePicker({ value, onChange, className, placeholder }
        placeholder={placeholder || "Select Date"}
        defaultDate={bsDefault}
        hideDefaultValue={!value}
+       language={language}
     />
   );
 }
