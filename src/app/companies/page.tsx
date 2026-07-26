@@ -41,18 +41,18 @@ export default function CompaniesPage() {
     name: '', email: '', phone: '', address: '', isActive: true
   });
 
-  // Basic check for Super Admin
+  const [showInactive, setShowInactive] = useState(false);
   const isSuperAdmin = user?.role?.name === 'Super Admin';
 
   useEffect(() => {
     if (isSuperAdmin) {
-      fetchCompanies();
+      fetchCompanies(showInactive);
     }
-  }, [isSuperAdmin]);
+  }, [isSuperAdmin, showInactive]);
 
-  const fetchCompanies = async () => {
+  const fetchCompanies = async (includeInactive = showInactive) => {
     try {
-      const res = await api.get('/companies');
+      const res = await api.get(`/companies?includeInactive=${includeInactive}`);
       setCompanies(res.data);
     } catch (err) {
       console.error('Error fetching companies', err);
@@ -142,6 +142,22 @@ export default function CompaniesPage() {
     }
   };
 
+  const handleDeletePermanently = async (id: number, name: string) => {
+    const reason = window.confirm(`⚠️ PERMANENT DELETE WARNING:\n\nAre you sure you want to PERMANENTLY delete "${name}" and all its users/data from the database?\nThis action CANNOT be undone!`);
+    if (!reason) return;
+    try {
+      setLoading(true);
+      await api.delete(`/companies/${id}?permanent=true`);
+      alert('Company permanently deleted.');
+      fetchCompanies(showInactive);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.response?.data?.message || 'Failed to permanently delete company');
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   if (!isSuperAdmin) {
     return <AuthLayout><div className="p-4">Access Denied. Only Super Admin can view this page.</div></AuthLayout>;
@@ -150,17 +166,32 @@ export default function CompaniesPage() {
   return (
     <AuthLayout>
       <div className="p-4">
-        <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="mb-0">🏢 {t('common', 'Companies') || 'Companies (Super Admin)'}</h2>
-        <div className="d-flex gap-2 flex-wrap">
-          <button className="btn btn-secondary" onClick={() => router.back()}>
-            <i className="bi bi-arrow-left me-2"></i> Back
-          </button>
-          <button className="btn btn-primary" onClick={handleOpenModal}>
-            <i className="bi bi-plus-circle me-2"></i> Add Company
-          </button>
+        <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+          <h2 className="mb-0">🏢 {t('common', 'Companies') || 'Companies (Super Admin)'}</h2>
+          <div className="d-flex align-items-center gap-3 flex-wrap">
+            <div className="form-check form-switch mb-0">
+              <input 
+                className="form-check-input" 
+                type="checkbox" 
+                id="showInactiveToggle" 
+                checked={showInactive} 
+                onChange={(e) => {
+                  setShowInactive(e.target.checked);
+                  fetchCompanies(e.target.checked);
+                }} 
+              />
+              <label className="form-check-label text-muted" htmlFor="showInactiveToggle">
+                Show Inactive / Demo
+              </label>
+            </div>
+            <button className="btn btn-secondary" onClick={() => router.back()}>
+              <i className="bi bi-arrow-left me-2"></i> Back
+            </button>
+            <button className="btn btn-primary" onClick={handleOpenModal}>
+              <i className="bi bi-plus-circle me-2"></i> Add Company
+            </button>
+          </div>
         </div>
-      </div>
 
       {loading ? (
         <div className="text-center py-5">
@@ -200,9 +231,15 @@ export default function CompaniesPage() {
                           <i className="bi bi-pencil"></i>
                         </button>
                         {c.id !== 1 && (
-                          <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteCompany(c.id, c.name)} title={c.isActive ? "Deactivate" : "Already Inactive"}>
-                            <i className={`bi ${c.isActive ? 'bi-power' : 'bi-dash-circle'}`}></i>
-                          </button>
+                          c.isActive ? (
+                            <button className="btn btn-sm btn-outline-warning" onClick={() => handleDeleteCompany(c.id, c.name)} title="Deactivate Company">
+                              <i className="bi bi-power"></i>
+                            </button>
+                          ) : (
+                            <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeletePermanently(c.id, c.name)} title="Permanently Delete Company">
+                              <i className="bi bi-trash"></i>
+                            </button>
+                          )
                         )}
                       </td>
                     </tr>
