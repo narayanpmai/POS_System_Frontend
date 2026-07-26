@@ -68,11 +68,19 @@ export default function Navbar() {
         </button>
 
         {/* Fiscal Year Badge */}
-        {activeFiscalYear && (
+        {activeFiscalYear ? (
           <div className="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2 d-none d-md-flex align-items-center gap-2">
             <i className="bi bi-calendar-check"></i>
-            <span className="fw-medium">FY: {activeFiscalYear.name}</span>
+            <span className="fw-medium">{language === 'ne' ? 'आर्थिक वर्ष:' : 'FY:'} {activeFiscalYear.name}</span>
           </div>
+        ) : (
+          <a
+            href="/fiscal-years"
+            className="badge bg-warning bg-opacity-25 text-dark border border-warning rounded-pill px-3 py-2 d-flex align-items-center gap-2 text-decoration-none shadow-sm"
+          >
+            <i className="bi bi-exclamation-triangle-fill text-danger"></i>
+            <span className="fw-bold">{language === 'ne' ? 'चालु आर्थिक वर्ष सेट गर्नुहोस्' : 'Set Active FY'}</span>
+          </a>
         )}
 
         {/* Nepali Clock Widget */}

@@ -46,11 +46,14 @@ export default function LoginPage() {
       <div className="card shadow-2xl border-0 p-4 p-md-5 rounded-lg text-white" style={{ maxWidth: '480px', width: '100%', backgroundColor: 'rgba(21, 34, 68, 0.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
         
         <div className="text-center mb-5">
-          <h2 className="fw-bold text-white mb-2 d-flex align-items-center justify-content-center gap-2" style={{ letterSpacing: '1px' }}>
-            <img src="/logo.png" alt="Logo" style={{ height: '48px', width: '48px', objectFit: 'contain' }} />
-            <span>KoseliGhar POS</span>
+          <div className="mb-3 d-flex justify-content-center">
+            <img src="/logo.png" alt="कोसेली घर Logo" style={{ height: '90px', width: '90px', objectFit: 'contain', filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.4))' }} />
+          </div>
+          <h2 className="fw-bold text-white mb-1 d-flex align-items-center justify-content-center gap-2" style={{ letterSpacing: '0.5px' }}>
+            <span>कोसेली घर POS</span>
           </h2>
-          <p className="text-light" style={{ fontSize: '0.9rem' }}>{t('auth', 'signin_subtitle') || 'Sign in to continue retail and cashier checkout'}</p>
+          <p className="text-warning fw-medium mb-1" style={{ fontSize: '0.85rem' }}>स्थानीय उत्पादन, हाम्रो पहिचान</p>
+          <p className="text-light" style={{ fontSize: '0.8rem', opacity: 0.85 }}>{t('auth', 'signin_subtitle') || 'गाउँघरको कोसेली, समृद्ध किसानको अभियान'}</p>
         </div>
 
         {error && (

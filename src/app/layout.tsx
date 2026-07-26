@@ -9,8 +9,13 @@ import './globals.css';
 import InitBootstrap from '@/components/InitBootstrap';
 
 export const metadata: Metadata = {
-  title: 'KoseliGhar',
-  description: 'Modern, fast, and responsive Point of Sale system.',
+  title: 'KoseliGhar - स्थानीय उत्पादन, हाम्रो पहिचान',
+  description: 'गाउँघरको कोसेली, समृद्ध किसानको अभियान - Modern POS & Inventory Management System',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({
