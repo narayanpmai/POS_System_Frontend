@@ -279,7 +279,7 @@ export default function ExpensesPage() {
                     <td colSpan={6} className="text-center py-5 text-muted">{t('expenses', 'no_expenses')}</td>
                   </tr>
                 ) : (
-                  expenses.map((exp) => (
+                  applyPagination(expenses, currentPage, rowsPerPage).map((exp) => (
                     <tr key={exp.id}>
                       <td className="ps-3 border-bottom py-3 text-secondary">{formatAdToBs(exp.date)}</td>
                       <td className="border-bottom fw-bold text-dark">{exp.referenceNo || `EXP-${exp.id}`}</td>
@@ -306,6 +306,14 @@ export default function ExpensesPage() {
               </tbody>
             </table>
           </div>
+
+        <TableControls
+          total={expenses.length}
+          currentPage={currentPage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(n) => { setRowsPerPage(n); setCurrentPage(1); }}
+          onPageChange={setCurrentPage}
+        />
         </div>
       )}
 

@@ -134,6 +134,14 @@ export default function PurchaseReturnsPage() {
               </tbody>
             </table>
           </div>
+
+        <TableControls
+          total={items.length}
+          currentPage={currentPage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(n) => { setRowsPerPage(n); setCurrentPage(1); }}
+          onPageChange={setCurrentPage}
+        />
         </div>
 
         {/* Modal */}
@@ -171,7 +179,7 @@ export default function PurchaseReturnsPage() {
                     </div>
 
                     <h6 className="fw-bold mt-4 mb-3">Return Items</h6>
-                    {items.map((item, index) => (
+                    {applyPagination(items, currentPage, rowsPerPage).map((item, index) => (
                       <div className="row g-2 mb-2 align-items-center" key={index}>
                         <div className="col-md-5">
                           <input

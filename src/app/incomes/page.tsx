@@ -298,7 +298,7 @@ export default function IncomesPage() {
                     <td colSpan={6} className="text-center py-5 text-muted">{t('incomes', 'no_incomes')}</td>
                   </tr>
                 ) : (
-                  incomes.map((exp) => (
+                  applyPagination(incomes, currentPage, rowsPerPage).map((exp) => (
                     <tr key={exp.id}>
                       <td className="ps-3 border-bottom py-3 text-secondary">{formatAdToBs(exp.date)}</td>
                       <td className="border-bottom fw-bold text-dark">{exp.referenceNo || `INC-${exp.id}`}</td>
@@ -328,6 +328,14 @@ export default function IncomesPage() {
               </tbody>
             </table>
           </div>
+
+        <TableControls
+          total={incomes.length}
+          currentPage={currentPage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(n) => { setRowsPerPage(n); setCurrentPage(1); }}
+          onPageChange={setCurrentPage}
+        />
         </div>
       )}
 

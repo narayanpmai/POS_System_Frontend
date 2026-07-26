@@ -254,7 +254,7 @@ export default function PurchasesPage() {
                     <td colSpan={7} className="text-center py-4 text-muted">Click "Add Item" to start adding products</td>
                   </tr>
                 ) : (
-                  cart.map((item, idx) => (
+                  applyPagination(cart, currentPage, rowsPerPage).map((item, idx) => (
                     <tr key={idx}>
                       <td className="ps-3 border-bottom py-3">
                         <select className="form-select" value={item.productId} onChange={e => updateCartItem(idx, 'productId', e.target.value)}>
@@ -320,6 +320,14 @@ export default function PurchasesPage() {
               </tbody>
             </table>
           </div>
+
+        <TableControls
+          total={cart.length}
+          currentPage={currentPage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(n) => { setRowsPerPage(n); setCurrentPage(1); }}
+          onPageChange={setCurrentPage}
+        />
         </div>
 
         {/* Section 3: Summary & Submit */}

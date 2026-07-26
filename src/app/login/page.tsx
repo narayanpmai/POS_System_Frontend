@@ -30,47 +30,49 @@ export default function LoginPage() {
     }
   };
 
-  const handleDemoFill = (role: 'admin' | 'cashier') => {
-    clearError();
-    if (role === 'admin') {
-      setEmail('admin@pos.com');
-      setPassword('admin123');
-    } else {
-      setEmail('cashier@pos.com');
-      setPassword('cashier123');
-    }
-  };
-
   return (
-    <div className="d-flex align-items-center justify-content-center min-vh-100" style={{ background: 'linear-gradient(135deg, #0b1329 0%, #1c2a4a 100%)' }}>
-      <div className="card shadow-2xl border-0 p-4 p-md-5 rounded-lg text-white" style={{ maxWidth: '480px', width: '100%', backgroundColor: 'rgba(21, 34, 68, 0.85)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+    <div className="d-flex align-items-center justify-content-center min-vh-100 position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #062b1b 0%, #031525 100%)' }}>
+      
+      {/* Decorative background elements */}
+      <div className="position-absolute rounded-circle" style={{ width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(26, 116, 56, 0.15) 0%, rgba(0,0,0,0) 70%)', top: '-10%', left: '-10%' }}></div>
+      <div className="position-absolute rounded-circle" style={{ width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(234, 179, 8, 0.1) 0%, rgba(0,0,0,0) 70%)', bottom: '-5%', right: '-5%' }}></div>
+      
+      <div className="card shadow-lg border-0 p-4 p-md-5 rounded-4 text-white position-relative" style={{ 
+        maxWidth: '460px', width: '100%', 
+        background: 'linear-gradient(180deg, rgba(20, 40, 30, 0.85) 0%, rgba(10, 20, 25, 0.95) 100%)', 
+        backdropFilter: 'blur(16px)', 
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+      }}>
         
-        <div className="text-center mb-5">
-          <div className="mb-3 d-flex justify-content-center">
-            <img src="/logo.png" alt="कोसेली घर Logo" style={{ height: '90px', width: '90px', objectFit: 'contain', filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.4))' }} />
+        <div className="text-center mb-4">
+          <div className="mb-3 d-flex justify-content-center position-relative">
+            <div className="position-absolute rounded-circle bg-white" style={{ width: '110px', height: '110px', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', opacity: 0.05, filter: 'blur(10px)' }}></div>
+            <img src="/logo.png" alt="कोसेली घर Logo" className="position-relative" style={{ height: '100px', width: '100px', objectFit: 'contain', filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.5))', transition: 'transform 0.3s ease' }} onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'} />
           </div>
-          <h2 className="fw-bold text-white mb-1 d-flex align-items-center justify-content-center gap-2" style={{ letterSpacing: '0.5px' }}>
-            <span>कोसेली घर POS</span>
+          <h2 className="fw-bolder text-white mb-2" style={{ letterSpacing: '0.5px', fontSize: '1.75rem', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+            कोसेली घर POS
           </h2>
-          <p className="text-warning fw-medium mb-1" style={{ fontSize: '0.85rem' }}>स्थानीय उत्पादन, हाम्रो पहिचान</p>
-          <p className="text-light" style={{ fontSize: '0.8rem', opacity: 0.85 }}>{t('auth', 'signin_subtitle') || 'गाउँघरको कोसेली, समृद्ध किसानको अभियान'}</p>
+          <p className="fw-medium mb-1" style={{ color: '#eab308', fontSize: '0.9rem', letterSpacing: '0.5px' }}>स्थानीय उत्पादन, हाम्रो पहिचान</p>
+          <p className="text-light opacity-75" style={{ fontSize: '0.85rem' }}>{t('auth', 'signin_subtitle') || 'गाउँघरको कोसेली, समृद्ध किसानको अभियान'}</p>
         </div>
 
         {error && (
-          <div className="alert alert-danger border-0 text-white rounded-md d-flex align-items-center gap-2" style={{ backgroundColor: '#ef4444', fontSize: '0.85rem' }} role="alert">
-            <i className="bi bi-exclamation-triangle-fill"></i>
+          <div className="alert alert-danger border-0 text-white rounded-3 d-flex align-items-center gap-2 mb-4 p-3 shadow-sm" style={{ backgroundColor: 'rgba(220, 38, 38, 0.9)', fontSize: '0.85rem', backdropFilter: 'blur(4px)' }} role="alert">
+            <i className="bi bi-exclamation-octagon-fill fs-6"></i>
             <div>{error}</div>
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
-            <label className="form-label text-light fs-7">{t('auth', 'email') || 'Email Address'}</label>
+            <label className="form-label text-light fs-7 fw-medium mb-2 opacity-75">{t('auth', 'email') || 'Email Address'}</label>
             <div className="input-group">
-              <span className="input-group-text bg-dark border-0 text-light"><i className="bi bi-envelope"></i></span>
+              <span className="input-group-text border-0 text-light" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}><i className="bi bi-envelope"></i></span>
               <input
                 type="email"
-                className="form-control bg-dark border-0 text-white"
+                className="form-control border-0 text-white shadow-none"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', fontSize: '0.95rem' }}
                 placeholder="email@example.com"
                 value={email}
                 onChange={(e) => { clearError(); setEmail(e.target.value); }}
@@ -80,15 +82,16 @@ export default function LoginPage() {
           </div>
 
           <div className="mb-4">
-            <div className="d-flex justify-content-between">
-              <label className="form-label text-light fs-7">{t('auth', 'password') || 'Password'}</label>
-              <Link href="/login" onClick={() => alert('Demo password reset feature. To log in, please use admin@pos.com with password admin123')} className="text-warning text-decoration-none" style={{ fontSize: '0.8rem' }}>Forgot password?</Link>
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <label className="form-label text-light fs-7 fw-medium mb-0 opacity-75">{t('auth', 'password') || 'Password'}</label>
+              <Link href="/login" onClick={(e) => { e.preventDefault(); alert('Demo password reset feature. To log in, please use admin@pos.com with password admin123'); }} className="text-decoration-none" style={{ color: '#eab308', fontSize: '0.8rem', opacity: 0.9, transition: 'opacity 0.2s' }} onMouseOver={(e) => e.currentTarget.style.opacity = '1'} onMouseOut={(e) => e.currentTarget.style.opacity = '0.9'}>Forgot password?</Link>
             </div>
             <div className="input-group">
-              <span className="input-group-text bg-dark border-0 text-light"><i className="bi bi-shield-lock"></i></span>
+              <span className="input-group-text border-0 text-light" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}><i className="bi bi-shield-lock"></i></span>
               <input
                 type="password"
-                className="form-control bg-dark border-0 text-white"
+                className="form-control border-0 text-white shadow-none"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', fontSize: '0.95rem' }}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => { clearError(); setPassword(e.target.value); }}
@@ -97,31 +100,15 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <button type="submit" className="btn btn-warning w-100 py-2.5 fw-bold text-dark d-flex align-items-center justify-content-center gap-2" disabled={submitting || loading}>
+          <button type="submit" className="btn w-100 py-2 fw-bold text-dark d-flex align-items-center justify-content-center gap-2 rounded-3 border-0 shadow-sm" style={{ background: 'linear-gradient(to right, #eab308, #f59e0b)', transition: 'all 0.3s ease' }} onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(234, 179, 8, 0.4)'; }} onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 1px 2px 0 rgba(0, 0, 0, 0.05)'; }} disabled={submitting || loading}>
             {submitting ? (
               <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
             ) : (
-              <i className="bi bi-box-arrow-in-right"></i>
+              <i className="bi bi-box-arrow-in-right fs-5"></i>
             )}
-            <span>{t('auth', 'login') || 'Sign In'}</span>
+            <span style={{ fontSize: '1rem' }}>{t('auth', 'login') || 'Sign In'}</span>
           </button>
         </form>
-
-        <div className="mt-4 pt-3 border-top border-secondary text-center">
-          <p className="text-light mb-2" style={{ fontSize: '0.8rem' }}>Click below to instantly fill Demo accounts:</p>
-          <div className="d-flex justify-content-center gap-2">
-            <button className="btn btn-sm btn-outline-primary text-white border-primary" onClick={() => handleDemoFill('admin')} style={{ fontSize: '0.75rem' }}>
-              <i className="bi bi-key me-1"></i>Admin Demo
-            </button>
-            <button className="btn btn-sm btn-outline-warning text-white border-warning" onClick={() => handleDemoFill('cashier')} style={{ fontSize: '0.75rem' }}>
-              <i className="bi bi-person me-1"></i>Cashier Demo
-            </button>
-          </div>
-        </div>
-
-        <p className="mt-4 mb-0 text-center text-light" style={{ fontSize: '0.85rem' }}>
-          {t('auth', 'dont_have_account') || "Don't have cashier account?"} <Link href="/register" className="text-warning text-decoration-none">{t('auth', 'register') || 'Register here'}</Link>
-        </p>
       </div>
     </div>
   );
