@@ -373,7 +373,7 @@ export default function FiscalYearsPage() {
                     </p>
                   </div>
                   <div className="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-bold border border-primary border-opacity-25 shadow-sm">
-                    <i className="bi bi-info-circle-fill me-1"></i> {fiscalYears.length} {language === 'ne' ? 'वटा वर्षहरू' : 'Records'}
+                    <i className="bi bi-info-circle-fill me-1"></i> {fiscalYears.filter(f => f.isActive).length} {language === 'ne' ? 'सक्रिय वर्ष' : 'Active'}
                   </div>
                 </div>
 
@@ -400,14 +400,14 @@ export default function FiscalYearsPage() {
                             </p>
                           </td>
                         </tr>
-                      ) : fiscalYears.length === 0 ? (
+                      ) : fiscalYears.filter(f => f.isActive).length === 0 ? (
                         <tr>
                           <td colSpan={5} className="text-center py-5 text-muted">
                             <div className="p-4 bg-light rounded-circle d-inline-block mb-3 shadow-sm border">
                               <i className="bi bi-calendar-x fs-1 text-primary opacity-75"></i>
                             </div>
                             <h5 className="fw-bold text-dark">
-                              {language === 'ne' ? 'कुनै आर्थिक वर्ष फेला परेन' : 'No fiscal years found'}
+                              {language === 'ne' ? 'कुनै सक्रिय आर्थिक वर्ष छैन' : 'No active fiscal year found'}
                             </h5>
                             <p className="small text-secondary mb-4">
                               {language === 'ne'
@@ -428,7 +428,7 @@ export default function FiscalYearsPage() {
                           </td>
                         </tr>
                       ) : (
-                        fiscalYears.map((fy) => {
+                        fiscalYears.filter(f => f.isActive).map((fy) => {
                           const startFormatted = renderBsDate(fy.startDate);
                           const endFormatted = renderBsDate(fy.endDate);
 
