@@ -221,7 +221,7 @@ export default function SalesHistoryPage() {
                   <td colSpan={7} className="text-center py-5 text-muted">{t('sales', 'no_sales')}</td>
                 </tr>
               ) : (
-                applyPagination(sales, currentPage, rowsPerPage).map((sale) => (
+                applyPagination(sales, currentPage, rowsPerPage).map((sale, index) => (
                   <tr key={sale.id}>
                     <td className="ps-3 border-bottom py-3">
                       <span className="fw-bold text-dark">{sale.invoiceNo}</span>

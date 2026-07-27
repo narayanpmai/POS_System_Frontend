@@ -204,7 +204,7 @@ export default function CompaniesPage() {
               <table className="table table-hover align-middle mb-0">
                 <thead className="table-light">
                   <tr>
-                    <th>ID</th>
+                    <th>S.N.</th>
                     <th>Name</th>
                     <th>Email</th>
                     <th>Status</th>

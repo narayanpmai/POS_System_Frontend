@@ -116,7 +116,7 @@ export default function SalesReturnsPage() {
                     <td colSpan={5} className="text-center py-4 text-muted">{language === 'ne' ? 'कुनै फिर्ता फेला परेन' : 'No returns found'}</td>
                   </tr>
                 ) : (
-                  applyPagination(returns, currentPage, rowsPerPage).map((ret) => (
+                  applyPagination(returns, currentPage, rowsPerPage).map((ret, index) => (
                     <tr key={ret.id}>
                       <td className="fw-bold">{ret.returnNo}</td>
                       <td>{ret.sale?.invoiceNo || '-'}</td>

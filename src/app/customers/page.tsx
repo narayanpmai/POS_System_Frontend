@@ -184,6 +184,7 @@ export default function CustomersPage() {
           <table className="table custom-table m-0">
             <thead>
               <tr>
+                <th>{t('common', 'sn') || 'S.N.'}</th>
                 <th>{t('customer', 'customer_name')}</th>
                 <th>{t('common', 'phone')}</th>
                 <th>{t('common', 'email')}</th>
@@ -195,16 +196,16 @@ export default function CustomersPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-4">
+                  <td colSpan={7} className="text-center py-4">
                     <div className="spinner-border text-primary" role="status"></div>
                   </td>
                 </tr>
               ) : customers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-4 text-muted">{t('customer', 'no_customers')}</td>
+                  <td colSpan={7} className="text-center py-4 text-muted">{t('customer', 'no_customers')}</td>
                 </tr>
               ) : (
-                customers.map((cust) => (
+                customers.map((cust, index) => (
                   <tr key={cust.id}>
                     <td className="fw-bold text-dark">{cust.name}</td>
                     <td>{cust.phone || <span className="text-muted fs-8">None</span>}</td>

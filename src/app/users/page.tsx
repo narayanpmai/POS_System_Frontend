@@ -232,7 +232,7 @@ export default function UserControlPage() {
             <tbody>
               {loading ? (
                 <tr><td colSpan={6} className="text-center py-4">Loading users...</td></tr>
-              ) : applyPagination(users, currentPage, rowsPerPage).map(u => (
+              ) : applyPagination(users, currentPage, rowsPerPage).map((u , index) => (
                 <tr key={u.id}>
                   <td className="fw-bold">{u.name}</td>
                   <td>{u.email}</td>

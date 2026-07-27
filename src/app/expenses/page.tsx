@@ -279,7 +279,7 @@ export default function ExpensesPage() {
                     <td colSpan={6} className="text-center py-5 text-muted">{t('expenses', 'no_expenses')}</td>
                   </tr>
                 ) : (
-                  applyPagination(expenses, currentPage, rowsPerPage).map((exp) => (
+                  applyPagination(expenses, currentPage, rowsPerPage).map((exp, index) => (
                     <tr key={exp.id}>
                       <td className="ps-3 border-bottom py-3 text-secondary">{formatAdToBs(exp.date)}</td>
                       <td className="border-bottom fw-bold text-dark">{exp.referenceNo || `EXP-${exp.id}`}</td>

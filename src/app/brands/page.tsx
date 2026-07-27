@@ -129,7 +129,7 @@ export default function BrandsPage() {
           <table className="table mb-0 align-middle">
             <thead>
               <tr style={{ backgroundColor: 'var(--light-bg)' }}>
-                <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top" style={{ width: '10%' }}>{t('common', 'id') || 'ID'}</th>
+                <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top" style={{ width: '10%' }}>{t('common', 'sn') || 'S.N.'}</th>
                 <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '35%' }}>{t('common', 'name')}</th>
                 <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '30%' }}>{t('brands', 'slug')}</th>
                 <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '15%' }}>{t('common', 'status')}</th>
@@ -146,9 +146,9 @@ export default function BrandsPage() {
                   <td colSpan={5} className="text-center py-5 text-muted">{t('brands', 'no_brands')}</td>
                 </tr>
               ) : (
-                applyPagination(brands, currentPage, rowsPerPage).map((brand) => (
+                applyPagination(brands, currentPage, rowsPerPage).map((brand, index) => (
                   <tr key={brand.id}>
-                    <td className="ps-3 border-bottom py-3 text-secondary">{brand.id}</td>
+                    <td className="ps-3 border-bottom py-3 text-secondary">{(currentPage - 1) * rowsPerPage + index + 1}</td>
                     <td className="border-bottom fw-semibold text-dark">{brand.name}</td>
                     <td className="border-bottom text-secondary font-mono">{brand.slug}</td>
                     <td className="border-bottom">

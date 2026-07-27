@@ -119,7 +119,7 @@ export default function PurchaseReturnsPage() {
                     </td>
                   </tr>
                 ) : (
-                  applyPagination(returns, currentPage, rowsPerPage).map((ret) => (
+                  applyPagination(returns, currentPage, rowsPerPage).map((ret, index) => (
                     <tr key={ret.id}>
                       <td className="fw-bold">{ret.returnNo}</td>
                       <td>{ret.purchase?.poNumber || '-'}</td>

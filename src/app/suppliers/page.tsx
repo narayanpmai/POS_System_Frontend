@@ -147,7 +147,7 @@ export default function SuppliersPage() {
           <table className="table mb-0 align-middle">
             <thead>
               <tr style={{ backgroundColor: 'var(--light-bg)' }}>
-                <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top" style={{ width: '10%' }}>{t('common', 'id') || 'ID'}</th>
+                <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top" style={{ width: '10%' }}>{t('common', 'sn') || 'S.N.'}</th>
                 <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '25%' }}>{t('common', 'name')}</th>
                 <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '20%' }}>{t('common', 'email')}</th>
                 <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '15%' }}>{t('common', 'phone')}</th>
@@ -165,9 +165,9 @@ export default function SuppliersPage() {
                   <td colSpan={6} className="text-center py-5 text-muted">{t('suppliers', 'no_suppliers')}</td>
                 </tr>
               ) : (
-                applyPagination(suppliers, currentPage, rowsPerPage).map((supp) => (
+                applyPagination(suppliers, currentPage, rowsPerPage).map((supp, index) => (
                   <tr key={supp.id}>
-                    <td className="ps-3 border-bottom py-3 text-secondary">{supp.id}</td>
+                    <td className="ps-3 border-bottom py-3 text-secondary">{(currentPage - 1) * rowsPerPage + index + 1}</td>
                     <td className="border-bottom fw-semibold text-dark">{supp.name}</td>
                     <td className="border-bottom text-secondary">{supp.email || <span className="text-muted fs-8">{t('common', 'none')}</span>}</td>
                     <td className="border-bottom text-secondary">{supp.phone || <span className="text-muted fs-8">{t('common', 'none')}</span>}</td>

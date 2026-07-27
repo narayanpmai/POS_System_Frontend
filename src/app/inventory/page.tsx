@@ -190,7 +190,7 @@ export default function InventoryPage() {
                   <td colSpan={isAdmin ? 9 : 8} className="text-center py-4 text-muted">{t('common', 'no_data')}</td>
                 </tr>
               ) : (
-                applyPagination(filteredItems, currentPage, rowsPerPage).map((item: any) => (
+                applyPagination(filteredItems, currentPage, rowsPerPage).map((item: any, index) => (
                   <tr key={item.id} className={item.isLowStock ? 'table-danger-subtle' : ''}>
                     <td className="fw-bold font-mono fs-8">{item.SKU}</td>
                     <td className="fw-semibold text-dark">{item.name}</td>

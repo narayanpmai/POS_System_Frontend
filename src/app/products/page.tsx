@@ -647,7 +647,7 @@ export default function ProductsPage() {
                     <td colSpan={isAdmin ? 4 : 3} className="text-center py-4 text-muted">No categories created in the system</td>
                   </tr>
                 ) : (
-                  applyPagination(categories, categoryPage, categoryRowsPerPage).map((cat) => (
+                  applyPagination(categories, categoryPage, categoryRowsPerPage).map((cat, index) => (
                     <tr key={cat.id}>
                       <td className="fw-bold text-dark">{cat.name}</td>
                       <td className="text-muted">{cat.description || 'No description provided'}</td>
