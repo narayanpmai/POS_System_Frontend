@@ -99,12 +99,12 @@ jobs:
           npm ci --legacy-peer-deps --omit=dev || npm install --legacy-peer-deps --omit=dev
 
           if pm2 describe "$APP_NAME" > /dev/null 2>&1; then
-            echo "Reloading existing PM2 process..."
-            pm2 reload ecosystem.config.js --only "$APP_NAME" --update-env || pm2 restart "$APP_NAME"
-          else
-            echo "Starting Next.js server with PM2..."
-            pm2 start ecosystem.config.js --only "$APP_NAME"
+            echo "Deleting existing PM2 process to reset args..."
+            pm2 delete "$APP_NAME" || true
           fi
+
+          echo "Starting Next.js server with PM2..."
+          pm2 start ecosystem.config.js --only "$APP_NAME"
 
           # Wait for app to come online
           MAX_ATTEMPTS=20

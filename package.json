@@ -4,9 +4,9 @@
   "description": "Premium Next.js Frontend Client for Koselighar System",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3001",
+    "dev": "next dev",
     "build": "next build && node -e \"const fs=require('fs'); try{fs.cpSync('.next/static','.next/standalone/.next/static',{recursive:true});fs.cpSync('public','.next/standalone/public',{recursive:true});}catch(e){}\"",
-    "start": "next start -p 3001"
+    "start": "next start"
   },
   "dependencies": {
     "@popperjs/core": "^2.11.8",
