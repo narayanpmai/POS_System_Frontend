@@ -157,6 +157,35 @@ export default function POSPage() {
     setCart(newCart);
   };
 
+  const setQuantity = (productId: number, val: string) => {
+    const existingIndex = cart.findIndex((item) => item.product.id === productId);
+    if (existingIndex === -1) return;
+
+    const newCart = [...cart];
+    const item = newCart[existingIndex];
+    
+    if (val === '') {
+      item.quantity = '' as any;
+      setCart(newCart);
+      return;
+    }
+
+    let targetQty = parseInt(val);
+    if (isNaN(targetQty)) return;
+
+    if (targetQty <= 0) {
+      newCart.splice(existingIndex, 1);
+    } else {
+      if (item.product.stock < targetQty) {
+        alert(`Insufficient stock. Only ${item.product.stock} units available.`);
+        targetQty = item.product.stock;
+      }
+      item.quantity = targetQty;
+      recalculateCartItem(item);
+    }
+    setCart(newCart);
+  };
+
   const removeFromCart = (productId: number) => {
     setCart(cart.filter((item) => item.product.id !== productId));
   };
@@ -447,11 +476,14 @@ export default function POSPage() {
                         -
                       </button>
                       <input 
-                        type="text" 
-                        className="form-control text-center py-0.5 bg-white" 
+                        type="number" 
+                        className="form-control text-center py-0.5 bg-white px-1 no-spinners" 
                         value={item.quantity} 
-                        readOnly 
-                        style={{ width: '38px', border: '1px solid #dee2e6', borderRadius: '0px', fontSize: '0.85rem', height: '26px' }} 
+                        onChange={(e) => setQuantity(item.product.id, e.target.value)}
+                        onBlur={() => {
+                          if (!item.quantity) setQuantity(item.product.id, '1');
+                        }}
+                        style={{ width: '45px', border: '1px solid #dee2e6', borderRadius: '0px', fontSize: '0.85rem', height: '26px' }} 
                       />
                       <button 
                         className="btn btn-sm btn-light border px-2 py-0.5" 

@@ -6,7 +6,8 @@ import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBs } from '@/utils/nepaliDate';
-
+
+
 import TableControls, { applyPagination } from '@/components/TableControls';
 export default function PurchasesPage() {
   const router = useRouter();
@@ -18,6 +19,7 @@ export default function PurchasesPage() {
   const [loading, setLoading] = useState(true);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
   
   // New Purchase Form UI state
   const [showForm, setShowForm] = useState(false);
@@ -254,7 +256,9 @@ export default function PurchasesPage() {
                     <td colSpan={7} className="text-center py-4 text-muted">Click "Add Item" to start adding products</td>
                   </tr>
                 ) : (
-                  applyPagination(cart, currentPage, rowsPerPage).map((item, idx) => (
+                  applyPagination(cart, currentPage, rowsPerPage).map((item, pageIdx) => {
+                    const idx = (currentPage - 1) * rowsPerPage + pageIdx;
+                    return (
                     <tr key={idx}>
                       <td className="ps-3 border-bottom py-3">
                         <select className="form-select" value={item.productId} onChange={e => updateCartItem(idx, 'productId', e.target.value)}>
@@ -315,7 +319,8 @@ export default function PurchasesPage() {
                         </button>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -378,7 +383,21 @@ export default function PurchasesPage() {
     );
   }
 
+
+  const filteredPurchases = purchases.filter(p => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    if (p.poNumber?.toLowerCase().includes(term)) return true;
+    if (p.status?.toLowerCase().includes(term)) return true;
+    if (p.items?.some((item: any) => {
+       const prodName = products.find(prod => prod.id === item.productId)?.name || '';
+       return prodName.toLowerCase().includes(term);
+    })) return true;
+    return false;
+  });
+
   // Listing view (when showForm is false)
+
   return (
     <AuthLayout>
       {/* Back Button */}
@@ -388,11 +407,23 @@ export default function PurchasesPage() {
         </button>
         <h4 className="fw-bold m-0 text-dark">{t('purchases', 'title') || 'Purchases'}</h4>
       </div>
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex justify-content-between align-items-center mb-4 gap-3 flex-wrap">
         <h4 className="fw-bold m-0">{t('purchases', 'title')}</h4>
-        <button className="btn btn-primary fw-bold d-flex align-items-center gap-2 px-3" onClick={() => setShowForm(true)}>
-          <i className="bi bi-plus-lg"></i> {t('purchases', 'add_purchase')}
-        </button>
+        <div className="d-flex gap-3 align-items-center flex-grow-1 justify-content-end" style={{ maxWidth: '600px' }}>
+          <div className="input-group">
+            <span className="input-group-text bg-white border-end-0"><i className="bi bi-search text-muted"></i></span>
+            <input 
+              type="text" 
+              className="form-control border-start-0 ps-0" 
+              placeholder={t('common', 'search') || 'Search purchases...'} 
+              value={searchTerm} 
+              onChange={e => setSearchTerm(e.target.value)} 
+            />
+          </div>
+          <button className="btn btn-primary fw-bold d-flex align-items-center gap-2 px-3 text-nowrap" onClick={() => setShowForm(true)}>
+            <i className="bi bi-plus-lg"></i> {t('purchases', 'add_purchase')}
+          </button>
+        </div>
       </div>
 
       <div className="card p-4 border-0 shadow-sm" style={{ backgroundColor: 'var(--light-card)' }}>
@@ -412,9 +443,9 @@ export default function PurchasesPage() {
             <tbody>
               {loading ? (
                 <tr><td colSpan={6} className="text-center py-4">{t('purchases', 'loading_purchases')}</td></tr>
-              ) : purchases.length === 0 ? (
+              ) : filteredPurchases.length === 0 ? (
                 <tr><td colSpan={6} className="text-center py-4 text-muted">{t('purchases', 'no_purchases')}</td></tr>
-              ) : purchases.map(p => (
+              ) : filteredPurchases.map(p => (
                 <tr key={p.id}>
                   <td className="fw-bold text-primary">{p.poNumber}</td>
                   <td>{formatAdToBs(p.purchaseDate)}</td>
