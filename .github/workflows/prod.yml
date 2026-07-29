@@ -85,6 +85,8 @@ jobs:
 
       - name: Start/Reload Next.js with PM2
         shell: bash
+        env:
+          APP_NAME: koselighar-frontend
         run: |
           export NVM_DIR="$HOME/.nvm"
           [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
@@ -96,16 +98,13 @@ jobs:
           # Install production deps in deploy dir
           npm ci --legacy-peer-deps --omit=dev || npm install --legacy-peer-deps --omit=dev
 
-          APP_NAME="koselighar-frontend"
-
           if pm2 describe "$APP_NAME" > /dev/null 2>&1; then
             echo "Reloading existing PM2 process..."
-            pm2 stop "$APP_NAME" || true
-            pm2 delete "$APP_NAME" || true
+            pm2 reload ecosystem.config.js --only "$APP_NAME" --update-env || pm2 restart "$APP_NAME"
+          else
+            echo "Starting Next.js server with PM2..."
+            pm2 start ecosystem.config.js --only "$APP_NAME"
           fi
-
-          echo "Starting Next.js server on port 3001..."
-          PORT=3000 pm2 start npm --name "$APP_NAME" -- run start -- -p 3000
 
           # Wait for app to come online
           MAX_ATTEMPTS=20
@@ -129,8 +128,6 @@ jobs:
             exit 1
           fi
 
-
-
       - name: Health Check
         shell: bash
         run: |
@@ -141,7 +138,6 @@ jobs:
             echo "✓ Frontend site is reachable (HTTP $STATUS)"
           else
             echo "✗ Frontend site not reachable (HTTP $STATUS)"
-            # Show PM2 logs for debugging
             pm2 logs koselighar-frontend --lines 30 --nostream || true
             exit 1
           fi
@@ -153,4 +149,3 @@ jobs:
           echo "=== Final PM2 Status ==="
           pm2 list
           echo ""
-
