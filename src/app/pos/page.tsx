@@ -6,6 +6,13 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBsFull } from '@/utils/nepaliDate';
 
+interface UnitConversion {
+  id: number;
+  baseUnit: string;
+  secondaryUnit: string;
+  conversionFactor: number;
+}
+
 interface Category {
   id: number;
   name: string;
@@ -22,6 +29,7 @@ interface Product {
   minStockAlert: number;
   taxRate: number;
   category: Category;
+  unitConversions?: UnitConversion[];
 }
 
 interface Customer {
@@ -37,6 +45,9 @@ interface CartItem {
   price: number;
   taxAmount: number;
   total: number;
+  selectedUnit?: string;
+  selectedUnitQuantity?: number;
+  conversionFactor?: number;
 }
 
 export default function POSPage() {
@@ -142,22 +153,28 @@ export default function POSPage() {
 
     const newCart = [...cart];
     const item = newCart[existingIndex];
-    const targetQty = item.quantity + amount;
+    
+    if (item.selectedUnit && item.conversionFactor) {
+      const currentSecondary = Number(item.selectedUnitQuantity || 0);
+      item.selectedUnitQuantity = currentSecondary + amount;
+      item.quantity = item.selectedUnitQuantity / item.conversionFactor;
+    } else {
+      item.quantity += amount;
+    }
 
-    if (targetQty <= 0) {
+    if (item.quantity <= 0) {
       newCart.splice(existingIndex, 1);
     } else {
-      if (item.product.stock < targetQty) {
+      if (item.product.stock < item.quantity) {
         alert(`Insufficient stock. Only ${item.product.stock} units available.`);
         return;
       }
-      item.quantity = targetQty;
       recalculateCartItem(item);
     }
     setCart(newCart);
   };
 
-  const setQuantity = (productId: number, val: string) => {
+  const setQuantity = (productId: number, val: string, isBaseUnit: boolean = true) => {
     const existingIndex = cart.findIndex((item) => item.product.id === productId);
     if (existingIndex === -1) return;
 
@@ -165,23 +182,57 @@ export default function POSPage() {
     const item = newCart[existingIndex];
     
     if (val === '') {
-      item.quantity = '' as any;
+      if (isBaseUnit) {
+        item.quantity = '' as any;
+      } else {
+        item.selectedUnitQuantity = '' as any;
+      }
       setCart(newCart);
       return;
     }
 
-    let targetQty = parseInt(val);
+    let targetQty = parseFloat(val);
     if (isNaN(targetQty)) return;
 
     if (targetQty <= 0) {
       newCart.splice(existingIndex, 1);
     } else {
-      if (item.product.stock < targetQty) {
-        alert(`Insufficient stock. Only ${item.product.stock} units available.`);
-        targetQty = item.product.stock;
+      if (!isBaseUnit && item.conversionFactor) {
+        item.selectedUnitQuantity = targetQty;
+        item.quantity = targetQty / item.conversionFactor;
+      } else {
+        item.quantity = targetQty;
       }
-      item.quantity = targetQty;
+
+      if (item.product.stock < item.quantity) {
+        alert(`Insufficient stock. Only ${item.product.stock} units available.`);
+        item.quantity = item.product.stock;
+        if (!isBaseUnit && item.conversionFactor) {
+          item.selectedUnitQuantity = item.quantity * item.conversionFactor;
+        }
+      }
       recalculateCartItem(item);
+    }
+    setCart(newCart);
+  };
+
+  const setUnit = (productId: number, unitName: string) => {
+    const existingIndex = cart.findIndex((item) => item.product.id === productId);
+    if (existingIndex === -1) return;
+    const newCart = [...cart];
+    const item = newCart[existingIndex];
+
+    if (!unitName) {
+      item.selectedUnit = undefined;
+      item.selectedUnitQuantity = undefined;
+      item.conversionFactor = undefined;
+    } else {
+      const conversion = item.product.unitConversions?.find(u => u.secondaryUnit === unitName);
+      if (conversion) {
+        item.selectedUnit = conversion.secondaryUnit;
+        item.conversionFactor = conversion.conversionFactor;
+        item.selectedUnitQuantity = item.quantity * conversion.conversionFactor;
+      }
     }
     setCart(newCart);
   };
@@ -244,6 +295,8 @@ export default function POSPage() {
         items: cart.map((item) => ({
           productId: item.product.id,
           quantity: item.quantity,
+          saleUnit: item.selectedUnit,
+          saleUnitQuantity: item.selectedUnitQuantity,
         })),
       };
 
@@ -467,31 +520,49 @@ export default function POSPage() {
                       <small className="text-secondary">Rs.{item.price.toFixed(2)}</small>
                     </div>
 
-                    <div className="d-flex align-items-center mx-2">
-                      <button 
-                        className="btn btn-sm btn-light border px-2 py-0.5" 
-                        style={{ borderTopLeftRadius: '4px', borderBottomLeftRadius: '4px', borderRight: 'none' }}
-                        onClick={() => adjustQuantity(item.product.id, -1)}
-                      >
-                        -
-                      </button>
-                      <input 
-                        type="number" 
-                        className="form-control text-center py-0.5 bg-white px-1 no-spinners" 
-                        value={item.quantity} 
-                        onChange={(e) => setQuantity(item.product.id, e.target.value)}
-                        onBlur={() => {
-                          if (!item.quantity) setQuantity(item.product.id, '1');
-                        }}
-                        style={{ width: '45px', border: '1px solid #dee2e6', borderRadius: '0px', fontSize: '0.85rem', height: '26px' }} 
-                      />
-                      <button 
-                        className="btn btn-sm btn-light border px-2 py-0.5" 
-                        style={{ borderTopRightRadius: '4px', borderBottomRightRadius: '4px', borderLeft: 'none' }}
-                        onClick={() => adjustQuantity(item.product.id, 1)}
-                      >
-                        +
-                      </button>
+                    <div className="d-flex align-items-center mx-2 flex-wrap justify-content-center" style={{ maxWidth: '140px' }}>
+                      <div className="d-flex w-100 mb-1 justify-content-center">
+                        <button 
+                          className="btn btn-sm btn-light border px-2 py-0.5" 
+                          style={{ borderTopLeftRadius: '4px', borderBottomLeftRadius: '4px', borderRight: 'none' }}
+                          onClick={() => adjustQuantity(item.product.id, -1)}
+                        >
+                          -
+                        </button>
+                        <input 
+                          type="number" 
+                          className="form-control text-center py-0.5 bg-white px-1 no-spinners" 
+                          value={item.selectedUnit ? item.selectedUnitQuantity : item.quantity} 
+                          onChange={(e) => setQuantity(item.product.id, e.target.value, !item.selectedUnit)}
+                          onBlur={() => {
+                            if (item.selectedUnit ? !item.selectedUnitQuantity : !item.quantity) setQuantity(item.product.id, '1', !item.selectedUnit);
+                          }}
+                          style={{ width: '55px', border: '1px solid #dee2e6', borderRadius: '0px', fontSize: '0.85rem', height: '26px' }} 
+                        />
+                        <button 
+                          className="btn btn-sm btn-light border px-2 py-0.5" 
+                          style={{ borderTopRightRadius: '4px', borderBottomRightRadius: '4px', borderLeft: 'none' }}
+                          onClick={() => adjustQuantity(item.product.id, 1)}
+                        >
+                          +
+                        </button>
+                      </div>
+                      
+                      {item.product.unitConversions && item.product.unitConversions.length > 0 && (
+                        <select
+                          className="form-select form-select-sm px-1 py-0"
+                          style={{ fontSize: '0.75rem', height: '22px', maxWidth: '100px' }}
+                          value={item.selectedUnit || ''}
+                          onChange={(e) => setUnit(item.product.id, e.target.value)}
+                        >
+                          <option value="">Base Unit</option>
+                          {item.product.unitConversions.map((uc) => (
+                            <option key={uc.id} value={uc.secondaryUnit}>
+                              {uc.secondaryUnit}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                     </div>
 
                     <div className="text-end d-flex align-items-center gap-3">

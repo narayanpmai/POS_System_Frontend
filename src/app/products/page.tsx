@@ -23,6 +23,13 @@ interface Brand {
   status: string;
 }
 
+interface UnitConversion {
+  id: number;
+  baseUnit: string;
+  secondaryUnit: string;
+  conversionFactor: number;
+}
+
 interface Product {
   id: number;
   name: string;
@@ -39,6 +46,7 @@ interface Product {
   brand?: Brand;
   unit: string;
   description?: string;
+  unitConversions?: UnitConversion[];
 }
 
 export default function ProductsPage() {
@@ -98,6 +106,10 @@ export default function ProductsPage() {
   const [categoryForm, setCategoryForm] = useState({
     name: '', description: ''
   });
+
+  const [selectedProductForUnits, setSelectedProductForUnits] = useState<any>(null);
+  const [ucFactor, setUcFactor] = useState('');
+  const [ucSecondary, setUcSecondary] = useState('');
 
   // Load items
   const loadCatalogs = async () => {
@@ -188,6 +200,51 @@ export default function ProductsPage() {
   };
 
   
+  const handleManageUnits = (prod: any) => {
+    setSelectedProductForUnits(prod);
+    const modalElement = document.getElementById('unitConversionsModal');
+    if (modalElement) {
+      const bootstrap = require('bootstrap');
+      const modal = new bootstrap.Modal(modalElement);
+      modal.show();
+    }
+  };
+
+  const handleUnitConversionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProductForUnits) return;
+    try {
+      await api.post('/unit-conversions', {
+        productId: selectedProductForUnits.id,
+        baseUnit: selectedProductForUnits.unit || 'pcs',
+        secondaryUnit: ucSecondary,
+        conversionFactor: Number(ucFactor),
+      });
+      alert('Conversion added successfully');
+      setUcFactor('');
+      setUcSecondary('');
+      
+      const updatedProductRes = await api.get('/products/' + selectedProductForUnits.id);
+      setSelectedProductForUnits(updatedProductRes.data);
+      loadCatalogs();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Error adding unit conversion');
+    }
+  };
+
+  const handleDeleteUnitConversion = async (id: number) => {
+    if (!confirm('Are you sure you want to delete this conversion?')) return;
+    try {
+      await api.delete('/unit-conversions/' + id);
+      alert('Conversion deleted');
+      const updatedProductRes = await api.get('/products/' + selectedProductForUnits.id);
+      setSelectedProductForUnits(updatedProductRes.data);
+      loadCatalogs();
+    } catch (err: any) {
+      alert('Error deleting conversion');
+    }
+  };
+
   const handleViewProduct = (prod: any) => {
     setSelectedProductForView(prod);
     const modalElement = document.getElementById('viewProductModal');
@@ -599,6 +656,10 @@ export default function ProductsPage() {
                             {/* Toggle status outlined button */}
                             <button className="btn btn-sm btn-outline-warning p-1 px-2 d-flex align-items-center" style={{ borderColor: '#ffc107', color: '#e0a800' }} title="View Details" onClick={() => handleViewProduct(prod)}>
                               <i className="bi bi-eye-fill"></i>
+                            </button>
+                            {/* Units button */}
+                            <button className="btn btn-sm btn-outline-primary p-1 px-2 d-flex align-items-center" title="Manage Unit Conversions" onClick={() => handleManageUnits(prod)}>
+                              <i className="bi bi-calculator"></i>
                             </button>
                             {/* Delete outlined button */}
                             <button className="btn btn-sm btn-outline-danger p-1 px-2 d-flex align-items-center" onClick={() => handleDeleteProduct(prod.id)} style={{ borderColor: '#dc3545', color: '#dc3545' }}>
@@ -1088,6 +1149,78 @@ export default function ProductsPage() {
           margin-top: 5px;
         }
       `}</style>
+      {/* ==========================================
+          MODAL: UNIT CONVERSIONS
+          ========================================== */}
+      <div className="modal fade text-dark" id="unitConversionsModal" tabIndex={-1} aria-hidden="true">
+        <div className="modal-dialog modal-dialog-centered modal-lg">
+          <div className="modal-content border-0 shadow-lg rounded-lg">
+            <div className="modal-header bg-primary text-white border-none p-3.5">
+              <h5 className="modal-title fw-bold">
+                <i className="bi bi-calculator me-2"></i>Unit Conversions for {selectedProductForUnits?.name}
+              </h5>
+              <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div className="modal-body p-4">
+              <form onSubmit={handleUnitConversionSubmit} className="mb-4 p-3 bg-light rounded border">
+                <h6 className="fw-bold mb-3">Add New Conversion</h6>
+                <div className="row g-2 align-items-end">
+                  <div className="col-md-3">
+                    <label className="form-label fs-8 fw-bold">Base Unit</label>
+                    <input type="text" className="form-control" value={selectedProductForUnits?.unit || ''} disabled />
+                  </div>
+                  <div className="col-md-1 text-center pb-2 fw-bold">=</div>
+                  <div className="col-md-3">
+                    <label className="form-label fs-8 fw-bold">Factor</label>
+                    <input type="number" step="any" className="form-control" value={ucFactor} onChange={e => setUcFactor(e.target.value)} required placeholder="e.g. 1000" />
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label fs-8 fw-bold">Secondary Unit</label>
+                    <input type="text" className="form-control" value={ucSecondary} onChange={e => setUcSecondary(e.target.value)} required placeholder="e.g. Gram" />
+                  </div>
+                  <div className="col-md-2">
+                    <button type="submit" className="btn btn-primary w-100 fw-bold">Add</button>
+                  </div>
+                </div>
+              </form>
+              
+              <h6 className="fw-bold mb-2">Existing Conversions</h6>
+              <div className="table-responsive">
+                <table className="table table-bordered">
+                  <thead className="bg-light">
+                    <tr>
+                      <th>Base Unit</th>
+                      <th>Conversion Factor</th>
+                      <th>Secondary Unit</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedProductForUnits?.unitConversions?.length > 0 ? (
+                      selectedProductForUnits.unitConversions.map((uc: any) => (
+                        <tr key={uc.id}>
+                          <td>{uc.baseUnit}</td>
+                          <td>{uc.conversionFactor}</td>
+                          <td>{uc.secondaryUnit}</td>
+                          <td>
+                            <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteUnitConversion(uc.id)}>
+                              <i className="bi bi-trash"></i>
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="text-center text-muted py-3">No conversions set</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </AuthLayout>
   );
 }

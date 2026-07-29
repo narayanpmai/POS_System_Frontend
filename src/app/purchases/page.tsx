@@ -17,8 +17,10 @@ export default function PurchasesPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [cartRowsPerPage, setCartRowsPerPage] = useState(10);
+  const [listRowsPerPage, setListRowsPerPage] = useState(10);
+  const [cartCurrentPage, setCartCurrentPage] = useState(1);
+  const [listCurrentPage, setListCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   
   // New Purchase Form UI state
@@ -256,8 +258,8 @@ export default function PurchasesPage() {
                     <td colSpan={7} className="text-center py-4 text-muted">Click "Add Item" to start adding products</td>
                   </tr>
                 ) : (
-                  applyPagination(cart, currentPage, rowsPerPage).map((item, pageIdx) => {
-                    const idx = (currentPage - 1) * rowsPerPage + pageIdx;
+                  applyPagination(cart, cartCurrentPage, cartRowsPerPage).map((item, pageIdx) => {
+                    const idx = (cartCurrentPage - 1) * cartRowsPerPage + pageIdx;
                     return (
                     <tr key={idx}>
                       <td className="ps-3 border-bottom py-3">
@@ -328,10 +330,10 @@ export default function PurchasesPage() {
 
         <TableControls
           total={cart.length}
-          currentPage={currentPage}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(n) => { setRowsPerPage(n); setCurrentPage(1); }}
-          onPageChange={setCurrentPage}
+          currentPage={cartCurrentPage}
+          rowsPerPage={cartRowsPerPage}
+          onRowsPerPageChange={(n) => { setCartRowsPerPage(n); setCartCurrentPage(1); }}
+          onPageChange={setCartCurrentPage}
         />
         </div>
 
@@ -445,7 +447,7 @@ export default function PurchasesPage() {
                 <tr><td colSpan={6} className="text-center py-4">{t('purchases', 'loading_purchases')}</td></tr>
               ) : filteredPurchases.length === 0 ? (
                 <tr><td colSpan={6} className="text-center py-4 text-muted">{t('purchases', 'no_purchases')}</td></tr>
-              ) : filteredPurchases.map(p => (
+              ) : applyPagination(filteredPurchases, listCurrentPage, listRowsPerPage).map(p => (
                 <tr key={p.id}>
                   <td className="fw-bold text-primary">{p.poNumber}</td>
                   <td>{formatAdToBs(p.purchaseDate)}</td>
@@ -480,6 +482,14 @@ export default function PurchasesPage() {
             </tbody>
           </table>
         </div>
+        
+        <TableControls
+          total={filteredPurchases.length}
+          currentPage={listCurrentPage}
+          rowsPerPage={listRowsPerPage}
+          onRowsPerPageChange={(n) => { setListRowsPerPage(n); setListCurrentPage(1); }}
+          onPageChange={setListCurrentPage}
+        />
       </div>
     </AuthLayout>
   );
