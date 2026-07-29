@@ -1,7 +1,7 @@
 {
-  "name": "smartpos-frontend",
+  "name": "koselighar-frontend",
   "version": "1.0.0",
-  "description": "Premium Next.js Frontend Client for SmartPOS System",
+  "description": "Premium Next.js Frontend Client for Koselighar System",
   "private": true,
   "scripts": {
     "dev": "next dev -p 3001",
