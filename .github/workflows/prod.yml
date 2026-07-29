@@ -44,6 +44,7 @@ jobs:
         run: |
           cat > .env << 'EOF'
           NEXT_PUBLIC_API_URL=https://koseligharapi.deeyosoft.com
+          NEXT_PUBLIC_IMAGE_URL=https://koseligharapi.deeyosoft.com/uploads
           NEXT_PUBLIC_ROOT_DOMAIN=smartptrm.com
           EOF
           echo "✓ Created .env"
