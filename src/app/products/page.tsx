@@ -322,19 +322,11 @@ export default function ProductsPage() {
   };
 
   const printBarcodeNow = () => {
-    // Hide modal cleanly first so backdrop is removed before print
-    const modalElement = document.getElementById('printBarcodeModal');
-    if (modalElement) {
-      const bootstrap = require('bootstrap');
-      const modal = bootstrap.Modal.getInstance(modalElement);
-      modal?.hide();
-    }
-
     setPrintMode('single');
     document.body.classList.add('printing-barcode-single');
     setTimeout(() => {
       window.print();
-    }, 250);
+    }, 150);
   };
 
   const handlePrintAllBarcodes = async () => {
