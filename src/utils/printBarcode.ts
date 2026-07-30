@@ -64,9 +64,12 @@ export const printBarcodeLabel = (product: BarcodePrintProduct, copies: number =
             overflow: hidden;
           }
           .barcode-sticker {
-            width: 50mm;
-            height: 25mm;
+            width: 48mm;
+            height: 23mm;
+            margin: 1mm auto;
             padding: 1mm 2mm;
+            border: 1px dashed #777;
+            border-radius: 6px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -82,7 +85,7 @@ export const printBarcodeLabel = (product: BarcodePrintProduct, copies: number =
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 46mm;
+            max-width: 44mm;
           }
           .barcode-cat {
             font-size: 8px;
@@ -90,12 +93,12 @@ export const printBarcodeLabel = (product: BarcodePrintProduct, copies: number =
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-width: 46mm;
+            max-width: 44mm;
             line-height: 1;
           }
           .barcode-svg {
-            max-width: 46mm;
-            max-height: 12mm;
+            max-width: 44mm;
+            max-height: 11mm;
           }
           .barcode-price {
             font-size: 10px;
@@ -112,24 +115,14 @@ export const printBarcodeLabel = (product: BarcodePrintProduct, copies: number =
               try {
                 JsBarcode("#bc-svg-" + i, "${barcodeVal}", {
                   width: 1.2,
-                  height: 25,
+                  height: 23,
                   fontSize: 9,
                   margin: 1,
                   displayValue: true
                 });
               } catch(e){}
             }
-            setTimeout(function() {
-              window.focus();
-              printFrameWindowPrint();
-            }, 250);
           };
-
-          function printFrameWindowPrint() {
-            try {
-              window.print();
-            } catch(e){}
-          }
         </script>
       </body>
     </html>
