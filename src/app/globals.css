@@ -593,7 +593,9 @@ h1, h2, h3, h4, h5, h6 {
     color: #000000 !important;
   }
 
-  body.printing-barcode-single .app-wrapper,
+  body.printing-barcode-single .custom-sidebar,
+  body.printing-barcode-single .custom-navbar,
+  body.printing-barcode-single .main-content > div:not(.modal),
   body.printing-barcode-single .modal-backdrop,
   body.printing-barcode-single .modal-header,
   body.printing-barcode-single .modal-footer,
@@ -603,10 +605,17 @@ h1, h2, h3, h4, h5, h6 {
     display: none !important;
   }
 
-  body.printing-barcode-single .modal,
-  body.printing-barcode-single .modal-dialog,
-  body.printing-barcode-single .modal-content,
-  body.printing-barcode-single .modal-body {
+  body.printing-barcode-single .main-content,
+  body.printing-barcode-single .app-wrapper {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  body.printing-barcode-single #printBarcodeModal,
+  body.printing-barcode-single #printBarcodeModal .modal-dialog,
+  body.printing-barcode-single #printBarcodeModal .modal-content,
+  body.printing-barcode-single #printBarcodeModal .modal-body {
     position: static !important;
     display: block !important;
     visibility: visible !important;
@@ -620,7 +629,7 @@ h1, h2, h3, h4, h5, h6 {
   body.printing-barcode-single #printable-receipt-modal {
     display: flex !important;
     visibility: visible !important;
-    position: fixed !important;
+    position: absolute !important;
     top: 50% !important;
     left: 50% !important;
     transform: translate(-50%, -50%) !important;

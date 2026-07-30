@@ -1369,58 +1369,53 @@ export default function ProductsPage() {
           }
 
           ${printMode === 'single' ? `
-          body > *:not(#single-barcode-print-area),
-          .app-wrapper,
-          .modal,
-          .modal-backdrop,
-          nav, header, footer, .custom-sidebar, .custom-navbar {
+          body.printing-barcode-single .custom-sidebar,
+          body.printing-barcode-single .custom-navbar,
+          body.printing-barcode-single .main-content > div:not(.modal),
+          body.printing-barcode-single .modal-backdrop,
+          body.printing-barcode-single .modal-header,
+          body.printing-barcode-single .modal-footer,
+          body.printing-barcode-single .no-print,
+          body.printing-barcode-single .btn,
+          body.printing-barcode-single .btn-close {
             display: none !important;
           }
 
-          #single-barcode-print-area {
+          body.printing-barcode-single .main-content,
+          body.printing-barcode-single .app-wrapper {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+          }
+
+          body.printing-barcode-single #printBarcodeModal,
+          body.printing-barcode-single #printBarcodeModal .modal-dialog,
+          body.printing-barcode-single #printBarcodeModal .modal-content,
+          body.printing-barcode-single #printBarcodeModal .modal-body {
+            position: static !important;
+            display: block !important;
+            visibility: visible !important;
+            background: #ffffff !important;
+            border: none !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+
+          body.printing-barcode-single #printable-receipt-modal {
             display: flex !important;
             visibility: visible !important;
             position: absolute !important;
             top: 50% !important;
             left: 50% !important;
             transform: translate(-50%, -50%) !important;
-            width: auto !important;
             margin: 0 !important;
-            padding: 0 !important;
+            padding: 20px 30px !important;
+            border: 1px dashed #444 !important;
             background: #ffffff !important;
-          }
-
-          .single-barcode-sticker {
-            border: 1px dashed #666;
-            padding: 15px 25px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            background: white;
-            border-radius: 8px;
-            min-width: 260px;
-          }
-
-          .single-barcode-title {
-            font-size: 15px;
-            font-weight: bold;
-            color: #000;
-            margin-bottom: 2px;
-          }
-
-          .single-barcode-sub {
-            font-size: 11px;
-            color: #555;
-            margin-bottom: 6px;
-          }
-
-          .single-barcode-price {
-            font-size: 16px;
-            font-weight: bold;
-            color: #000;
-            margin-top: 6px;
+            width: auto !important;
+            min-width: 260px !important;
+            box-shadow: none !important;
           }
           ` : ''}
 
