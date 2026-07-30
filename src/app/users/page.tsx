@@ -14,7 +14,7 @@ export default function UserControlPage() {
   const router = useRouter();
   const { token, api, user } = useAuth();
   const { t } = useLanguage();
-  const { showAlert } = useModal();
+  const { showAlert, showConfirm } = useModal();
   const [users, setUsers] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
@@ -131,6 +131,26 @@ export default function UserControlPage() {
     } catch (err: any) {
       showAlert(err.response?.data?.message || t('common', 'error'), { type: 'danger', title: 'Reset Failed' });
     }
+  };
+
+  const handleDeleteUser = (u: any) => {
+    showConfirm({
+      title: 'Delete User Account',
+      message: `Are you sure you want to PERMANENTLY delete user "${u.name}" (${u.email})?\nThis action cannot be undone.`,
+      type: 'danger',
+      confirmText: 'Delete User',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/users/${u.id}`);
+          showAlert(`User "${u.name}" deleted successfully.`, { type: 'success', title: 'User Deleted' });
+          loadData();
+        } catch (err: any) {
+          console.error(err);
+          showAlert(err.response?.data?.message || 'Failed to delete user', { type: 'danger', title: 'Delete Failed' });
+        }
+      },
+    });
   };
 
   return (
@@ -250,18 +270,23 @@ export default function UserControlPage() {
                   </td>
                   <td>{formatAdToBs(u.createdAt)}</td>
                   <td className="text-end">
-                    <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => {
+                    <button className="btn btn-sm btn-outline-secondary me-1" onClick={() => {
                       setResetUserId(u.id);
                       setShowResetModal(true);
                     }} title="Reset Password">
                       <i className="bi bi-key-fill"></i>
                     </button>
-                    <button className="btn btn-sm btn-outline-primary me-2" onClick={() => handleEditClick(u)} title="Edit">
+                    <button className="btn btn-sm btn-outline-primary me-1" onClick={() => handleEditClick(u)} title="Edit">
                       <i className="bi bi-pencil"></i>
                     </button>
-                    <button className={`btn btn-sm ${u.active ? 'btn-outline-danger' : 'btn-outline-success'}`} onClick={() => toggleActiveStatus(u.id, u.active)} title={u.active ? 'Deactivate' : 'Activate'}>
+                    <button className={`btn btn-sm me-1 ${u.active ? 'btn-outline-warning' : 'btn-outline-success'}`} onClick={() => toggleActiveStatus(u.id, u.active)} title={u.active ? 'Deactivate' : 'Activate'}>
                       <i className={`bi ${u.active ? 'bi-lock-fill' : 'bi-unlock-fill'}`}></i>
                     </button>
+                    {user?.id !== u.id && (
+                      <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteUser(u)} title="Delete User">
+                        <i className="bi bi-trash-fill"></i>
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
