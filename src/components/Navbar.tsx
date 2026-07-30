@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useRouter } from 'next/navigation';
@@ -11,9 +11,20 @@ export default function Navbar() {
   const { language, setLanguage, t } = useLanguage();
   const router = useRouter();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Check local storage or system preference on mount
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
     const storedTheme = localStorage.getItem('theme');
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     
@@ -45,9 +56,10 @@ export default function Navbar() {
     setLanguage(language === 'en' ? 'ne' : 'en');
   };
 
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-
-  const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
+  const handleLogoutClick = () => {
+    setDropdownOpen(false);
+    logout();
+  };
 
   return (
     <nav className="custom-navbar d-flex justify-content-between align-items-center px-3 px-md-4">
@@ -155,12 +167,11 @@ export default function Navbar() {
         </button>
 
         {/* User Dropdown */}
-        <div className="dropdown">
+        <div className="dropdown position-relative" ref={dropdownRef}>
           <button
             className="btn btn-light rounded-pill border shadow-sm d-flex align-items-center gap-2 px-3 bg-white text-dark hover-lift text-nowrap"
             type="button"
-            onClick={toggleDropdown}
-            onBlur={() => setTimeout(() => setDropdownOpen(false), 200)}
+            onClick={() => setDropdownOpen(!dropdownOpen)}
             aria-expanded={dropdownOpen}
             style={{ height: '38px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
           >
@@ -169,17 +180,46 @@ export default function Navbar() {
             <i className="bi bi-caret-down-fill ms-1 text-muted" style={{ fontSize: '0.65rem' }}></i>
           </button>
           
-          <ul className={`dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-md p-2 mt-2 ${dropdownOpen ? 'show' : ''}`} style={{ position: 'absolute' }}>
-            <li className="p-3 border-bottom">
-              <h6 className="m-0 fw-bold">{user?.name || t('common', 'profile')}</h6>
-              <small className="text-primary fw-semibold">{user?.role?.name || 'Cashier'}</small>
-            </li>
-            <li className="pt-2">
-              <button className="dropdown-item text-danger py-2 rounded-md" onClick={logout}>
-                <i className="bi bi-box-arrow-right me-2"></i>{t('common', 'logout')}
+          {dropdownOpen && (
+            <div
+              className="dropdown-menu dropdown-menu-end show shadow-lg border-0 p-2 mt-2"
+              style={{
+                position: 'absolute',
+                top: '100%',
+                right: 0,
+                borderRadius: '16px',
+                minWidth: '220px',
+                backgroundColor: 'var(--card-bg, #ffffff)',
+                border: '1px solid var(--border-color, #e2e8f0)',
+                zIndex: 1050,
+              }}
+            >
+              <div className="p-3 border-bottom mb-2 bg-light bg-opacity-50 rounded-3">
+                <h6 className="m-0 fw-bold text-dark">{user?.name || 'User Profile'}</h6>
+                <div className="d-flex align-items-center justify-content-between mt-1">
+                  <span className="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1">
+                    {user?.role?.name || 'Cashier'}
+                  </span>
+                  <small className="text-muted">ID: #{user?.id}</small>
+                </div>
+                {user?.email && (
+                  <small className="text-muted d-block text-truncate mt-1" style={{ fontSize: '0.75rem' }}>
+                    {user.email}
+                  </small>
+                )}
+              </div>
+
+              <button
+                type="button"
+                className="dropdown-item text-danger py-2 px-3 rounded-3 d-flex align-items-center gap-2 fw-semibold"
+                onClick={handleLogoutClick}
+                style={{ transition: 'all 0.2s ease', cursor: 'pointer' }}
+              >
+                <i className="bi bi-box-arrow-right fs-5"></i>
+                <span>{t('common', 'logout') || 'Logout'}</span>
               </button>
-            </li>
-          </ul>
+            </div>
+          )}
         </div>
       </div>
     </nav>

@@ -183,11 +183,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = () => {
     localStorage.removeItem('smartpos_token');
     localStorage.removeItem('smartpos_user');
-    setToken(null);
-    setUser(null);
+    localStorage.removeItem('smartpos_superadmin_company');
     delete api.defaults.headers.common['Authorization'];
     delete axios.defaults.headers.common['Authorization'];
-    router.push('/login');
+    delete api.defaults.headers.common['x-company-id'];
+    delete axios.defaults.headers.common['x-company-id'];
+    setToken(null);
+    setUser(null);
+    setSuperAdminCompanyId(null);
+    window.location.href = '/login';
   };
 
   // Setup global Axios interceptor for 401 Unauthorized
