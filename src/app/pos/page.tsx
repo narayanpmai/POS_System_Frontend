@@ -434,7 +434,11 @@ export default function POSPage() {
   };
 
   const handlePrintReceipt = () => {
+    document.body.classList.add('printing-receipt');
     window.print();
+    setTimeout(() => {
+      document.body.classList.remove('printing-receipt');
+    }, 1000);
   };
 
   const handleDownloadPDF = async () => {

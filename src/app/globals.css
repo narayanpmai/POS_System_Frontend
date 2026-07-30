@@ -510,12 +510,30 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ==============================================================
    POSTRONIX-8005 (80mm Thermal Receipt Printer) Print Rules
-   Removes side margins, forces zero browser padding & 76mm printable area
+   Isolates receipt printing and hides background page tables / elements
    ============================================================== */
 @media print {
   @page {
     size: 80mm auto;
     margin: 0;
+  }
+
+  /* When printing thermal receipt, hide all background page content */
+  body.printing-receipt main,
+  body.printing-receipt header,
+  body.printing-receipt nav,
+  body.printing-receipt footer,
+  body.printing-receipt .custom-sidebar,
+  body.printing-receipt .custom-navbar,
+  body.printing-receipt .card,
+  body.printing-receipt table:not(.font-mono),
+  body.printing-receipt .pagination,
+  .no-print,
+  .modal-header,
+  .modal-footer,
+  .btn,
+  .btn-close {
+    display: none !important;
   }
 
   html, body {
@@ -524,30 +542,23 @@ h1, h2, h3, h4, h5, h6 {
     background: #ffffff !important;
     color: #000000 !important;
     width: 80mm !important;
-  }
-
-  /* Hide UI elements during print */
-  .no-print,
-  .custom-sidebar,
-  .custom-navbar,
-  .modal-header,
-  .modal-footer,
-  .modal-backdrop,
-  nav,
-  header,
-  footer {
-    display: none !important;
+    overflow: visible !important;
   }
 
   .modal {
-    position: static !important;
-    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important;
+    height: auto !important;
     overflow: visible !important;
     background: none !important;
+    display: block !important;
   }
 
   .modal-dialog {
-    max-width: 100% !important;
+    max-width: 80mm !important;
+    width: 80mm !important;
     margin: 0 !important;
     padding: 0 !important;
   }
@@ -556,10 +567,16 @@ h1, h2, h3, h4, h5, h6 {
     border: none !important;
     box-shadow: none !important;
     background: #ffffff !important;
+    width: 80mm !important;
   }
 
   .modal-body {
     padding: 0 !important;
+    width: 80mm !important;
+  }
+
+  .modal-backdrop {
+    display: none !important;
   }
 
   .thermal-receipt {
@@ -570,6 +587,8 @@ h1, h2, h3, h4, h5, h6 {
     border: none !important;
     color: #000000 !important;
     background: #ffffff !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
   }
 
   .thermal-receipt * {
