@@ -361,13 +361,9 @@ export default function ProductsPage() {
       if (categoryImageFile) formData.append('image', categoryImageFile);
 
       if (editingCategory) {
-        await api.put(`/products/categories/${editingCategory.id}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        await api.put(`/products/categories/${editingCategory.id}`, formData);
       } else {
-        await api.post('/products/categories', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
+        await api.post('/products/categories', formData);
       }
       setCategoryForm({ name: '', description: '', parentId: null });
       setEditingCategory(null);
