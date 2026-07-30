@@ -351,20 +351,38 @@ export default function ProductsPage() {
     if (!isAdmin) return;
 
     try {
-      // Build FormData to support image upload
-      const formData = new FormData();
-      formData.append('name', categoryForm.name);
-      if (categoryForm.description) formData.append('description', categoryForm.description);
-      if (categoryForm.parentId !== null && categoryForm.parentId !== undefined) {
-        formData.append('parentId', String(categoryForm.parentId));
-      }
-      if (categoryImageFile) formData.append('image', categoryImageFile);
+      if (categoryImageFile) {
+        // Only use FormData when an image file is actually selected
+        const formData = new FormData();
+        formData.append('name', categoryForm.name);
+        if (categoryForm.description) formData.append('description', categoryForm.description);
+        if (categoryForm.parentId !== null && categoryForm.parentId !== undefined) {
+          formData.append('parentId', String(categoryForm.parentId));
+        }
+        formData.append('image', categoryImageFile);
 
-      if (editingCategory) {
-        await api.put(`/products/categories/${editingCategory.id}`, formData);
+        if (editingCategory) {
+          await api.put(`/products/categories/${editingCategory.id}`, formData);
+        } else {
+          await api.post('/products/categories', formData);
+        }
       } else {
-        await api.post('/products/categories', formData);
+        // No image — send clean JSON (works perfectly with ValidationPipe)
+        const payload: any = {
+          name: categoryForm.name,
+          ...(categoryForm.description ? { description: categoryForm.description } : {}),
+          ...(categoryForm.parentId !== null && categoryForm.parentId !== undefined
+            ? { parentId: categoryForm.parentId }
+            : {}),
+        };
+
+        if (editingCategory) {
+          await api.put(`/products/categories/${editingCategory.id}`, payload);
+        } else {
+          await api.post('/products/categories', payload);
+        }
       }
+
       setCategoryForm({ name: '', description: '', parentId: null });
       setEditingCategory(null);
       setCategoryImageFile(null);
