@@ -9,6 +9,14 @@ import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
 import { formatAdToBs } from '@/utils/nepaliDate';
 
+interface CompanyUser {
+  id: number;
+  name: string;
+  email: string;
+  active: boolean;
+  role?: { name: string };
+}
+
 interface Company {
   id: number;
   name: string;
@@ -17,6 +25,7 @@ interface Company {
   address: string | null;
   isActive: boolean;
   createdAt: string;
+  users?: CompanyUser[];
 }
 
 export default function CompaniesPage() {
@@ -41,6 +50,18 @@ export default function CompaniesPage() {
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [editFormData, setEditFormData] = useState({
     name: '', email: '', phone: '', address: '', isActive: true
+  });
+
+  // Assign Admin Modal State
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [targetCompany, setTargetCompany] = useState<Company | null>(null);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [assignMode, setAssignMode] = useState<'existing' | 'new'>('existing');
+  const [assignFormData, setAssignFormData] = useState({
+    userId: '',
+    name: '',
+    email: '',
+    password: '',
   });
 
   const [showInactive, setShowInactive] = useState(false);
@@ -86,6 +107,20 @@ export default function CompaniesPage() {
     setShowEditModal(true);
   };
 
+  const handleOpenAssignModal = async (company: Company) => {
+    setTargetCompany(company);
+    setAssignFormData({ userId: '', name: '', email: '', password: '' });
+    setAssignMode('existing');
+    setErrorMsg('');
+    setShowAssignModal(true);
+    try {
+      const res = await api.get('/users');
+      setAllUsers(res.data);
+    } catch (err) {
+      console.error('Failed to load users list', err);
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -119,6 +154,28 @@ export default function CompaniesPage() {
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.response?.data?.message || 'Failed to update company');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleAssignSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!targetCompany) return;
+    setSubmitting(true);
+    setErrorMsg('');
+    try {
+      const payload = assignMode === 'existing'
+        ? { userId: parseInt(assignFormData.userId, 10) }
+        : { name: assignFormData.name, email: assignFormData.email, password: assignFormData.password };
+
+      const res = await api.post(`/companies/${targetCompany.id}/assign-admin`, payload);
+      showAlert(res.data.message || 'Admin assigned successfully', { type: 'success', title: 'Admin Assigned' });
+      setShowAssignModal(false);
+      fetchCompanies(showInactive);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.response?.data?.message || 'Failed to assign admin');
     } finally {
       setSubmitting(false);
     }
@@ -199,7 +256,6 @@ export default function CompaniesPage() {
     });
   };
 
-
   if (!isSuperAdmin) {
     return <AuthLayout><div className="p-4">Access Denied. Only Super Admin can view this page.</div></AuthLayout>;
   }
@@ -247,7 +303,8 @@ export default function CompaniesPage() {
                   <tr>
                     <th>S.N.</th>
                     <th>Name</th>
-                    <th>Email</th>
+                    <th>Company Email</th>
+                    <th>Assigned Admin / Users</th>
                     <th>Status</th>
                     <th>Created</th>
                     <th>Actions</th>
@@ -259,6 +316,19 @@ export default function CompaniesPage() {
                       <td>{c.id}</td>
                       <td className="fw-bold">{c.name}</td>
                       <td>{c.email || 'N/A'}</td>
+                      <td>
+                        {c.users && c.users.length > 0 ? (
+                          <div className="d-flex flex-wrap gap-1">
+                            {c.users.map(u => (
+                              <span key={u.id} className="badge bg-primary-subtle text-primary border border-primary-subtle" title={`${u.name} (${u.email})`}>
+                                👤 {u.email}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-muted small">No Admin assigned</span>
+                        )}
+                      </td>
                       <td>
                         {c.isActive ? (
                           <span className="badge bg-success">Active</span>
@@ -273,6 +343,10 @@ export default function CompaniesPage() {
                             <i className="bi bi-pencil"></i>
                           </button>
                           
+                          <button className="btn btn-sm btn-outline-info" onClick={() => handleOpenAssignModal(c)} title="Assign Admin / User to Company">
+                            <i className="bi bi-person-plus-fill"></i>
+                          </button>
+
                           {c.id !== 1 && (
                             <>
                               <button 
@@ -300,13 +374,111 @@ export default function CompaniesPage() {
                   ))}
                   {companies.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="text-center py-4 text-muted">
+                      <td colSpan={7} className="text-center py-4 text-muted">
                         No companies found.
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Admin Modal */}
+      {showAssignModal && targetCompany && (
+        <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow-lg">
+              <div className="modal-header border-0 pb-0">
+                <h5 className="modal-title fw-bold">👤 Assign Admin for "{targetCompany.name}"</h5>
+                <button type="button" className="btn-close" onClick={() => setShowAssignModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                {errorMsg && <div className="alert alert-danger p-2 mb-3">{errorMsg}</div>}
+
+                <div className="btn-group w-100 mb-3" role="group">
+                  <button
+                    type="button"
+                    className={`btn btn-sm ${assignMode === 'existing' ? 'btn-primary' : 'btn-outline-primary'}`}
+                    onClick={() => setAssignMode('existing')}
+                  >
+                    Link Existing System User
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn btn-sm ${assignMode === 'new' ? 'btn-primary' : 'btn-outline-primary'}`}
+                    onClick={() => setAssignMode('new')}
+                  >
+                    Create New Admin Account
+                  </button>
+                </div>
+
+                <form onSubmit={handleAssignSubmit} id="assign-admin-form">
+                  {assignMode === 'existing' ? (
+                    <div className="mb-3">
+                      <label className="form-label fw-semibold">Select Existing User to Assign</label>
+                      <select
+                        className="form-select bg-light"
+                        value={assignFormData.userId}
+                        onChange={(e) => setAssignFormData({ ...assignFormData, userId: e.target.value })}
+                        required
+                      >
+                        <option value="">-- Choose User --</option>
+                        {allUsers.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.name} ({u.email}) - Current Co #{u.companyId}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="row g-3">
+                      <div className="col-md-12">
+                        <label className="form-label fw-semibold">Admin Name *</label>
+                        <input
+                          type="text"
+                          className="form-control bg-light"
+                          value={assignFormData.name}
+                          onChange={(e) => setAssignFormData({ ...assignFormData, name: e.target.value })}
+                          required
+                          placeholder="e.g. Sonam Sherpa"
+                        />
+                      </div>
+                      <div className="col-md-12">
+                        <label className="form-label fw-semibold">Admin Email (Login) *</label>
+                        <input
+                          type="email"
+                          className="form-control bg-light"
+                          value={assignFormData.email}
+                          onChange={(e) => setAssignFormData({ ...assignFormData, email: e.target.value })}
+                          required
+                          placeholder="admin@company.com"
+                        />
+                      </div>
+                      <div className="col-md-12">
+                        <label className="form-label fw-semibold">Password *</label>
+                        <input
+                          type="password"
+                          className="form-control bg-light"
+                          value={assignFormData.password}
+                          onChange={(e) => setAssignFormData({ ...assignFormData, password: e.target.value })}
+                          required
+                          minLength={6}
+                          placeholder="Minimum 6 characters"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </form>
+              </div>
+              <div className="modal-footer border-0 pt-0">
+                <button type="button" className="btn btn-light" onClick={() => setShowAssignModal(false)}>Cancel</button>
+                <button type="submit" form="assign-admin-form" className="btn btn-primary px-4" disabled={submitting}>
+                  {submitting ? 'Assigning...' : 'Assign Admin'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
