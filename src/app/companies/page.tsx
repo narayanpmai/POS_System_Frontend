@@ -147,10 +147,39 @@ export default function CompaniesPage() {
     });
   };
 
-  const handleDeletePermanently = (id: number, name: string) => {
+  const handleFlushData = (id: number, name: string) => {
+    const isProtected = id === 10 || id === 12;
     showConfirm({
-      title: 'Permanent Delete Warning',
-      message: `Are you sure you want to PERMANENTLY delete "${name}" and all its users/data from the database?\n\nThis action CANNOT be undone!`,
+      title: isProtected ? '⚠️ Flush Core Company Data Warning' : 'Flush Company Data',
+      message: isProtected 
+        ? `Company #${id} ("${name}") is a CORE company.\n\nFlushing data will wipe ALL sales, purchases, stock, products, expenses, customers, and suppliers for "${name}".\n\nAre you sure you want to flush its operational data?`
+        : `Are you sure you want to flush all operational data for "${name}"?\nThis will clear products, sales, stock, and transactions, leaving the company and user accounts intact.`,
+      type: isProtected ? 'danger' : 'warning',
+      confirmText: 'Yes, Flush Data',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        try {
+          setLoading(true);
+          await api.post(`/companies/${id}/flush-data`);
+          showAlert(`Operational data for "${name}" flushed successfully.`, { type: 'success', title: 'Data Flushed' });
+          fetchCompanies(showInactive);
+        } catch (err: any) {
+          console.error(err);
+          showAlert(err.response?.data?.message || 'Failed to flush company data', { type: 'danger', title: 'Flush Failed' });
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+  };
+
+  const handleDeletePermanently = (id: number, name: string) => {
+    const isProtected = id === 10 || id === 12;
+    showConfirm({
+      title: isProtected ? '⚠️ PERMANENT DELETE CORE COMPANY WARNING' : 'Permanent Delete Warning',
+      message: isProtected
+        ? `PERMANENT DELETE WARNING FOR CORE COMPANY #${id} ("${name}"):\n\nAre you absolutely sure you want to PERMANENTLY delete "${name}" and all its users/data from the database?\n\nThis action CANNOT be undone!`
+        : `Are you sure you want to PERMANENTLY delete "${name}" and all its users/data from the database?\n\nThis action CANNOT be undone!`,
       type: 'danger',
       confirmText: 'Delete Permanently',
       cancelText: 'Cancel',
@@ -158,7 +187,7 @@ export default function CompaniesPage() {
         try {
           setLoading(true);
           await api.delete(`/companies/${id}?permanent=true`);
-          showAlert('Company permanently deleted.', { type: 'success', title: 'Company Deleted' });
+          showAlert(`Company "${name}" permanently deleted.`, { type: 'success', title: 'Company Deleted' });
           fetchCompanies(showInactive);
         } catch (err: any) {
           console.error(err);
@@ -239,20 +268,33 @@ export default function CompaniesPage() {
                       </td>
                       <td>{formatAdToBs(c.createdAt)}</td>
                       <td>
-                        <button className="btn btn-sm btn-outline-primary me-2" onClick={() => handleOpenEditModal(c)} title="Edit">
-                          <i className="bi bi-pencil"></i>
-                        </button>
-                        {c.id !== 1 && (
-                          c.isActive ? (
-                            <button className="btn btn-sm btn-outline-warning" onClick={() => handleDeleteCompany(c.id, c.name)} title="Deactivate Company">
-                              <i className="bi bi-power"></i>
-                            </button>
-                          ) : (
-                            <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeletePermanently(c.id, c.name)} title="Permanently Delete Company">
-                              <i className="bi bi-trash"></i>
-                            </button>
-                          )
-                        )}
+                        <div className="d-flex align-items-center gap-1">
+                          <button className="btn btn-sm btn-outline-primary" onClick={() => handleOpenEditModal(c)} title="Edit Company">
+                            <i className="bi bi-pencil"></i>
+                          </button>
+                          
+                          {c.id !== 1 && (
+                            <>
+                              <button 
+                                className="btn btn-sm btn-outline-secondary" 
+                                onClick={() => handleFlushData(c.id, c.name)} 
+                                title="Flush Operational Data (Products, Sales, Stock)"
+                              >
+                                <i className="bi bi-eraser-fill"></i>
+                              </button>
+
+                              {c.isActive ? (
+                                <button className="btn btn-sm btn-outline-warning" onClick={() => handleDeleteCompany(c.id, c.name)} title="Deactivate Company">
+                                  <i className="bi bi-power"></i>
+                                </button>
+                              ) : null}
+
+                              <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeletePermanently(c.id, c.name)} title="Permanently Delete Company">
+                                <i className="bi bi-trash-fill"></i>
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
