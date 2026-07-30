@@ -6,6 +6,7 @@ import Barcode from 'react-barcode';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useModal } from '@/context/ModalContext';
 import * as XLSX from 'xlsx';
 import TableControls, { applyPagination } from '@/components/TableControls';
 
@@ -58,6 +59,7 @@ export default function ProductsPage() {
   const router = useRouter();
   const { user, token, api } = useAuth();
   const { t } = useLanguage();
+  const { showAlert, showConfirm } = useModal();
   const isAdmin = user?.role?.name === 'Admin' || user?.role?.name === 'Super Admin';
 
   // Catalogs
@@ -157,7 +159,7 @@ export default function ProductsPage() {
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin) {
-      alert('Only administrators can alter the product catalog');
+      showAlert('Only administrators can alter the product catalog', { type: 'warning', title: 'Access Denied' });
       return;
     }
 
@@ -179,10 +181,10 @@ export default function ProductsPage() {
     try {
       if (editingProduct) {
         await api.put(`/products/${editingProduct.id}`, payload);
-        alert('Product successfully updated!');
+        showAlert('Product successfully updated!', { type: 'success', title: 'Updated' });
       } else {
         await api.post('/products', payload);
-        alert('Product successfully created!');
+        showAlert('Product successfully created!', { type: 'success', title: 'Created' });
       }
       
       // Reset Product Form
@@ -209,7 +211,7 @@ export default function ProductsPage() {
 
       loadCatalogs();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error processing product');
+      showAlert(err.response?.data?.message || 'Error processing product', { type: 'danger', title: 'Error' });
     }
   };
 
@@ -234,7 +236,7 @@ export default function ProductsPage() {
         secondaryUnit: ucSecondary,
         conversionFactor: Number(ucFactor),
       });
-      alert('Conversion added successfully');
+      showAlert('Conversion added successfully', { type: 'success', title: 'Success' });
       setUcFactor('');
       setUcSecondary('');
       
@@ -242,21 +244,28 @@ export default function ProductsPage() {
       setSelectedProductForUnits(updatedProductRes.data);
       loadCatalogs();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error adding unit conversion');
+      showAlert(err.response?.data?.message || 'Error adding unit conversion', { type: 'danger', title: 'Error' });
     }
   };
 
   const handleDeleteUnitConversion = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this conversion?')) return;
-    try {
-      await api.delete('/unit-conversions/' + id);
-      alert('Conversion deleted');
-      const updatedProductRes = await api.get('/products/' + selectedProductForUnits.id);
-      setSelectedProductForUnits(updatedProductRes.data);
-      loadCatalogs();
-    } catch (err: any) {
-      alert('Error deleting conversion');
-    }
+    showConfirm({
+      title: 'Delete Conversion',
+      message: 'Are you sure you want to delete this unit conversion?',
+      type: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await api.delete('/unit-conversions/' + id);
+          showAlert('Conversion deleted', { type: 'success', title: 'Deleted' });
+          const updatedProductRes = await api.get('/products/' + selectedProductForUnits.id);
+          setSelectedProductForUnits(updatedProductRes.data);
+          loadCatalogs();
+        } catch (err: any) {
+          showAlert('Error deleting conversion', { type: 'danger', title: 'Error' });
+        }
+      },
+    });
   };
 
   const handleViewProduct = (prod: any) => {
@@ -319,14 +328,21 @@ export default function ProductsPage() {
   };
 
   const handleDeleteProduct = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this product?')) return;
-    try {
-      await api.delete(`/products/${id}`);
-      alert('Product deleted successfully');
-      loadCatalogs();
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Cannot delete product with active sales history');
-    }
+    showConfirm({
+      title: 'Delete Product',
+      message: 'Are you sure you want to permanently delete this product? This cannot be undone.',
+      type: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/products/${id}`);
+          showAlert('Product deleted successfully', { type: 'success', title: 'Deleted' });
+          loadCatalogs();
+        } catch (err: any) {
+          showAlert(err.response?.data?.message || 'Cannot delete product with active sales history', { type: 'danger', title: 'Error' });
+        }
+      },
+    });
   };
 
   // Handle Category CRUD
@@ -368,7 +384,7 @@ export default function ProductsPage() {
 
       loadCatalogs();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error processing category');
+      showAlert(err.response?.data?.message || 'Error processing category', { type: 'danger', title: 'Error' });
     }
   };
 
@@ -402,14 +418,21 @@ export default function ProductsPage() {
   };
 
   const handleDeleteCategory = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this category?')) return;
-    try {
-      await api.delete(`/products/categories/${id}`);
-      alert('Category deleted successfully');
-      loadCatalogs();
-    } catch (err: any) {
-      alert(err.response?.data?.message || 'Cannot delete category containing products');
-    }
+    showConfirm({
+      title: 'Delete Category',
+      message: 'Are you sure you want to delete this category? All sub-categories must be removed first.',
+      type: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/products/categories/${id}`);
+          showAlert('Category deleted successfully', { type: 'success', title: 'Deleted' });
+          loadCatalogs();
+        } catch (err: any) {
+          showAlert(err.response?.data?.message || 'Cannot delete category containing products', { type: 'danger', title: 'Cannot Delete' });
+        }
+      },
+    });
   };
 
   const handleExportExcel = () => {
@@ -436,7 +459,7 @@ export default function ProductsPage() {
     if (!file) return;
 
     if (!isAdmin) {
-      alert('Only administrators can import products');
+      showAlert('Only administrators can import products', { type: 'warning', title: 'Access Denied' });
       return;
     }
 
@@ -450,7 +473,7 @@ export default function ProductsPage() {
         const parsedData = XLSX.utils.sheet_to_json(sheet);
 
         if (parsedData.length === 0) {
-          alert('Excel file is empty');
+          showAlert('Excel file is empty', { type: 'warning', title: 'Empty File' });
           return;
         }
 
@@ -474,11 +497,11 @@ export default function ProductsPage() {
           await api.post('/products', payload);
         }
 
-        alert('Products imported successfully!');
+        showAlert(`${parsedData.length} product(s) imported successfully!`, { type: 'success', title: 'Import Complete' });
         loadCatalogs();
       } catch (err: any) {
         console.error(err);
-        alert('Error importing products. Ensure formatting is correct.');
+        showAlert('Error importing products. Ensure formatting is correct.', { type: 'danger', title: 'Import Failed' });
       }
       
       // reset file input
