@@ -40,6 +40,7 @@ export default function SettingsPage() {
     receiptFooter: '',
     taxRateDefault: 13.0,
     invoicePrefix: 'PTRM',
+    printCopies: 2,
   });
 
   // Local state for Notifications and Security configurations
@@ -231,6 +232,7 @@ export default function SettingsPage() {
         receiptFooter: res.data.receiptFooter || '',
         taxRateDefault: res.data.taxRateDefault !== undefined ? res.data.taxRateDefault : 13.0,
         invoicePrefix: res.data.invoicePrefix || 'PTRM',
+        printCopies: res.data.printCopies !== undefined ? res.data.printCopies : 2,
       });
       setLoading(false);
     } catch (err) {
@@ -269,6 +271,7 @@ export default function SettingsPage() {
       const payload = {
         ...form,
         taxRateDefault: Number(form.taxRateDefault),
+        printCopies: Number(form.printCopies),
       };
       await api.put('/settings', payload);
       alert('Store settings successfully updated!');
@@ -494,6 +497,21 @@ export default function SettingsPage() {
               required
               disabled={!isAdmin}
             />
+          </div>
+          <div className="col-12 col-md-6">
+            <label className="form-label fw-semibold text-secondary mb-1" style={{ fontSize: '0.85rem' }}>Receipt Print Copies</label>
+            <select
+              className="form-select"
+              style={inputStyle}
+              value={form.printCopies}
+              onChange={(e) => setForm({ ...form, printCopies: Number(e.target.value) })}
+              disabled={!isAdmin}
+            >
+              <option value={1}>1 Copy (Single Receipt)</option>
+              <option value={2}>2 Copies (Customer + Store Copy)</option>
+              <option value={3}>3 Copies</option>
+            </select>
+            <small className="text-muted d-block mt-1" style={{ fontSize: '0.75rem' }}>Automatically prints Customer & Store copies back-to-back</small>
           </div>
         </div>
       </div>
