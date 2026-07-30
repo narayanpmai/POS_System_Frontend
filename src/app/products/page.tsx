@@ -1335,6 +1335,24 @@ export default function ProductsPage() {
         </div>
       </div>
 
+      {/* Hidden Single Barcode Print Area */}
+      {printMode === 'single' && selectedProductForBarcode && (
+        <div id="single-barcode-print-area" className="single-print-only">
+          <div className="single-barcode-sticker">
+            <div className="single-barcode-title">{selectedProductForBarcode.name}</div>
+            <div className="single-barcode-sub">{selectedProductForBarcode.category?.name || ''}</div>
+            <Barcode
+              value={selectedProductForBarcode.barcode || selectedProductForBarcode.SKU || 'UNKNOWN'}
+              width={1.8}
+              height={45}
+              fontSize={13}
+              margin={4}
+            />
+            <div className="single-barcode-price">Rs. {Number(selectedProductForBarcode.price).toFixed(2)}</div>
+          </div>
+        </div>
+      )}
+
       {/* Hidden Bulk Print Area */}
       {printMode === 'bulk' && (
         <div id="bulk-barcode-print" className="bulk-print-only">
@@ -1351,31 +1369,87 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {/* Bulk Print Styles */}
+      {/* Global Print Styles */}
       <style jsx global>{`
         @media print {
-          ${printMode === 'bulk' ? `
-          body * {
-            visibility: hidden;
+          @page {
+            margin: 0 !important;
           }
-          #bulk-barcode-print, #bulk-barcode-print * {
-            visibility: visible;
-          }
-          #bulk-barcode-print {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-          }
-          /* Hide the single print modal if it was open */
-          #printBarcodeModal { display: none !important; }
-          #printable-receipt-modal { display: none !important; }
-          .no-print { display: none !important; }
-          ` : ''}
 
           ${printMode === 'single' ? `
-          /* Hide the bulk print area */
-          #bulk-barcode-print { display: none !important; }
+          body > *:not(#single-barcode-print-area),
+          .app-wrapper,
+          .modal,
+          .modal-backdrop,
+          nav, header, footer, .custom-sidebar, .custom-navbar {
+            display: none !important;
+          }
+
+          #single-barcode-print-area {
+            display: flex !important;
+            visibility: visible !important;
+            position: absolute !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            width: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+          }
+
+          .single-barcode-sticker {
+            border: 1px dashed #666;
+            padding: 15px 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: white;
+            border-radius: 8px;
+            min-width: 260px;
+          }
+
+          .single-barcode-title {
+            font-size: 15px;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 2px;
+          }
+
+          .single-barcode-sub {
+            font-size: 11px;
+            color: #555;
+            margin-bottom: 6px;
+          }
+
+          .single-barcode-price {
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            margin-top: 6px;
+          }
+          ` : ''}
+
+          ${printMode === 'bulk' ? `
+          body > *:not(#bulk-barcode-print),
+          .app-wrapper,
+          .modal,
+          .modal-backdrop,
+          nav, header, footer, .custom-sidebar, .custom-navbar {
+            display: none !important;
+          }
+
+          #bulk-barcode-print {
+            display: block !important;
+            visibility: visible !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            background: #ffffff !important;
+          }
           ` : ''}
         }
 
