@@ -43,12 +43,12 @@ export const printThermalReceipt = (elementId: string = 'printable-receipt-modal
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Receipt Print</title>
+        <title></title>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
         <style>
           @page {
             size: 80mm auto;
-            margin: 0;
+            margin: 0 !important;
           }
           * {
             box-sizing: border-box;

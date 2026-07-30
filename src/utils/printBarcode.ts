@@ -43,12 +43,12 @@ export const printBarcodeLabel = (product: BarcodePrintProduct, copies: number =
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Barcode Print - ${product.name}</title>
+        <title></title>
         <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
         <style>
           @page {
             size: 50mm 25mm;
-            margin: 0;
+            margin: 0 !important;
           }
           * {
             box-sizing: border-box;
