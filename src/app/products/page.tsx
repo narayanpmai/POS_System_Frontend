@@ -66,6 +66,7 @@ export default function ProductsPage() {
 
   // Catalogs
   const [products, setProducts] = useState<Product[]>([]);
+  const [allProductsForPrint, setAllProductsForPrint] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryTree, setCategoryTree] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -304,18 +305,29 @@ export default function ProductsPage() {
 
   const printBarcodeNow = () => {
     setPrintMode('single');
+    document.body.classList.add('printing-barcode-single');
     setTimeout(() => {
       window.print();
+      document.body.classList.remove('printing-barcode-single');
       setPrintMode(null);
-    }, 100);
+    }, 200);
   };
 
-  const handlePrintAllBarcodes = () => {
+  const handlePrintAllBarcodes = async () => {
+    try {
+      const res = await api.get('/products?limit=1000');
+      const fullCatalog = res.data.items || products;
+      setAllProductsForPrint(fullCatalog);
+    } catch {
+      setAllProductsForPrint(products);
+    }
     setPrintMode('bulk');
+    document.body.classList.add('printing-bulk-barcode');
     setTimeout(() => {
       window.print();
+      document.body.classList.remove('printing-bulk-barcode');
       setPrintMode(null);
-    }, 100);
+    }, 200);
   };
 
   const handleEditProductClick = (prod: Product) => {
@@ -1303,7 +1315,7 @@ export default function ProductsPage() {
       {printMode === 'bulk' && (
         <div id="bulk-barcode-print" className="bulk-print-only">
           <div className="bulk-barcode-grid">
-            {products.map((prod, index) => (
+            {(allProductsForPrint.length > 0 ? allProductsForPrint : products).map((prod, index) => (
               <div key={`${prod.id}-${index}`} className="bulk-barcode-item">
                 <div className="bulk-barcode-name">{prod.name}</div>
                 <div className="bulk-barcode-category">{prod.category?.name || 'Store'}</div>
