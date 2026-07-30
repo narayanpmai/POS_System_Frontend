@@ -161,33 +161,33 @@ export default function DashboardPage() {
     <AuthLayout>
 
 
-      {/* 1. Stat Grid */}
-      <div className="row g-4 mb-4 animate-fade-in-up">
-        <div className="col-12 col-sm-6 col-xl-3">
+      {/* 1. Stat Grid - Responsive 4-Column Layout */}
+      <div className="row g-3 mb-4 animate-fade-in-up">
+        <div className="col-12 col-sm-6 col-md-3">
           <div className="card stat-card stat-card-blue h-100 text-center animate-fade-in-up animate-delay-100">
             <span className="text-secondary fw-semibold d-block mb-2">{t('dashboard', 'today_sales')}</span>
-            <h3 className="m-0 fw-bold" style={{ color: 'var(--primary)' }}>Rs. {summary?.salesToday.toFixed(2) || '0.00'}</h3>
+            <h3 className="m-0 fw-bold fs-4" style={{ color: 'var(--primary)' }}>Rs. {summary?.salesToday.toFixed(2) || '0.00'}</h3>
           </div>
         </div>
 
-        <div className="col-12 col-sm-6 col-xl-3">
+        <div className="col-12 col-sm-6 col-md-3">
           <div className="card stat-card stat-card-orange h-100 text-center animate-fade-in-up animate-delay-200">
             <span className="text-secondary fw-semibold d-block mb-2">{t('dashboard', 'this_month')}</span>
-            <h3 className="m-0 fw-bold" style={{ color: 'var(--secondary)' }}>Rs. {summary?.salesThisMonth?.toFixed(2) || summary?.salesThisWeek.toFixed(2) || '0.00'}</h3>
+            <h3 className="m-0 fw-bold fs-4" style={{ color: 'var(--secondary)' }}>Rs. {summary?.salesThisMonth?.toFixed(2) || summary?.salesThisWeek.toFixed(2) || '0.00'}</h3>
           </div>
         </div>
 
-        <div className="col-12 col-sm-6 col-xl-3">
+        <div className="col-12 col-sm-6 col-md-3">
           <div className="card stat-card stat-card-blue h-100 text-center animate-fade-in-up animate-delay-300">
             <span className="text-secondary fw-semibold d-block mb-2">{t('dashboard', 'profit')}</span>
-            <h3 className="m-0 fw-bold" style={{ color: 'var(--primary)' }}>Rs. {summary?.totalNetProfit.toFixed(2) || '0.00'}</h3>
+            <h3 className="m-0 fw-bold fs-4" style={{ color: 'var(--primary)' }}>Rs. {summary?.totalNetProfit.toFixed(2) || '0.00'}</h3>
           </div>
         </div>
 
-        <div className="col-12 col-sm-6 col-xl-3">
+        <div className="col-12 col-sm-6 col-md-3">
           <div className="card stat-card stat-card-orange h-100 text-center animate-fade-in-up animate-delay-400">
             <span className="text-secondary fw-semibold d-block mb-2">{t('dashboard', 'today_revenue')}</span>
-            <h3 className="m-0 fw-bold" style={{ color: 'var(--secondary)' }}>Rs. {summary?.totalSales?.toFixed(2) || summary?.salesThisMonth?.toFixed(2) || '0.00'}</h3>
+            <h3 className="m-0 fw-bold fs-4" style={{ color: 'var(--secondary)' }}>Rs. {summary?.totalSales?.toFixed(2) || summary?.salesThisMonth?.toFixed(2) || '0.00'}</h3>
           </div>
         </div>
       </div>

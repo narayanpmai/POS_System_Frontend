@@ -73,6 +73,95 @@ export default function POSPage() {
   const [submittingCheckout, setSubmittingCheckout] = useState(false);
   const [storeSettings, setStoreSettings] = useState<any | null>(null);
 
+  // Hardware Barcode Scanner Ref & Integration (Smart HC-6052 & USB HID presentation scanners)
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus search input on page mount
+  useEffect(() => {
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, []);
+
+  // Helper to handle barcode match and auto-add to cart
+  const processBarcodeScan = (scannedCode: string): boolean => {
+    const code = scannedCode.trim();
+    if (!code) return false;
+
+    // Search by exact Barcode or SKU match first, then by substring
+    const matchedProduct = products.find(
+      (p) =>
+        (p.barcode && p.barcode.toLowerCase() === code.toLowerCase()) ||
+        p.SKU.toLowerCase() === code.toLowerCase()
+    ) || products.find(
+      (p) =>
+        (p.barcode && p.barcode.toLowerCase().includes(code.toLowerCase())) ||
+        p.SKU.toLowerCase().includes(code.toLowerCase()) ||
+        p.name.toLowerCase().includes(code.toLowerCase())
+    );
+
+    if (matchedProduct) {
+      addToCart(matchedProduct);
+      setSearchTerm('');
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+        searchInputRef.current.style.borderColor = '#198754';
+        setTimeout(() => {
+          if (searchInputRef.current) searchInputRef.current.style.borderColor = '';
+        }, 600);
+      }
+      return true;
+    }
+    return false;
+  };
+
+  // Global keydown listener for hands-free scanning with Smart HC-6052 scanner anywhere on screen
+  useEffect(() => {
+    let barcodeBuffer = '';
+    let lastKeyTime = 0;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT';
+
+      // If Enter is pressed while focused in search input or barcode buffer is populated
+      if (e.key === 'Enter') {
+        if (target === searchInputRef.current && searchTerm) {
+          e.preventDefault();
+          const matched = processBarcodeScan(searchTerm);
+          if (!matched) {
+            alert(`No product matched barcode/SKU: "${searchTerm}"`);
+          }
+          return;
+        }
+
+        if (barcodeBuffer.length >= 2) {
+          e.preventDefault();
+          const matched = processBarcodeScan(barcodeBuffer);
+          if (!matched && !isInput) {
+            alert(`No product matched scanned barcode: "${barcodeBuffer}"`);
+          }
+          barcodeBuffer = '';
+          return;
+        }
+      }
+
+      // Hardware Barcode Scanners transmit characters rapidly (<50ms apart)
+      const currentTime = Date.now();
+      if (currentTime - lastKeyTime > 80) {
+        barcodeBuffer = ''; // Reset buffer if manually typed by human (>80ms delay)
+      }
+      lastKeyTime = currentTime;
+
+      if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+        barcodeBuffer += e.key;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [products, searchTerm, cart]);
+
   // Load catalogs
   useEffect(() => {
     if (!token) return;
@@ -397,9 +486,10 @@ export default function POSPage() {
                 <i className="bi bi-search"></i>
               </span>
               <input
+                ref={searchInputRef}
                 type="text"
                 className="form-control border-0 bg-transparent py-2.5 shadow-none"
-                placeholder={t('pos', 'search_product') || 'Search product by name or SKU'}
+                placeholder={t('pos', 'search_product') || 'Scan barcode (Smart HC-6052) or search product/SKU...'}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{ outline: 'none' }}
@@ -407,7 +497,14 @@ export default function POSPage() {
               <button 
                 className="btn btn-primary px-4 py-2 border-0 fw-bold" 
                 style={{ backgroundColor: '#0d6efd', borderRadius: '0px' }}
-                onClick={() => {}}
+                onClick={() => {
+                  if (searchTerm) {
+                    const matched = processBarcodeScan(searchTerm);
+                    if (!matched) {
+                      alert(`No product matched: "${searchTerm}"`);
+                    }
+                  }
+                }}
               >
                 {t('common', 'search') || 'Search'}
               </button>
