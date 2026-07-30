@@ -19,6 +19,7 @@ interface Category {
   parent?: { id: number; name: string };
   fullPath?: string;
   level?: number;
+  children?: Category[];
   _count?: { products: number; children?: number };
 }
 
@@ -126,6 +127,15 @@ export default function ProductsPage() {
   const [selectedProductForUnits, setSelectedProductForUnits] = useState<any>(null);
   const [ucFactor, setUcFactor] = useState('');
   const [ucSecondary, setUcSecondary] = useState('');
+  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
+
+  const toggleCategoryExpand = (id: number) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
 
   // Load items
   const loadCatalogs = async () => {
@@ -135,7 +145,7 @@ export default function ProductsPage() {
       const catUrl = categoryId ? `&categoryId=${categoryId}` : '';
       const [prodRes, categoriesRes, brandsRes, settingsRes] = await Promise.all([
         api.get(`/products?page=${page}&limit=${rowsPerPage}&search=${search}${catUrl}`),
-        api.get(`/products/categories`),
+        api.get(`/products/categories/tree`),
         api.get(`/brands`),
         api.get('/settings')
       ]);
@@ -773,10 +783,10 @@ export default function ProductsPage() {
             <table className="table mb-0 align-middle">
               <thead>
                 <tr style={{ backgroundColor: 'var(--light-bg)' }}>
-                  <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top">Category Name & Hierarchy</th>
-                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top">Hierarchy Level</th>
+                  <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top">Category</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top">Level</th>
                   <th className="fw-bold text-dark py-3 border-bottom-0 border-top">Description</th>
-                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top">Products Count</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top">Products</th>
                   {isAdmin && <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-center">Actions</th>}
                 </tr>
               </thead>
@@ -785,48 +795,116 @@ export default function ProductsPage() {
                   <tr>
                     <td colSpan={isAdmin ? 5 : 4} className="text-center py-4 text-muted">No categories created in the system</td>
                   </tr>
-                ) : (
-                  applyPagination(categories, categoryPage, categoryRowsPerPage).map((cat, index) => (
-                    <tr key={cat.id}>
-                      <td className="fw-bold text-dark ps-3">
-                        <div className="d-flex align-items-center gap-2">
-                          {cat.image ? (
-                            <img
-                              src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/${cat.image}`}
-                              alt={cat.name}
-                              style={{ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #dee2e6' }}
-                            />
-                          ) : (
-                            <i className={`bi ${cat.level ? 'bi-diagram-3 text-secondary' : 'bi-folder-fill text-warning'} fs-6`}></i>
+                ) : (() => {
+                  // Recursive row renderer — matches reference app pattern
+                  const renderCategoryRow = (cat: Category, depth: number): React.ReactNode => {
+                    const hasChildren = (cat.children?.length ?? 0) > 0;
+                    const isExpanded = expandedCategories.has(cat.id);
+
+                    return (
+                      <React.Fragment key={cat.id}>
+                        <tr
+                          className="align-middle"
+                          style={{
+                            borderBottom: '1px solid var(--border-color, #dee2e6)',
+                            backgroundColor: depth > 0 ? 'var(--light-bg, rgba(0,0,0,0.01))' : undefined,
+                          }}
+                        >
+                          {/* Name cell with indent + connector */}
+                          <td className="py-2 ps-3">
+                            <div className="d-flex align-items-center" style={{ paddingLeft: depth * 24 }}>
+                              {/* Horizontal connector line for children */}
+                              {depth > 0 && (
+                                <span style={{ width: 16, height: 1, backgroundColor: 'var(--border-color, #dee2e6)', flexShrink: 0, display: 'inline-block', marginRight: 4 }} />
+                              )}
+                              {/* Expand/collapse chevron */}
+                              {hasChildren ? (
+                                <button
+                                  className="btn btn-link p-0 me-1 text-secondary"
+                                  style={{ lineHeight: 1, minWidth: 16 }}
+                                  onClick={() => toggleCategoryExpand(cat.id)}
+                                  title={isExpanded ? 'Collapse' : 'Expand'}
+                                >
+                                  <i className={`bi ${isExpanded ? 'bi-chevron-down' : 'bi-chevron-right'} fs-7`}></i>
+                                </button>
+                              ) : (
+                                <span style={{ width: 20, display: 'inline-block', flexShrink: 0 }} />
+                              )}
+                              {/* Image or icon */}
+                              {cat.image ? (
+                                <img
+                                  src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/${cat.image}`}
+                                  alt={cat.name}
+                                  className="me-2 flex-shrink-0"
+                                  style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 6, border: '1px solid #dee2e6' }}
+                                />
+                              ) : (
+                                <i className={`bi ${depth === 0 ? 'bi-folder-fill text-warning' : 'bi-folder2 text-secondary'} me-2 flex-shrink-0`}></i>
+                              )}
+                              {/* Name only — no full path */}
+                              <span className={depth === 0 ? 'fw-semibold' : 'text-secondary'} style={{ fontSize: '0.9rem' }}>
+                                {cat.name}
+                              </span>
+                              {/* Sub-count badge */}
+                              {hasChildren && (
+                                <span className="ms-2 text-muted" style={{ fontSize: '0.75rem' }}>
+                                  ({cat.children!.length} sub)
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          <td>
+                            <span className={`badge ${depth === 0 ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-secondary-subtle text-dark border'} rounded-pill px-2 py-1 fw-semibold`}>
+                              {depth === 0 ? 'Root Category' : `Level ${depth} Sub`}
+                            </span>
+                          </td>
+
+                          <td className="text-muted" style={{ fontSize: '0.875rem' }}>
+                            {cat.description || <span className="fst-italic">—</span>}
+                          </td>
+
+                          <td>
+                            <span className="badge bg-primary rounded-pill">{cat._count?.products || 0} items</span>
+                          </td>
+
+                          {isAdmin && (
+                            <td>
+                              <div className="d-flex justify-content-center gap-1">
+                                <button
+                                  className="btn btn-sm btn-outline-success p-1 px-2"
+                                  title="Add sub-category"
+                                  onClick={() => handleAddSubCategoryClick(cat)}
+                                >
+                                  <i className="bi bi-plus-lg"></i>
+                                </button>
+                                <button
+                                  className="btn btn-sm btn-outline-secondary p-1 px-2"
+                                  title="Edit"
+                                  onClick={() => handleEditCategoryClick(cat)}
+                                >
+                                  <i className="bi bi-pencil-fill"></i>
+                                </button>
+                                <button
+                                  className="btn btn-sm btn-outline-danger p-1 px-2"
+                                  title="Delete"
+                                  onClick={() => handleDeleteCategory(cat.id)}
+                                >
+                                  <i className="bi bi-trash-fill"></i>
+                                </button>
+                              </div>
+                            </td>
                           )}
-                          <span>{cat.fullPath ? cat.fullPath : cat.name}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <span className={`badge ${cat.level === 0 || !cat.level ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-secondary-subtle text-dark border'} rounded-pill px-2.5 py-1 fw-semibold`}>
-                          {cat.level === 0 || !cat.level ? 'Root Category' : `Level ${cat.level} Sub`}
-                        </span>
-                      </td>
-                      <td className="text-muted">{cat.description || 'No description provided'}</td>
-                      <td><span className="badge bg-primary rounded-pill">{cat._count?.products || 0} items</span></td>
-                      {isAdmin && (
-                        <td>
-                          <div className="d-flex justify-content-center gap-1.5">
-                            <button className="btn btn-sm btn-outline-success p-1 px-2 d-flex align-items-center gap-1 fw-semibold" title="Add Sub-Category under this item" onClick={() => handleAddSubCategoryClick(cat)}>
-                              <i className="bi bi-plus-circle-fill"></i> + Sub
-                            </button>
-                            <button className="btn btn-sm btn-outline-info p-1 px-2 d-flex align-items-center" title="Edit Category" onClick={() => handleEditCategoryClick(cat)} style={{ borderColor: '#0dcaf0', color: '#0dcaf0' }}>
-                              <i className="bi bi-pencil-fill"></i>
-                            </button>
-                            <button className="btn btn-sm btn-outline-danger p-1 px-2 d-flex align-items-center" title="Delete Category" onClick={() => handleDeleteCategory(cat.id)} style={{ borderColor: '#dc3545', color: '#dc3545' }}>
-                              <i className="bi bi-trash-fill"></i>
-                            </button>
-                          </div>
-                        </td>
-                      )}
-                    </tr>
-                  ))
-                )}
+                        </tr>
+
+                        {/* Render children if expanded */}
+                        {isExpanded && hasChildren && cat.children!.map(child => renderCategoryRow(child, depth + 1))}
+                      </React.Fragment>
+                    );
+                  };
+
+                  return categories.map(root => renderCategoryRow(root, 0));
+                })()}
               </tbody>
             </table>
 
