@@ -5,6 +5,7 @@ import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBsFull } from '@/utils/nepaliDate';
+import { printThermalReceipt } from '@/utils/printReceipt';
 
 interface UnitConversion {
   id: number;
@@ -434,11 +435,7 @@ export default function POSPage() {
   };
 
   const handlePrintReceipt = () => {
-    document.body.classList.add('printing-receipt');
-    window.print();
-    setTimeout(() => {
-      document.body.classList.remove('printing-receipt');
-    }, 1000);
+    printThermalReceipt('printable-receipt-modal');
   };
 
   const handleDownloadPDF = async () => {

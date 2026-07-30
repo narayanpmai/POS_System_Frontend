@@ -523,51 +523,41 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0 !important;
     background: #ffffff !important;
     color: #000000 !important;
+    width: 80mm !important;
   }
 
-  /* When printing thermal receipt, hide background layout containers */
+  /* When printing thermal receipt, hide page layout navigation, tables, sidebars, buttons */
   body.printing-receipt nav,
   body.printing-receipt header,
   body.printing-receipt footer,
   body.printing-receipt .custom-sidebar,
   body.printing-receipt .custom-navbar,
-  body.printing-receipt main,
   body.printing-receipt .no-print,
   body.printing-receipt .modal-header,
   body.printing-receipt .modal-footer,
   body.printing-receipt .btn,
-  body.printing-receipt .btn-close {
+  body.printing-receipt .btn-close,
+  body.printing-receipt .card:not(.modal *),
+  body.printing-receipt table:not(.font-mono),
+  body.printing-receipt .pagination,
+  body.printing-receipt .stat-card {
     display: none !important;
   }
 
-  body.printing-receipt .modal {
+  body.printing-receipt .modal,
+  body.printing-receipt .modal-dialog,
+  body.printing-receipt .modal-content,
+  body.printing-receipt .modal-body {
     position: static !important;
     display: block !important;
     overflow: visible !important;
-    background: transparent !important;
+    background: #ffffff !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: 80mm !important;
-  }
-
-  body.printing-receipt .modal-dialog {
-    max-width: 80mm !important;
-    width: 80mm !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  body.printing-receipt .modal-content {
     border: none !important;
     box-shadow: none !important;
-    background: transparent !important;
-    padding: 0 !important;
     width: 80mm !important;
-  }
-
-  body.printing-receipt .modal-body {
-    padding: 0 !important;
-    width: 80mm !important;
+    max-width: 80mm !important;
   }
 
   .thermal-receipt {

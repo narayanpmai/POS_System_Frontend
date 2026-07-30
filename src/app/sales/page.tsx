@@ -10,6 +10,7 @@ import { formatAdToBsFull } from '@/utils/nepaliDate';
 import * as XLSX from 'xlsx';
 import BSDatePicker from '@/components/BSDatePicker';
 import TableControls, { applyPagination } from '@/components/TableControls';
+import { printThermalReceipt } from '@/utils/printReceipt';
 
 export default function SalesHistoryPage() {
   const router = useRouter();
@@ -75,11 +76,7 @@ export default function SalesHistoryPage() {
   };
 
   const handlePrintReceipt = () => {
-    document.body.classList.add('printing-receipt');
-    window.print();
-    setTimeout(() => {
-      document.body.classList.remove('printing-receipt');
-    }, 1000);
+    printThermalReceipt('printable-receipt-modal');
   };
 
   const handleDownloadPDF = async () => {
