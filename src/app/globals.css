@@ -507,3 +507,72 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateY(-2px);
   box-shadow: 0 12px 25px rgba(59, 130, 246, 0.4);
 }
+
+/* ==============================================================
+   POSTRONIX-8005 (80mm Thermal Receipt Printer) Print Rules
+   Removes side margins, forces zero browser padding & 76mm printable area
+   ============================================================== */
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    width: 80mm !important;
+  }
+
+  /* Hide UI elements during print */
+  .no-print,
+  .custom-sidebar,
+  .custom-navbar,
+  .modal-header,
+  .modal-footer,
+  .modal-backdrop,
+  nav,
+  header,
+  footer {
+    display: none !important;
+  }
+
+  .modal {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    background: none !important;
+  }
+
+  .modal-dialog {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .modal-content {
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+  }
+
+  .modal-body {
+    padding: 0 !important;
+  }
+
+  .thermal-receipt {
+    width: 76mm !important;
+    margin: 0 auto !important;
+    padding: 2mm 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    color: #000000 !important;
+    background: #ffffff !important;
+  }
+
+  .thermal-receipt * {
+    color: #000000 !important;
+  }
+}
