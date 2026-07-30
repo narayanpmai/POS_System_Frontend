@@ -9,6 +9,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useModal } from '@/context/ModalContext';
 import * as XLSX from 'xlsx';
 import TableControls, { applyPagination } from '@/components/TableControls';
+import CategorySelect from '@/components/CategorySelect';
 
 interface Category {
   id: number;
@@ -678,16 +679,13 @@ export default function ProductsPage() {
               />
             </div>
             <div className="col-12 col-md-4">
-              <select
-                className="form-select"
+              <CategorySelect
+                categories={categories}
                 value={categoryId}
-                onChange={(e) => { setCategoryId(e.target.value); setPage(1); }}
-              >
-                <option value="">{t('common', 'all')} {t('common', 'category')}</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.fullPath ? c.fullPath : c.name}</option>
-                ))}
-              </select>
+                onChange={(val) => { setCategoryId(val ? String(val) : ''); setPage(1); }}
+                placeholder="All Categories"
+                allowClear
+              />
             </div>
           </div>
 
@@ -1001,17 +999,12 @@ export default function ProductsPage() {
                 <div className="row g-3 mb-3">
                   <div className="col-12 col-md-4">
                     <label className="form-label fw-bold text-secondary fs-8 mb-1">Category <span className="text-danger">*</span></label>
-                    <select
-                      className="form-select"
+                    <CategorySelect
+                      categories={categories}
                       value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
-                      required
-                    >
-                      <option value="">-- Select Category --</option>
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id}>{c.fullPath ? c.fullPath : c.name}</option>
-                      ))}
-                    </select>
+                      onChange={(val) => setSelectedCategory(val ? String(val) : '')}
+                      placeholder="-- Select Category --"
+                    />
                   </div>
                   <div className="col-12 col-md-4">
                     <label className="form-label fw-bold text-secondary fs-8 mb-1">Brand</label>
@@ -1173,20 +1166,13 @@ export default function ProductsPage() {
 
                 <div className="mb-3">
                   <label className="form-label fw-semibold">Parent Category (Optional)</label>
-                  <select
-                    className="form-select"
-                    value={categoryForm.parentId || ''}
-                    onChange={(e) => setCategoryForm({ ...categoryForm, parentId: e.target.value ? Number(e.target.value) : null })}
-                  >
-                    <option value="">None (Root Category)</option>
-                    {categories
-                      .filter((c) => !editingCategory || c.id !== editingCategory.id)
-                      .map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.fullPath ? c.fullPath : c.name}
-                        </option>
-                      ))}
-                  </select>
+                  <CategorySelect
+                    categories={categories.filter((c) => !editingCategory || c.id !== editingCategory.id)}
+                    value={categoryForm.parentId}
+                    onChange={(val) => setCategoryForm({ ...categoryForm, parentId: val })}
+                    placeholder="None (Root Category)"
+                    allowClear
+                  />
                   <small className="text-muted fs-8">Select a parent to create a sub-category (e.g. खाद्यान्न &gt; चामल)</small>
                 </div>
                 <div className="mb-3">
