@@ -9,7 +9,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useModal } from '@/context/ModalContext';
 import * as XLSX from 'xlsx';
 import TableControls, { applyPagination } from '@/components/TableControls';
-import CategorySelect from '@/components/CategorySelect';
+import CascadingCategorySelect from '@/components/CascadingCategorySelect';
 
 interface Category {
   id: number;
@@ -691,8 +691,8 @@ export default function ProductsPage() {
               />
             </div>
             <div className="col-12 col-md-4">
-              <CategorySelect
-                categories={categories}
+              <CascadingCategorySelect
+                categories={categoryTree.length > 0 ? categoryTree : categories}
                 value={categoryId}
                 onChange={(val) => { setCategoryId(val ? String(val) : ''); setPage(1); }}
                 placeholder="All Categories"
@@ -1011,8 +1011,8 @@ export default function ProductsPage() {
                 <div className="row g-3 mb-3">
                   <div className="col-12 col-md-4">
                     <label className="form-label fw-bold text-secondary fs-8 mb-1">Category <span className="text-danger">*</span></label>
-                    <CategorySelect
-                      categories={categories}
+                    <CascadingCategorySelect
+                      categories={categoryTree.length > 0 ? categoryTree : categories}
                       value={selectedCategory}
                       onChange={(val) => setSelectedCategory(val ? String(val) : '')}
                       placeholder="-- Select Category --"
@@ -1178,8 +1178,8 @@ export default function ProductsPage() {
 
                 <div className="mb-3">
                   <label className="form-label fw-semibold">Parent Category (Optional)</label>
-                  <CategorySelect
-                    categories={categories.filter((c) => !editingCategory || c.id !== editingCategory.id)}
+                  <CascadingCategorySelect
+                    categories={(categoryTree.length > 0 ? categoryTree : categories).filter((c) => !editingCategory || c.id !== editingCategory.id)}
                     value={categoryForm.parentId}
                     onChange={(val) => setCategoryForm({ ...categoryForm, parentId: val })}
                     placeholder="None (Root Category)"
