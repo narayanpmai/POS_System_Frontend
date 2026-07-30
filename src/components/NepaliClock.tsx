@@ -7,10 +7,8 @@ export default function NepaliClock() {
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
 
   useEffect(() => {
-    // Initial set
     setCurrentDate(new Date());
 
-    // Update time every second
     const intervalId = setInterval(() => {
       setCurrentDate(new Date());
     }, 1000);
@@ -20,22 +18,25 @@ export default function NepaliClock() {
 
   if (!currentDate) {
     return (
-      <div className="d-flex align-items-center gap-2 text-secondary fs-7 px-3 py-1 bg-light rounded-pill border">
+      <div 
+        className="d-flex align-items-center gap-2 text-secondary px-3 bg-light rounded-pill border"
+        style={{ whiteSpace: 'nowrap', height: '38px', fontSize: '0.82rem' }}
+      >
         <i className="bi bi-clock-history"></i>
         <span>Loading...</span>
       </div>
     );
   }
 
-  // Get formatted BS date with time
   const formattedBs = formatAdToBsClock(currentDate);
 
   return (
-    <div className="d-flex align-items-center gap-2 text-dark fs-7 px-3 py-1 bg-white rounded-pill border shadow-sm">
-      <i className="bi bi-calendar-event text-danger"></i>
-      <span className="fw-semibold">{formattedBs}</span>
+    <div 
+      className="d-flex align-items-center gap-2 text-dark px-3 bg-white rounded-pill border shadow-sm"
+      style={{ whiteSpace: 'nowrap', height: '38px', fontSize: '0.82rem', lineHeight: '1.2' }}
+    >
+      <i className="bi bi-calendar-event text-danger fs-6"></i>
+      <span className="fw-semibold text-nowrap" style={{ whiteSpace: 'nowrap' }}>{formattedBs}</span>
     </div>
   );
 }
-
-

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-
+
 import TableControls, { applyPagination } from '@/components/TableControls';
 export default function SettingsPage() {
   const router = useRouter();
@@ -109,85 +109,91 @@ export default function SettingsPage() {
         const text = event.target?.result as string;
         const backupData = JSON.parse(text);
         
-        if (!backupData.form || typeof backupData.form.storeName !== 'string') {
-          throw new Error('Invalid settings backup file format.');
-        }
-
-        setForm(backupData.form);
-
-        if (backupData.notifConfig) {
-          setNotifConfig(backupData.notifConfig);
-          localStorage.setItem('smartpos_notifications', JSON.stringify(backupData.notifConfig));
-        }
-
-        if (backupData.securityConfig) {
-          setSecurityConfig(backupData.securityConfig);
-          localStorage.setItem('smartpos_security', JSON.stringify(backupData.securityConfig));
-        }
-
         setSubmitting(true);
-        const payload = {
-          ...backupData.form,
-          taxRateDefault: Number(backupData.form.taxRateDefault),
-        };
-        await api.put('/settings', payload);
+        if (backupData.type === 'TENANT_SCOPED_BACKUP' || backupData.data) {
+          const res = await api.post('/settings/backup/import', backupData);
+          alert(res.data?.message || 'Tenant data successfully restored!');
+        } else {
+          if (!backupData.form || typeof backupData.form.storeName !== 'string') {
+            throw new Error('Invalid settings backup file format.');
+          }
+
+          setForm(backupData.form);
+
+          if (backupData.notifConfig) {
+            setNotifConfig(backupData.notifConfig);
+            localStorage.setItem('smartpos_notifications', JSON.stringify(backupData.notifConfig));
+          }
+
+          if (backupData.securityConfig) {
+            setSecurityConfig(backupData.securityConfig);
+            localStorage.setItem('smartpos_security', JSON.stringify(backupData.securityConfig));
+          }
+
+          const payload = {
+            ...backupData.form,
+            taxRateDefault: Number(backupData.form.taxRateDefault),
+          };
+          await api.put('/settings', payload);
+          alert('Configuration settings successfully restored!');
+        }
         setSubmitting(false);
-        
-        alert('Configuration settings successfully restored!');
         loadSettings();
       } catch (err: any) {
         setSubmitting(false);
-        alert(err.message || 'Error parsing backup file.');
+        alert(err.response?.data?.message || err.message || 'Error parsing backup file.');
       }
     };
     reader.readAsText(file);
     e.target.value = '';
   };
 
-  const handleGenerateDBBackup = () => {
+  const handleGenerateDBBackup = async () => {
     if (!isAdmin) {
-      alert('Only administrators are authorized to create database backups');
+      alert('Only administrators are authorized to create company backups');
       return;
     }
 
     setBackupStatus('generating');
-    setBackupProgress(0);
+    setBackupProgress(30);
 
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 10;
-      setBackupProgress(progress);
-      if (progress >= 100) {
-        clearInterval(interval);
-        setBackupStatus('success');
+    try {
+      const res = await api.get('/settings/backup/export');
+      setBackupProgress(80);
 
-        const timestamp = new Date().toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/:/g, '-');
-        const fileName = `smartpos_db_backup_${timestamp}.sql`;
-        const sqlContent = `-- SmartPOS Full System Database Backup\n-- Generated on ${new Date().toISOString()}\n-- Postgres Version: 15-alpine\n\nCREATE TABLE "StoreSetting" (...);\nINSERT INTO "StoreSetting" VALUES (...);\n-- Completed successfully.`;
-        const blob = new Blob([sqlContent], { type: 'text/sql' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+      const timestamp = new Date().toISOString().split('T')[0];
+      const fileName = `koselighar_backup_company_${user?.companyId || 'data'}_${timestamp}.json`;
+      const jsonString = JSON.stringify(res.data, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
 
-        const newBackup = {
-          id: Date.now(),
-          name: fileName,
-          size: '4.88 MB',
-          date: new Date().toISOString().replace('T', ' ').substring(0, 19),
-          type: 'Manual',
-        };
-        setBackupHistory(prev => [newBackup, ...prev]);
+      setBackupProgress(100);
+      setBackupStatus('success');
 
-        setTimeout(() => {
-          setBackupStatus('idle');
-        }, 1500);
-      }
-    }, 150);
+      const sizeKB = (jsonString.length / 1024).toFixed(2);
+      const newBackup = {
+        id: Date.now(),
+        name: fileName,
+        size: `${sizeKB} KB`,
+        date: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        type: 'Tenant Data Backup',
+      };
+      setBackupHistory(prev => [newBackup, ...prev]);
+
+      setTimeout(() => {
+        setBackupStatus('idle');
+      }, 1500);
+    } catch (err: any) {
+      setBackupStatus('idle');
+      alert(err.response?.data?.message || 'Error generating tenant backup file.');
+    }
   };
 
   const handleRestoreDBBackup = (name: string) => {
