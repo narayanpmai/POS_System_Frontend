@@ -35,6 +35,7 @@ export default function InventoryPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [filterLowStock, setFilterLowStock] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Stock Adjustment Form
   const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
@@ -102,8 +103,15 @@ export default function InventoryPage() {
   };
 
   const filteredItems = ledger?.items?.filter((item: InventoryItem) => {
-    if (filterLowStock) return item.isLowStock;
-    return true;
+    const matchesLowStock = filterLowStock ? item.isLowStock : true;
+    const q = searchQuery.trim().toLowerCase();
+    const matchesSearch = !q || (
+      item.name?.toLowerCase().includes(q) ||
+      item.SKU?.toLowerCase().includes(q) ||
+      item.category?.toLowerCase().includes(q) ||
+      item.unit?.toLowerCase().includes(q)
+    );
+    return matchesLowStock && matchesSearch;
   }) || [];
 
   return (
@@ -146,20 +154,37 @@ export default function InventoryPage() {
 
       {/* Main Ledger Table Card */}
       <div className="card border-none rounded-lg p-4 shadow-sm" style={{ backgroundColor: 'var(--light-card)', border: '1px solid var(--border-color)' }}>
-        <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
           <h5 className="fw-bold m-0 d-flex align-items-center gap-2">
             <i className="bi bi-box-seam-fill text-primary"></i>
             {t('inventory', 'stock_level')}
           </h5>
-          <div className="form-check form-switch bg-light border px-4 py-2 rounded-pill shadow-sm">
-            <input
-              className="form-check-input ms-0 me-2"
-              type="checkbox"
-              id="lowStockFilterSwitch"
-              checked={filterLowStock}
-              onChange={(e) => setFilterLowStock(e.target.checked)}
-            />
-            <label className="form-check-label fw-semibold" htmlFor="lowStockFilterSwitch">{t('inventory', 'low_stock')}</label>
+          <div className="d-flex align-items-center gap-3 flex-wrap">
+            {/* Search Input Bar */}
+            <div className="input-group input-group-sm" style={{ maxWidth: '280px' }}>
+              <span className="input-group-text bg-white border-end-0 rounded-start-pill text-muted px-3">
+                <i className="bi bi-search"></i>
+              </span>
+              <input
+                type="text"
+                className="form-control border-start-0 rounded-end-pill px-2 shadow-none"
+                placeholder={t('common', 'search') || 'Search product, SKU...'}
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              />
+            </div>
+
+            {/* Low Stock Switch */}
+            <div className="form-check form-switch bg-light border px-4 py-2 rounded-pill shadow-sm m-0 d-flex align-items-center">
+              <input
+                className="form-check-input ms-0 me-2"
+                type="checkbox"
+                id="lowStockFilterSwitch"
+                checked={filterLowStock}
+                onChange={(e) => { setFilterLowStock(e.target.checked); setCurrentPage(1); }}
+              />
+              <label className="form-check-label fw-semibold" htmlFor="lowStockFilterSwitch">{t('inventory', 'low_stock')}</label>
+            </div>
           </div>
         </div>
 
