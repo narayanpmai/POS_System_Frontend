@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useModal } from '@/context/ModalContext';
 import { useRouter } from 'next/navigation';
 
 import AuthLayout from '@/components/AuthLayout';
@@ -21,6 +22,7 @@ interface Company {
 export default function CompaniesPage() {
   const { api, user } = useAuth();
   const { t } = useLanguage();
+  const { showAlert, showConfirm } = useModal();
   const router = useRouter();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,40 +124,50 @@ export default function CompaniesPage() {
     }
   };
 
-  const handleDeleteCompany = async (id: number, name: string) => {
-    const reason = window.confirm(`Are you sure you want to deactivate "${name}"?\nThis will prevent all users of this company from logging in, but their data will remain safe in the system.`);
-    if (!reason) {
-      alert('Action cancelled.');
-      return;
-    }
-    
-    try {
-      setLoading(true);
-      await api.delete(`/companies/${id}`);
-      alert('Company deactivated successfully.');
-      fetchCompanies();
-    } catch (err: any) {
-      console.error(err);
-      alert(err.response?.data?.message || 'Failed to deactivate company');
-    } finally {
-      setLoading(false);
-    }
+  const handleDeleteCompany = (id: number, name: string) => {
+    showConfirm({
+      title: 'Deactivate Company',
+      message: `Are you sure you want to deactivate "${name}"?\nThis will prevent all users of this company from logging in, but their data will remain safe in the system.`,
+      type: 'warning',
+      confirmText: 'Deactivate',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        try {
+          setLoading(true);
+          await api.delete(`/companies/${id}`);
+          showAlert('Company deactivated successfully.', { type: 'success', title: 'Company Deactivated' });
+          fetchCompanies();
+        } catch (err: any) {
+          console.error(err);
+          showAlert(err.response?.data?.message || 'Failed to deactivate company', { type: 'danger', title: 'Deactivation Failed' });
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
   };
 
-  const handleDeletePermanently = async (id: number, name: string) => {
-    const reason = window.confirm(`⚠️ PERMANENT DELETE WARNING:\n\nAre you sure you want to PERMANENTLY delete "${name}" and all its users/data from the database?\nThis action CANNOT be undone!`);
-    if (!reason) return;
-    try {
-      setLoading(true);
-      await api.delete(`/companies/${id}?permanent=true`);
-      alert('Company permanently deleted.');
-      fetchCompanies(showInactive);
-    } catch (err: any) {
-      console.error(err);
-      alert(err.response?.data?.message || 'Failed to permanently delete company');
-    } finally {
-      setLoading(false);
-    }
+  const handleDeletePermanently = (id: number, name: string) => {
+    showConfirm({
+      title: 'Permanent Delete Warning',
+      message: `Are you sure you want to PERMANENTLY delete "${name}" and all its users/data from the database?\n\nThis action CANNOT be undone!`,
+      type: 'danger',
+      confirmText: 'Delete Permanently',
+      cancelText: 'Cancel',
+      onConfirm: async () => {
+        try {
+          setLoading(true);
+          await api.delete(`/companies/${id}?permanent=true`);
+          showAlert('Company permanently deleted.', { type: 'success', title: 'Company Deleted' });
+          fetchCompanies(showInactive);
+        } catch (err: any) {
+          console.error(err);
+          showAlert(err.response?.data?.message || 'Failed to permanently delete company', { type: 'danger', title: 'Delete Failed' });
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
   };
 
 

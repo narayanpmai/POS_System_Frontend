@@ -5,13 +5,16 @@ import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useModal } from '@/context/ModalContext';
 import { formatAdToBs } from '@/utils/nepaliDate';
-
+
 import TableControls, { applyPagination } from '@/components/TableControls';
+
 export default function UserControlPage() {
   const router = useRouter();
   const { token, api, user } = useAuth();
   const { t } = useLanguage();
+  const { showAlert } = useModal();
   const [users, setUsers] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
@@ -91,20 +94,20 @@ export default function UserControlPage() {
         
         if (!payload.password) delete payload.password;
         await api.put(`/users/${editingUserId}`, payload);
-        alert(t('users', 'success_update') || 'User updated successfully');
+        showAlert(t('users', 'success_update') || 'User updated successfully', { type: 'success', title: 'User Updated' });
       } else {
-        if (!formData.password) return alert('Password is required for new users');
+        if (!formData.password) return showAlert('Password is required for new users', { type: 'warning', title: 'Validation Warning' });
         const payload: any = { ...formData };
         if (payload.companyId) payload.companyId = parseInt(payload.companyId as string);
         else delete payload.companyId;
 
         await api.post('/users', payload);
-        alert(t('users', 'success_add') || 'User created successfully');
+        showAlert(t('users', 'success_add') || 'User created successfully', { type: 'success', title: 'User Created' });
       }
       setShowForm(false);
       loadData();
     } catch (err: any) {
-      alert(err.response?.data?.message || t('common', 'error'));
+      showAlert(err.response?.data?.message || t('common', 'error'), { type: 'danger', title: 'Operation Failed' });
     }
   };
 
@@ -113,20 +116,20 @@ export default function UserControlPage() {
       await api.put(`/users/${id}`, { active: !currentStatus });
       loadData();
     } catch (err) {
-      alert('Error updating status');
+      showAlert('Error updating status', { type: 'danger', title: 'Error' });
     }
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPassword || newPassword.length < 6) return alert('Password must be at least 6 characters');
+    if (!newPassword || newPassword.length < 6) return showAlert('Password must be at least 6 characters', { type: 'warning', title: 'Validation Warning' });
     try {
       await api.patch(`/users/${resetUserId}/reset-password`, { newPassword });
-      alert(t('common', 'updated_successfully') || 'Password reset successfully');
+      showAlert(t('common', 'updated_successfully') || 'Password reset successfully', { type: 'success', title: 'Password Reset' });
       setShowResetModal(false);
       setNewPassword('');
     } catch (err: any) {
-      alert(err.response?.data?.message || t('common', 'error'));
+      showAlert(err.response?.data?.message || t('common', 'error'), { type: 'danger', title: 'Reset Failed' });
     }
   };
 
@@ -137,46 +140,42 @@ export default function UserControlPage() {
             <button className="btn btn-outline-secondary btn-sm" onClick={() => router.back()} title="Go back">
               <i className="bi bi-arrow-left"></i> Back
             </button>
-            <h4 className="fw-bold m-0">{t('users', 'title')}</h4>
-          </div>
+            <h2 className="mb-0">{t('users', 'title')}</h2>
+        </div>
         <button className="btn btn-primary fw-bold px-4" onClick={handleAddClick}>
-          <i className="bi bi-plus-lg me-1"></i> {t('users', 'add_user')}
+          <i className="bi bi-plus-lg me-2"></i>{t('users', 'add_user')}
         </button>
       </div>
 
       {showForm && (
         <div className="card p-4 border-none shadow-sm mb-4" style={{ backgroundColor: 'var(--light-card)', border: '1px solid var(--border-color)' }}>
-          <h5 className="fw-bold mb-4">{isEditing ? t('users', 'edit_user') : t('users', 'new_user')}</h5>
+          <h5 className="fw-bold mb-3">{isEditing ? t('users', 'edit_user') : t('users', 'add_user')}</h5>
           <form onSubmit={submitForm}>
-            <div className="row g-3 mb-3">
-              <div className="col-12 col-md-6">
+            <div className="row g-3">
+              <div className="col-md-6">
                 <label className="form-label fw-semibold">{t('users', 'user_name')}</label>
                 <input required type="text" className="form-control" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
               </div>
-              <div className="col-12 col-md-6">
+              <div className="col-md-6">
                 <label className="form-label fw-semibold">{t('users', 'user_email')}</label>
                 <input required type="email" className="form-control" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
               </div>
-              
-              {!isEditing && (
-                <div className="col-12 col-md-6">
-                  <label className="form-label fw-semibold">{t('auth', 'password') || 'Initial Password'}</label>
-                  <input required type="password" minLength={6} className="form-control" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
-                </div>
-              )}
-
-              <div className="col-12 col-md-6">
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">{t('auth', 'password')} {isEditing && <small className="text-muted">(Leave blank to keep unchanged)</small>}</label>
+                <input type="password" className="form-control" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} />
+              </div>
+              <div className="col-md-6">
                 <label className="form-label fw-semibold">{t('users', 'user_role')}</label>
-                <select className="form-select" value={formData.roleId} onChange={e => setFormData({...formData, roleId: parseFloat(e.target.value)})}>
+                <select className="form-select" value={formData.roleId} onChange={e => setFormData({...formData, roleId: parseInt(e.target.value)})}>
                   {roles.map(r => (
-                    <option key={r.id} value={r.id}>{r.name} - {r.description}</option>
+                    <option key={r.id} value={r.id}>{r.name}</option>
                   ))}
                 </select>
               </div>
-              
+
               {user?.role?.name === 'Super Admin' && (
-                <div className="col-12 col-md-6">
-                  <label className="form-label fw-semibold">Company</label>
+                <div className="col-md-6">
+                  <label className="form-label fw-semibold">Assign Company (Super Admin only)</label>
                   <select className="form-select" value={formData.companyId} onChange={e => setFormData({...formData, companyId: e.target.value})}>
                     <option value="">Select Company</option>
                     {companies.map(c => (
@@ -254,18 +253,13 @@ export default function UserControlPage() {
                     <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => {
                       setResetUserId(u.id);
                       setShowResetModal(true);
-                      setShowForm(false);
-                    }}>
+                    }} title="Reset Password">
                       <i className="bi bi-key-fill"></i>
                     </button>
-                    <button className="btn btn-sm btn-outline-primary me-2" onClick={() => handleEditClick(u)}>
-                      <i className="bi bi-pencil-fill"></i>
+                    <button className="btn btn-sm btn-outline-primary me-2" onClick={() => handleEditClick(u)} title="Edit">
+                      <i className="bi bi-pencil"></i>
                     </button>
-                    <button 
-                      className={`btn btn-sm ${u.active ? 'btn-outline-danger' : 'btn-outline-success'}`} 
-                      onClick={() => toggleActiveStatus(u.id, u.active)}
-                      disabled={user?.email === u.email} // Cannot disable self
-                    >
+                    <button className={`btn btn-sm ${u.active ? 'btn-outline-danger' : 'btn-outline-success'}`} onClick={() => toggleActiveStatus(u.id, u.active)} title={u.active ? 'Deactivate' : 'Activate'}>
                       <i className={`bi ${u.active ? 'bi-lock-fill' : 'bi-unlock-fill'}`}></i>
                     </button>
                   </td>
@@ -274,6 +268,14 @@ export default function UserControlPage() {
             </tbody>
           </table>
         </div>
+
+        <TableControls 
+          totalItems={users.length} 
+          rowsPerPage={rowsPerPage} 
+          currentPage={currentPage} 
+          onRowsPerPageChange={(val) => { setRowsPerPage(val); setCurrentPage(1); }} 
+          onPageChange={setCurrentPage} 
+        />
       </div>
     </AuthLayout>
   );

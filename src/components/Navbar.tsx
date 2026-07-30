@@ -98,23 +98,26 @@ export default function Navbar() {
       </div>
 
       <div className="d-flex align-items-center gap-2 gap-sm-3">
-        {/* Super Admin Global Company Selector */}
+        {/* Super Admin Global Tenant Company Selector */}
         {user?.role?.name === 'Super Admin' && (
-          <select 
-            className="form-select form-select-sm border-danger text-danger fw-bold rounded-pill shadow-sm"
-            style={{ minWidth: '180px', height: '38px', fontSize: '0.8rem' }}
-            value={superAdminCompanyId || ''}
-            onChange={(e) => {
-              const val = e.target.value;
-              setSuperAdminCompanyId(val ? parseInt(val, 10) : null);
-              setTimeout(() => window.location.reload(), 100);
-            }}
-          >
-            <option value="">Global Filter: Default</option>
-            {companies.map(c => (
-              <option key={c.id} value={c.id}>🌍 {c.name}</option>
-            ))}
-          </select>
+          <div className="d-flex align-items-center gap-1">
+            <select 
+              className="form-select form-select-sm border-primary text-primary fw-bold rounded-pill shadow-sm"
+              style={{ minWidth: '220px', height: '38px', fontSize: '0.85rem', cursor: 'pointer', backgroundColor: '#f0f7ff' }}
+              value={superAdminCompanyId || ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSuperAdminCompanyId(val ? parseInt(val, 10) : null);
+                setTimeout(() => window.location.reload(), 150);
+              }}
+              title="Select tenant company to filter system-wide data"
+            >
+              <option value="">🌐 All Companies (Global View)</option>
+              {companies.map(c => (
+                <option key={c.id} value={c.id}>🏢 {c.name}</option>
+              ))}
+            </select>
+          </div>
         )}
   
         {/* Language Toggle Button */}

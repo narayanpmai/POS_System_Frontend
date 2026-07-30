@@ -1,8 +1,8 @@
-
 import React from 'react';
 import type { Metadata } from 'next';
 import { AuthProvider } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
+import { ModalProvider } from '@/context/ModalContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import './globals.css';
@@ -28,8 +28,10 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           <LanguageProvider>
-            <InitBootstrap />
-            {children}
+            <ModalProvider>
+              <InitBootstrap />
+              {children}
+            </ModalProvider>
           </LanguageProvider>
         </AuthProvider>
       </body>
