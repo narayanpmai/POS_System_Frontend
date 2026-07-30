@@ -435,7 +435,7 @@ export default function POSPage() {
   };
 
   const handlePrintReceipt = () => {
-    printThermalReceipt('printable-receipt-modal');
+    printThermalReceipt('printable-receipt-modal', storeSettings?.printCopies || 2);
   };
 
   const handleDownloadPDF = async () => {

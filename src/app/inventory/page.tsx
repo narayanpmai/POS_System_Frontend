@@ -222,8 +222,8 @@ export default function InventoryPage() {
                     <td><span className="badge bg-secondary-subtle text-secondary px-2.5 py-1 rounded-pill">{item.category}</span></td>
                     <td className="fw-medium text-dark">{item.unit || 'pcs'}</td>
                     <td>
-                      <span className={`badge ${item.isLowStock ? 'badge-low-stock' : 'badge-in-stock'} rounded-pill px-2.5 py-1`}>
-                        {item.stock} / alert: {item.minStockAlert}
+                      <span className={`badge ${item.isLowStock ? 'bg-danger-subtle text-danger border border-danger-subtle' : 'bg-success-subtle text-success border border-success-subtle'} rounded-pill px-3 py-1.5 fw-bold`}>
+                        {item.stock} <span className="opacity-75 fw-normal">/ alert: {item.minStockAlert}</span>
                       </span>
                     </td>
                     <td className="text-muted fw-medium">Rs. {item.cost.toFixed(2)}</td>

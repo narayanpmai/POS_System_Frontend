@@ -1,11 +1,31 @@
-export const printThermalReceipt = (elementId: string = 'printable-receipt-modal') => {
+export const printThermalReceipt = (elementId: string = 'printable-receipt-modal', copies: number = 1) => {
   const element = document.getElementById(elementId);
   if (!element) {
     console.error(`Receipt element with ID #${elementId} not found`);
     return;
   }
 
-  const content = element.innerHTML;
+  const baseContent = element.innerHTML;
+  const numCopies = Math.max(1, copies);
+
+  let fullHtml = '';
+  for (let i = 0; i < numCopies; i++) {
+    const copyBadge = numCopies > 1 
+      ? `<div style="text-align: center; font-weight: bold; text-transform: uppercase; font-size: 10px; border-bottom: 1px solid #000; padding-bottom: 4px; margin-bottom: 6px;">=== ${i === 0 ? 'CUSTOMER COPY' : 'STORE COPY'} ===</div>` 
+      : '';
+      
+    const dividerStyle = i > 0 
+      ? 'page-break-before: always; border-top: 2px dashed #000; padding-top: 12px; margin-top: 12px;' 
+      : '';
+
+    fullHtml += `
+      <div class="thermal-receipt" style="${dividerStyle}">
+        ${copyBadge}
+        ${baseContent}
+      </div>
+    `;
+  }
+
   const printFrame = document.createElement('iframe');
   printFrame.style.position = 'fixed';
   printFrame.style.right = '0';
@@ -68,9 +88,7 @@ export const printThermalReceipt = (elementId: string = 'printable-receipt-modal
         </style>
       </head>
       <body>
-        <div class="thermal-receipt">
-          ${content}
-        </div>
+        ${fullHtml}
       </body>
     </html>
   `);
