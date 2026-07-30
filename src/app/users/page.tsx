@@ -1,13 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useModal } from '@/context/ModalContext';
+import { useRouter } from 'next/navigation';
+import AuthLayout from '@/components/AuthLayout';
 import { formatAdToBs } from '@/utils/nepaliDate';
-
 import TableControls, { applyPagination } from '@/components/TableControls';
 
 export default function UserControlPage() {
@@ -27,69 +26,90 @@ export default function UserControlPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
 
+  // View Modal State
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [viewingUser, setViewingUser] = useState<any>(null);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    roleId: 2, // Default to cashier
+    roleId: 3, // Cashier default
     companyId: '',
-    active: true,
+    active: true
   });
 
-  // Password reset state
+  // Reset password states
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetUserId, setResetUserId] = useState<number | null>(null);
   const [newPassword, setNewPassword] = useState('');
 
   useEffect(() => {
     if (!token) return;
-    if (user && user.role.name !== 'Admin' && user.role.name !== 'Super Admin') {
-      window.location.href = '/dashboard';
-      return;
-    }
     loadData();
-  }, [token, user]);
+  }, [token]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [usersRes, rolesRes] = await Promise.all([
+      const [uRes, rRes] = await Promise.all([
         api.get('/users'),
-        api.get('/users/roles'),
+        api.get('/users/roles')
       ]);
-      setUsers(usersRes.data);
-      setRoles(rolesRes.data);
+      setUsers(uRes.data);
+      setRoles(rRes.data);
 
       if (user?.role?.name === 'Super Admin') {
-        const compRes = await api.get('/companies');
-        setCompanies(compRes.data);
+        const cRes = await api.get('/companies');
+        setCompanies(cRes.data);
       }
     } catch (err) {
       console.error(err);
+      showAlert('Failed to load user data', { type: 'danger', title: 'Error' });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleAddClick = () => {
-    setFormData({ name: '', email: '', password: '', roleId: roles.find(r => r.name === 'Cashier')?.id || 2, companyId: '', active: true });
     setIsEditing(false);
+    setEditingUserId(null);
+    setFormData({
+      name: '',
+      email: '',
+      password: '',
+      roleId: roles.find(r => r.name === 'Cashier')?.id || roles[0]?.id || 3,
+      companyId: user?.companyId ? String(user.companyId) : '',
+      active: true
+    });
     setShowForm(true);
   };
 
   const handleEditClick = (u: any) => {
-    setFormData({ name: u.name, email: u.email, password: '', roleId: u.roleId, companyId: u.companyId || '', active: u.active });
+    setFormData({ 
+      name: u.name, 
+      email: u.email, 
+      password: '', 
+      roleId: u.roleId, 
+      companyId: u.companyId ? String(u.companyId) : '', 
+      active: u.active 
+    });
     setEditingUserId(u.id);
     setIsEditing(true);
     setShowForm(true);
+  };
+
+  const handleViewClick = (u: any) => {
+    setViewingUser(u);
+    setShowViewModal(true);
   };
 
   const submitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       if (isEditing) {
-        // Prepare data (only include password if typed)
         const payload: any = { ...formData };
-        if (payload.companyId) payload.companyId = parseInt(payload.companyId as string);
+        if (payload.companyId) payload.companyId = parseInt(payload.companyId as string, 10);
         else delete payload.companyId;
         
         if (!payload.password) delete payload.password;
@@ -98,7 +118,7 @@ export default function UserControlPage() {
       } else {
         if (!formData.password) return showAlert('Password is required for new users', { type: 'warning', title: 'Validation Warning' });
         const payload: any = { ...formData };
-        if (payload.companyId) payload.companyId = parseInt(payload.companyId as string);
+        if (payload.companyId) payload.companyId = parseInt(payload.companyId as string, 10);
         else delete payload.companyId;
 
         await api.post('/users', payload);
@@ -186,7 +206,7 @@ export default function UserControlPage() {
               </div>
               <div className="col-md-6">
                 <label className="form-label fw-semibold">{t('users', 'user_role')}</label>
-                <select className="form-select" value={formData.roleId} onChange={e => setFormData({...formData, roleId: parseInt(e.target.value)})}>
+                <select className="form-select" value={formData.roleId} onChange={e => setFormData({...formData, roleId: parseInt(e.target.value, 10)})}>
                   {roles.map(r => (
                     <option key={r.id} value={r.id}>{r.name}</option>
                   ))}
@@ -199,7 +219,7 @@ export default function UserControlPage() {
                   <select className="form-select" value={formData.companyId} onChange={e => setFormData({...formData, companyId: e.target.value})}>
                     <option value="">Select Company</option>
                     {companies.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                      <option key={c.id} value={c.id}>{c.name} (#{c.id})</option>
                     ))}
                   </select>
                 </div>
@@ -216,7 +236,7 @@ export default function UserControlPage() {
         </div>
       )}
 
-      {/* Reset Password Modal Simulator */}
+      {/* Reset Password Modal */}
       {showResetModal && (
         <div className="card p-4 border-none shadow-sm mb-4 border-danger" style={{ backgroundColor: '#fff5f5' }}>
           <h5 className="text-danger fw-bold mb-3"><i className="bi bi-shield-lock-fill me-2"></i>Force Reset Password</h5>
@@ -233,6 +253,65 @@ export default function UserControlPage() {
         </div>
       )}
 
+      {/* View User Modal */}
+      {showViewModal && viewingUser && (
+        <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '16px' }}>
+              <div className="modal-header border-0 pb-0">
+                <h5 className="modal-title fw-bold text-dark">👤 User Account Details</h5>
+                <button type="button" className="btn-close" onClick={() => setShowViewModal(false)}></button>
+              </div>
+              <div className="modal-body p-4">
+                <div className="text-center mb-4">
+                  <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style={{ width: '64px', height: '64px' }}>
+                    <i className="bi bi-person-fill fs-2"></i>
+                  </div>
+                  <h5 className="fw-bold mb-1">{viewingUser.name}</h5>
+                  <p className="text-muted mb-0">{viewingUser.email}</p>
+                </div>
+
+                <div className="bg-light p-3 rounded-3 mb-3 border">
+                  <div className="row g-2">
+                    <div className="col-6">
+                      <small className="text-muted d-block">User ID</small>
+                      <span className="fw-semibold text-dark">#{viewingUser.id}</span>
+                    </div>
+                    <div className="col-6">
+                      <small className="text-muted d-block">Role</small>
+                      <span className="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                        {viewingUser.role?.name || 'N/A'}
+                      </span>
+                    </div>
+                    <div className="col-6 mt-3">
+                      <small className="text-muted d-block">Assigned Company</small>
+                      <span className="fw-semibold text-dark">
+                        {viewingUser.company ? `${viewingUser.company.name} (#${viewingUser.companyId})` : `Company #${viewingUser.companyId}`}
+                      </span>
+                    </div>
+                    <div className="col-6 mt-3">
+                      <small className="text-muted d-block">Account Status</small>
+                      {viewingUser.active ? (
+                        <span className="badge bg-success-subtle text-success border border-success border-opacity-25 px-2 py-1"><i className="bi bi-check-circle-fill me-1"></i>Active</span>
+                      ) : (
+                        <span className="badge bg-danger-subtle text-danger border border-danger border-opacity-25 px-2 py-1"><i className="bi bi-slash-circle-fill me-1"></i>Inactive</span>
+                      )}
+                    </div>
+                    <div className="col-12 mt-3 pt-2 border-top">
+                      <small className="text-muted d-block">Account Created Date (BS)</small>
+                      <span className="fw-medium text-dark">{formatAdToBs(viewingUser.createdAt)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="modal-footer border-0 pt-0">
+                <button type="button" className="btn btn-secondary px-4" onClick={() => setShowViewModal(false)}>Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="card p-4 border-none shadow-sm" style={{ backgroundColor: 'var(--light-card)', border: '1px solid var(--border-color)' }}>
         <h5 className="fw-bold mb-3">{t('users', 'title')}</h5>
         <div className="table-responsive">
@@ -241,7 +320,7 @@ export default function UserControlPage() {
               <tr>
                 <th>{t('users', 'user_name')}</th>
                 <th>{t('users', 'user_email')}</th>
-                {user?.role?.name === 'Super Admin' && <th>Company</th>}
+                <th>Company</th>
                 <th>{t('users', 'user_role')}</th>
                 <th>{t('common', 'status')}</th>
                 <th>{t('common', 'date')}</th>
@@ -250,15 +329,19 @@ export default function UserControlPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} className="text-center py-4">Loading users...</td></tr>
-              ) : applyPagination(users, currentPage, rowsPerPage).map((u , index) => (
+                <tr><td colSpan={7} className="text-center py-4">Loading users...</td></tr>
+              ) : applyPagination(users, currentPage, rowsPerPage).map((u) => (
                 <tr key={u.id}>
                   <td className="fw-bold">{u.name}</td>
                   <td>{u.email}</td>
-                  {user?.role?.name === 'Super Admin' && <td>{u.company?.name || '-'}</td>}
                   <td>
-                    <span className={`badge px-2 py-1 rounded-pill ${u.role.name === 'Admin' ? 'bg-danger-subtle text-danger' : u.role.name === 'Manager' ? 'bg-warning-subtle text-warning' : 'bg-primary-subtle text-primary'}`}>
-                      {u.role.name}
+                    <span className="badge bg-light text-dark border">
+                      🏢 {u.company?.name || `Company #${u.companyId}`}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`badge px-2 py-1 rounded-pill ${u.role?.name === 'Super Admin' ? 'bg-purple-subtle text-purple border' : u.role?.name === 'Admin' ? 'bg-danger-subtle text-danger' : 'bg-primary-subtle text-primary'}`}>
+                      {u.role?.name || 'N/A'}
                     </span>
                   </td>
                   <td>
@@ -270,26 +353,42 @@ export default function UserControlPage() {
                   </td>
                   <td>{formatAdToBs(u.createdAt)}</td>
                   <td className="text-end">
-                    <button className="btn btn-sm btn-outline-secondary me-1" onClick={() => {
-                      setResetUserId(u.id);
-                      setShowResetModal(true);
-                    }} title="Reset Password">
-                      <i className="bi bi-key-fill"></i>
-                    </button>
-                    <button className="btn btn-sm btn-outline-primary me-1" onClick={() => handleEditClick(u)} title="Edit">
-                      <i className="bi bi-pencil"></i>
-                    </button>
-                    <button className={`btn btn-sm me-1 ${u.active ? 'btn-outline-warning' : 'btn-outline-success'}`} onClick={() => toggleActiveStatus(u.id, u.active)} title={u.active ? 'Deactivate' : 'Activate'}>
-                      <i className={`bi ${u.active ? 'bi-lock-fill' : 'bi-unlock-fill'}`}></i>
-                    </button>
-                    {user?.id !== u.id && (
-                      <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteUser(u)} title="Delete User">
-                        <i className="bi bi-trash-fill"></i>
+                    <div className="d-flex justify-content-end align-items-center gap-1">
+                      <button className="btn btn-sm btn-outline-info" onClick={() => handleViewClick(u)} title="View User Details">
+                        <i className="bi bi-eye-fill"></i>
                       </button>
-                    )}
+
+                      <button className="btn btn-sm btn-outline-secondary" onClick={() => {
+                        setResetUserId(u.id);
+                        setShowResetModal(true);
+                      }} title="Reset Password">
+                        <i className="bi bi-key-fill"></i>
+                      </button>
+
+                      <button className="btn btn-sm btn-outline-primary" onClick={() => handleEditClick(u)} title="Edit User">
+                        <i className="bi bi-pencil"></i>
+                      </button>
+
+                      <button className={`btn btn-sm ${u.active ? 'btn-outline-warning' : 'btn-outline-success'}`} onClick={() => toggleActiveStatus(u.id, u.active)} title={u.active ? 'Deactivate User' : 'Activate User'}>
+                        <i className={`bi ${u.active ? 'bi-lock-fill' : 'bi-unlock-fill'}`}></i>
+                      </button>
+
+                      {user?.id !== u.id && (
+                        <button className="btn btn-sm btn-outline-danger" onClick={() => handleDeleteUser(u)} title="Delete User">
+                          <i className="bi bi-trash-fill"></i>
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
+              {users.length === 0 && !loading && (
+                <tr>
+                  <td colSpan={7} className="text-center py-4 text-muted">
+                    No users found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
