@@ -10,6 +10,7 @@ import { useModal } from '@/context/ModalContext';
 import * as XLSX from 'xlsx';
 import TableControls, { applyPagination } from '@/components/TableControls';
 import CascadingCategorySelect from '@/components/CascadingCategorySelect';
+import { printBarcodeLabel } from '@/utils/printBarcode';
 
 interface Category {
   id: number;
@@ -323,104 +324,7 @@ export default function ProductsPage() {
 
   const printBarcodeNow = () => {
     if (!selectedProductForBarcode) return;
-
-    const printWin = window.open('', '_blank', 'width=550,height=350');
-    if (!printWin) return;
-
-    const barcodeVal = selectedProductForBarcode.barcode || selectedProductForBarcode.SKU || 'UNKNOWN';
-
-    printWin.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Barcode Label - ${selectedProductForBarcode.name}</title>
-          <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-          <style>
-            @page {
-              size: 50mm 25mm;
-              margin: 0;
-            }
-            html, body {
-              width: 50mm;
-              height: 25mm;
-              margin: 0;
-              padding: 0;
-              background-color: #ffffff;
-              font-family: system-ui, -apple-system, sans-serif;
-              overflow: hidden;
-            }
-            .label-box {
-              width: 50mm;
-              height: 25mm;
-              padding: 1.5mm 2mm;
-              box-sizing: border-box;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: space-between;
-              text-align: center;
-              background: #ffffff;
-            }
-            .label-name {
-              font-size: 10px;
-              font-weight: bold;
-              color: #000;
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
-              max-width: 46mm;
-              line-height: 1.1;
-            }
-            .label-cat {
-              font-size: 8px;
-              color: #444;
-              white-space: nowrap;
-              overflow: hidden;
-              text-overflow: ellipsis;
-              max-width: 46mm;
-              line-height: 1;
-            }
-            .barcode-svg {
-              max-width: 46mm;
-              max-height: 12mm;
-            }
-            .label-price {
-              font-size: 10px;
-              font-weight: bold;
-              color: #000;
-              line-height: 1;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="label-box">
-            <div class="label-name">${selectedProductForBarcode.name}</div>
-            <div class="label-cat">${selectedProductForBarcode.category?.name || ''}</div>
-            <svg id="barcode-target" class="barcode-svg"></svg>
-            <div class="label-price">Rs. ${Number(selectedProductForBarcode.price).toFixed(2)}</div>
-          </div>
-          <script>
-            window.onload = function() {
-              try {
-                JsBarcode("#barcode-target", "${barcodeVal}", {
-                  width: 1.2,
-                  height: 25,
-                  fontSize: 9,
-                  margin: 2,
-                  displayValue: true
-                });
-              } catch(e) {}
-              setTimeout(function() {
-                window.focus();
-                window.print();
-                window.close();
-              }, 200);
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    printWin.document.close();
+    printBarcodeLabel(selectedProductForBarcode, 1);
   };
 
   const handlePrintAllBarcodes = async () => {
