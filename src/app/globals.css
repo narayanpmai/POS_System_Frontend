@@ -515,37 +515,73 @@ h1, h2, h3, h4, h5, h6 {
 @media print {
   @page {
     size: 80mm auto;
-    margin: 0;
-  }
-
-  /* When printing receipt, hide all elements via visibility: hidden */
-  body.printing-receipt * {
-    visibility: hidden !important;
-  }
-
-  /* Make ONLY .thermal-receipt and its children visible */
-  body.printing-receipt .thermal-receipt,
-  body.printing-receipt .thermal-receipt * {
-    visibility: visible !important;
-  }
-
-  /* Position .thermal-receipt at absolute top-left (0,0) on 80mm paper */
-  body.printing-receipt .thermal-receipt {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 76mm !important;
     margin: 0 !important;
-    padding: 2mm 0 !important;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
     background: #ffffff !important;
     color: #000000 !important;
-    box-shadow: none !important;
-    border: none !important;
-    page-break-after: avoid !important;
-    page-break-inside: avoid !important;
   }
 
-  body.printing-receipt .thermal-receipt * {
+  /* When printing thermal receipt, hide background layout containers */
+  body.printing-receipt nav,
+  body.printing-receipt header,
+  body.printing-receipt footer,
+  body.printing-receipt .custom-sidebar,
+  body.printing-receipt .custom-navbar,
+  body.printing-receipt main,
+  body.printing-receipt .no-print,
+  body.printing-receipt .modal-header,
+  body.printing-receipt .modal-footer,
+  body.printing-receipt .btn,
+  body.printing-receipt .btn-close {
+    display: none !important;
+  }
+
+  body.printing-receipt .modal {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    background: transparent !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 80mm !important;
+  }
+
+  body.printing-receipt .modal-dialog {
+    max-width: 80mm !important;
+    width: 80mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body.printing-receipt .modal-content {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    width: 80mm !important;
+  }
+
+  body.printing-receipt .modal-body {
+    padding: 0 !important;
+    width: 80mm !important;
+  }
+
+  .thermal-receipt {
+    width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 0 !important;
+    padding: 0 1mm !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .thermal-receipt * {
     color: #000000 !important;
   }
 }
