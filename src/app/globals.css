@@ -536,7 +536,8 @@ h1, h2, h3, h4, h5, h6 {
     display: none !important;
   }
 
-  html, body {
+  body.printing-receipt html,
+  body.printing-receipt {
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;

@@ -31,7 +31,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="d-flex align-items-center justify-content-center min-vh-100 position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #062b1b 0%, #031525 100%)' }}>
+    <div className="d-flex align-items-center justify-content-center min-vh-100 w-100 position-relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #062b1b 0%, #031525 100%)', width: '100vw', minHeight: '100vh' }}>
       
       {/* Decorative background elements */}
       <div className="position-absolute rounded-circle" style={{ width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(26, 116, 56, 0.15) 0%, rgba(0,0,0,0) 70%)', top: '-10%', left: '-10%' }}></div>
