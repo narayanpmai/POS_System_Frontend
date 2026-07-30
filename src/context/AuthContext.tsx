@@ -97,7 +97,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (storedToken && storedUser) {
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (e) {
+          localStorage.removeItem('smartpos_user');
+          localStorage.removeItem('smartpos_token');
+        }
         
         // Attach bearer token to axios common header
         api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
@@ -108,13 +113,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           api.defaults.headers.common['x-company-id'] = storedCompanyId;
           axios.defaults.headers.common['x-company-id'] = storedCompanyId;
         }
-        
-        try {
-          const fyRes = await api.get('/fiscal-years/active');
-          setActiveFiscalYear(fyRes.data);
-        } catch (e) {
-          console.error(e);
-        }
+
+        // Fetch fiscal year asynchronously without blocking session load
+        api.get('/fiscal-years/active', { timeout: 3000 })
+          .then((fyRes) => setActiveFiscalYear(fyRes.data))
+          .catch(() => {});
       }
       setLoading(false);
     };
