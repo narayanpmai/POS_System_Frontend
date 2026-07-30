@@ -322,67 +322,99 @@ export default function ProductsPage() {
   };
 
   const printBarcodeNow = () => {
-    const printContent = document.getElementById('printable-receipt-modal');
-    if (!printContent) return;
+    if (!selectedProductForBarcode) return;
 
-    const printWin = window.open('', '_blank', 'width=500,height=500');
-    if (!printWin) {
-      window.print();
-      return;
-    }
+    const printWin = window.open('', '_blank', 'width=550,height=350');
+    if (!printWin) return;
+
+    const barcodeVal = selectedProductForBarcode.barcode || selectedProductForBarcode.SKU || 'UNKNOWN';
 
     printWin.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Print Barcode - ${selectedProductForBarcode?.name || 'Product'}</title>
+          <title>Barcode Label - ${selectedProductForBarcode.name}</title>
+          <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
           <style>
             @page {
-              size: auto;
+              size: 50mm 25mm;
               margin: 0;
             }
-            body {
-              font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            html, body {
+              width: 50mm;
+              height: 25mm;
               margin: 0;
               padding: 0;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              min-height: 100vh;
               background-color: #ffffff;
+              font-family: system-ui, -apple-system, sans-serif;
+              overflow: hidden;
             }
-            .barcode-container {
-              border: 1px dashed #666;
-              padding: 20px 30px;
-              border-radius: 8px;
-              text-align: center;
+            .label-box {
+              width: 50mm;
+              height: 25mm;
+              padding: 1.5mm 2mm;
+              box-sizing: border-box;
               display: flex;
               flex-direction: column;
               align-items: center;
-              justify-content: center;
-              background: #fff;
-              box-sizing: border-box;
+              justify-content: space-between;
+              text-align: center;
+              background: #ffffff;
             }
-            .barcode-container * {
-              box-sizing: border-box;
+            .label-name {
+              font-size: 10px;
+              font-weight: bold;
+              color: #000;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 46mm;
+              line-height: 1.1;
             }
-            h6, h5, p {
-              margin: 0;
+            .label-cat {
+              font-size: 8px;
+              color: #444;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 46mm;
+              line-height: 1;
             }
-            svg {
-              max-width: 100%;
+            .barcode-svg {
+              max-width: 46mm;
+              max-height: 12mm;
+            }
+            .label-price {
+              font-size: 10px;
+              font-weight: bold;
+              color: #000;
+              line-height: 1;
             }
           </style>
         </head>
         <body>
-          <div class="barcode-container">
-            ${printContent.innerHTML}
+          <div class="label-box">
+            <div class="label-name">${selectedProductForBarcode.name}</div>
+            <div class="label-cat">${selectedProductForBarcode.category?.name || ''}</div>
+            <svg id="barcode-target" class="barcode-svg"></svg>
+            <div class="label-price">Rs. ${Number(selectedProductForBarcode.price).toFixed(2)}</div>
           </div>
           <script>
             window.onload = function() {
-              window.focus();
-              window.print();
-              window.close();
+              try {
+                JsBarcode("#barcode-target", "${barcodeVal}", {
+                  width: 1.2,
+                  height: 25,
+                  fontSize: 9,
+                  margin: 2,
+                  displayValue: true
+                });
+              } catch(e) {}
+              setTimeout(function() {
+                window.focus();
+                window.print();
+                window.close();
+              }, 200);
             };
           </script>
         </body>
