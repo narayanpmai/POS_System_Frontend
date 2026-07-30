@@ -586,46 +586,31 @@ h1, h2, h3, h4, h5, h6 {
   }
 
   /* 2. Single Barcode Label Printing */
-  body.printing-barcode-single {
+  body.printing-barcode-single * {
+    visibility: hidden !important;
+  }
+
+  body.printing-barcode-single #printable-receipt-modal,
+  body.printing-barcode-single #printable-receipt-modal * {
+    visibility: visible !important;
+  }
+
+  body.printing-barcode-single #printable-receipt-modal {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: auto !important;
+    min-width: 260px !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 15px !important;
+    border: 1px dashed #666 !important;
     background: #ffffff !important;
-    color: #000000 !important;
-  }
-
-  body.printing-barcode-single nav,
-  body.printing-barcode-single header,
-  body.printing-barcode-single footer,
-  body.printing-barcode-single .custom-sidebar,
-  body.printing-barcode-single .custom-navbar,
-  body.printing-barcode-single .no-print,
-  body.printing-barcode-single .modal-header,
-  body.printing-barcode-single .modal-footer,
-  body.printing-barcode-single .btn,
-  body.printing-barcode-single .btn-close,
-  body.printing-barcode-single .card,
-  body.printing-barcode-single table,
-  body.printing-barcode-single .pagination,
-  body.printing-barcode-single .stat-card {
-    display: none !important;
-  }
-
-  body.printing-barcode-single .modal,
-  body.printing-barcode-single .modal-dialog,
-  body.printing-barcode-single .modal-content,
-  body.printing-barcode-single .modal-body {
-    position: static !important;
-    display: block !important;
-    overflow: visible !important;
-    background: #ffffff !important;
-    margin: 0 auto !important;
-    padding: 0 !important;
-    border: none !important;
     box-shadow: none !important;
-  }
-
-  body.printing-barcode-single .modal-backdrop {
-    display: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   /* 3. Bulk Barcode Grid Printing */

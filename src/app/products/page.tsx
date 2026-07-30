@@ -170,6 +170,24 @@ export default function ProductsPage() {
     loadCatalogs();
   }, [token, page, rowsPerPage, search, categoryId]);
 
+  // Clean up print mode & modal backdrop on print/cancel
+  useEffect(() => {
+    const handleAfterPrint = () => {
+      document.body.classList.remove('printing-barcode-single');
+      document.body.classList.remove('printing-bulk-barcode');
+      document.body.classList.remove('printing-receipt');
+      const backdrops = document.querySelectorAll('.modal-backdrop');
+      backdrops.forEach(b => b.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('padding-right');
+      document.body.style.removeProperty('overflow');
+      setPrintMode(null);
+    };
+
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => window.removeEventListener('afterprint', handleAfterPrint);
+  }, []);
+
   // Handle Product CRUD
   const handleProductSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -304,13 +322,19 @@ export default function ProductsPage() {
   };
 
   const printBarcodeNow = () => {
+    // Hide modal cleanly first so backdrop is removed before print
+    const modalElement = document.getElementById('printBarcodeModal');
+    if (modalElement) {
+      const bootstrap = require('bootstrap');
+      const modal = bootstrap.Modal.getInstance(modalElement);
+      modal?.hide();
+    }
+
     setPrintMode('single');
     document.body.classList.add('printing-barcode-single');
     setTimeout(() => {
       window.print();
-      document.body.classList.remove('printing-barcode-single');
-      setPrintMode(null);
-    }, 200);
+    }, 250);
   };
 
   const handlePrintAllBarcodes = async () => {
