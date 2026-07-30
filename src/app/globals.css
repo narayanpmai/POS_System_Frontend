@@ -521,155 +521,87 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ==============================================================
-   POSTRONIX-8005 (80mm Thermal Receipt Printer) Print Rules
-   Isolates receipt printing and hides background page tables / elements
-   ============================================================== */
-/* ==============================================================
-   Comprehensive Print Rules (Receipts, Single & Bulk Barcodes)
+   Universal Print Rules (POS Receipts, Barcodes & Reports)
    ============================================================== */
 @media print {
-  /* 1. Thermal Receipt Printing (80mm) */
-  body.printing-receipt {
+  /* Hide all background layout elements, sidebars, navbars, tables, buttons, and modal overlays */
+  nav,
+  header,
+  footer,
+  .custom-sidebar,
+  .custom-navbar,
+  .no-print,
+  .modal-header,
+  .modal-footer,
+  .btn,
+  .btn-close,
+  .card:not(.modal *):not(#bulk-barcode-print *),
+  .table-responsive,
+  table:not(#bulk-barcode-print *),
+  .pagination,
+  .stat-card,
+  .modal-backdrop {
+    display: none !important;
+  }
+
+  html, body {
     margin: 0 !important;
     padding: 0 !important;
     background: #ffffff !important;
     color: #000000 !important;
-    width: 80mm !important;
   }
 
-  body.printing-receipt nav,
-  body.printing-receipt header,
-  body.printing-receipt footer,
-  body.printing-receipt .custom-sidebar,
-  body.printing-receipt .custom-navbar,
-  body.printing-receipt .no-print,
-  body.printing-receipt .modal-header,
-  body.printing-receipt .modal-footer,
-  body.printing-receipt .btn,
-  body.printing-receipt .btn-close,
-  body.printing-receipt .card:not(.modal *),
-  body.printing-receipt table:not(.font-mono),
-  body.printing-receipt .pagination,
-  body.printing-receipt .stat-card {
-    display: none !important;
-  }
-
-  body.printing-receipt .modal,
-  body.printing-receipt .modal-dialog,
-  body.printing-receipt .modal-content,
-  body.printing-receipt .modal-body {
+  /* Modal Wrapper for Single Barcode & Receipt Print */
+  .modal,
+  .modal-dialog,
+  .modal-content,
+  .modal-body {
     position: static !important;
     display: block !important;
     overflow: visible !important;
     background: #ffffff !important;
-    margin: 0 !important;
-    padding: 0 !important;
     border: none !important;
     box-shadow: none !important;
-    width: 80mm !important;
-    max-width: 80mm !important;
-  }
-
-  .thermal-receipt {
-    width: 80mm !important;
-    max-width: 80mm !important;
-    margin: 0 !important;
-    padding: 0 1mm !important;
-    box-shadow: none !important;
-    border: none !important;
-    background: #ffffff !important;
-    color: #000000 !important;
-  }
-
-  .thermal-receipt * {
-    color: #000000 !important;
-  }
-
-  /* 2. Single Barcode Label Printing */
-  body.printing-barcode-single {
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #ffffff !important;
-    color: #000000 !important;
-  }
-
-  body.printing-barcode-single .custom-sidebar,
-  body.printing-barcode-single .custom-navbar,
-  body.printing-barcode-single .main-content > div:not(.modal),
-  body.printing-barcode-single .modal-backdrop,
-  body.printing-barcode-single .modal-header,
-  body.printing-barcode-single .modal-footer,
-  body.printing-barcode-single .no-print,
-  body.printing-barcode-single .btn,
-  body.printing-barcode-single .btn-close {
-    display: none !important;
-  }
-
-  body.printing-barcode-single .main-content,
-  body.printing-barcode-single .app-wrapper {
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
   }
 
-  body.printing-barcode-single #printBarcodeModal,
-  body.printing-barcode-single #printBarcodeModal .modal-dialog,
-  body.printing-barcode-single #printBarcodeModal .modal-content,
-  body.printing-barcode-single #printBarcodeModal .modal-body {
-    position: static !important;
-    display: block !important;
-    visibility: visible !important;
-    background: #ffffff !important;
-    border: none !important;
-    box-shadow: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  body.printing-barcode-single #printable-receipt-modal {
+  /* Thermal Receipt / Single Barcode Label Box */
+  #printable-receipt-modal,
+  .thermal-receipt {
     display: flex !important;
     visibility: visible !important;
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) !important;
-    margin: 0 !important;
-    padding: 20px 30px !important;
-    border: 1px dashed #444 !important;
+    position: relative !important;
+    margin: 20px auto !important;
+    padding: 15px 25px !important;
+    border: 1px dashed #666 !important;
     background: #ffffff !important;
-    width: auto !important;
-    min-width: 260px !important;
+    color: #000000 !important;
     box-shadow: none !important;
+    width: auto !important;
+    max-width: 320px !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
-  /* 3. Bulk Barcode Grid Printing */
-  body.printing-bulk-barcode {
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #ffffff !important;
+  #printable-receipt-modal *,
+  .thermal-receipt * {
     color: #000000 !important;
   }
 
-  body.printing-bulk-barcode nav,
-  body.printing-bulk-barcode header,
-  body.printing-bulk-barcode footer,
-  body.printing-bulk-barcode .custom-sidebar,
-  body.printing-bulk-barcode .custom-navbar,
-  body.printing-bulk-barcode .no-print,
-  body.printing-bulk-barcode .modal,
-  body.printing-bulk-barcode .modal-backdrop,
-  body.printing-bulk-barcode .card,
-  body.printing-bulk-barcode table,
-  body.printing-bulk-barcode .main-content > *:not(#bulk-barcode-print) {
-    display: none !important;
-  }
-
-  body.printing-bulk-barcode #bulk-barcode-print {
+  /* Bulk Barcode Grid Printing Override */
+  #bulk-barcode-print {
     display: block !important;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
+    visibility: visible !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
     background: #ffffff !important;
+  }
+  #bulk-barcode-print * {
+    visibility: visible !important;
   }
 }

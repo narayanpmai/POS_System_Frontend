@@ -1327,24 +1327,6 @@ export default function ProductsPage() {
         </div>
       </div>
 
-      {/* Hidden Single Barcode Print Area */}
-      {printMode === 'single' && selectedProductForBarcode && (
-        <div id="single-barcode-print-area" className="single-print-only">
-          <div className="single-barcode-sticker">
-            <div className="single-barcode-title">{selectedProductForBarcode.name}</div>
-            <div className="single-barcode-sub">{selectedProductForBarcode.category?.name || ''}</div>
-            <Barcode
-              value={selectedProductForBarcode.barcode || selectedProductForBarcode.SKU || 'UNKNOWN'}
-              width={1.8}
-              height={45}
-              fontSize={13}
-              margin={4}
-            />
-            <div className="single-barcode-price">Rs. {Number(selectedProductForBarcode.price).toFixed(2)}</div>
-          </div>
-        </div>
-      )}
-
       {/* Hidden Bulk Print Area */}
       {printMode === 'bulk' && (
         <div id="bulk-barcode-print" className="bulk-print-only">
@@ -1369,29 +1351,16 @@ export default function ProductsPage() {
           }
 
           ${printMode === 'single' ? `
-          body.printing-barcode-single .custom-sidebar,
-          body.printing-barcode-single .custom-navbar,
-          body.printing-barcode-single .main-content > div:not(.modal),
-          body.printing-barcode-single .modal-backdrop,
-          body.printing-barcode-single .modal-header,
-          body.printing-barcode-single .modal-footer,
-          body.printing-barcode-single .no-print,
-          body.printing-barcode-single .btn,
-          body.printing-barcode-single .btn-close {
+          /* Hide all background elements */
+          nav, header, footer,
+          .custom-sidebar, .custom-navbar, .no-print,
+          .modal-header, .modal-footer, .btn, .btn-close,
+          .card:not(.modal *), .table-responsive, table,
+          .pagination, .stat-card, .modal-backdrop {
             display: none !important;
           }
 
-          body.printing-barcode-single .main-content,
-          body.printing-barcode-single .app-wrapper {
-            margin: 0 !important;
-            padding: 0 !important;
-            width: 100% !important;
-          }
-
-          body.printing-barcode-single #printBarcodeModal,
-          body.printing-barcode-single #printBarcodeModal .modal-dialog,
-          body.printing-barcode-single #printBarcodeModal .modal-content,
-          body.printing-barcode-single #printBarcodeModal .modal-body {
+          .modal, .modal-dialog, .modal-content, .modal-body {
             position: static !important;
             display: block !important;
             visibility: visible !important;
@@ -1400,24 +1369,55 @@ export default function ProductsPage() {
             box-shadow: none !important;
             margin: 0 !important;
             padding: 0 !important;
+            width: 100% !important;
           }
 
-          body.printing-barcode-single #printable-receipt-modal {
+          #printable-receipt-modal {
             display: flex !important;
             visibility: visible !important;
-            position: absolute !important;
-            top: 50% !important;
-            left: 50% !important;
-            transform: translate(-50%, -50%) !important;
-            margin: 0 !important;
-            padding: 20px 30px !important;
-            border: 1px dashed #444 !important;
+            position: relative !important;
+            margin: 20px auto !important;
+            padding: 15px 25px !important;
+            border: 1px dashed #666 !important;
             background: #ffffff !important;
-            width: auto !important;
-            min-width: 260px !important;
+            color: #000000 !important;
             box-shadow: none !important;
+            width: auto !important;
+            max-width: 320px !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            justify-content: center !important;
+          }
+
+          #printable-receipt-modal * {
+            color: #000000 !important;
           }
           ` : ''}
+
+          ${printMode === 'bulk' ? `
+          nav, header, footer,
+          .custom-sidebar, .custom-navbar, .no-print,
+          .modal, .modal-backdrop, .card:not(#bulk-barcode-print *),
+          .table-responsive, table:not(#bulk-barcode-print *),
+          .pagination, .stat-card {
+            display: none !important;
+          }
+
+          #bulk-barcode-print {
+            display: block !important;
+            visibility: visible !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            background: #ffffff !important;
+          }
+
+          #bulk-barcode-print * {
+            visibility: visible !important;
+          }
+          ` : ''}
+        }
 
           ${printMode === 'bulk' ? `
           body > *:not(#bulk-barcode-print),
