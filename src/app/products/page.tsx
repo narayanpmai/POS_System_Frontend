@@ -13,7 +13,12 @@ interface Category {
   id: number;
   name: string;
   description?: string;
-  _count?: { products: number };
+  image?: string | null;
+  parentId?: number | null;
+  parent?: { id: number; name: string };
+  fullPath?: string;
+  level?: number;
+  _count?: { products: number; children?: number };
 }
 
 interface Brand {
@@ -103,9 +108,18 @@ export default function ProductsPage() {
   const [barcode, setBarcode] = useState('');
 
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [categoryForm, setCategoryForm] = useState({
-    name: '', description: ''
+  const [categoryForm, setCategoryForm] = useState<{
+    name: string;
+    description: string;
+    parentId: number | null;
+  }>({
+    name: '',
+    description: '',
+    parentId: null,
   });
+  const [categoryImageFile, setCategoryImageFile] = useState<File | null>(null);
+  const [categoryImagePreview, setCategoryImagePreview] = useState<string | null>(null);
+  const categoryImageInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedProductForUnits, setSelectedProductForUnits] = useState<any>(null);
   const [ucFactor, setUcFactor] = useState('');
@@ -321,15 +335,28 @@ export default function ProductsPage() {
     if (!isAdmin) return;
 
     try {
-      if (editingCategory) {
-        await api.put(`/products/categories/${editingCategory.id}`, categoryForm);
-        alert('Category updated!');
-      } else {
-        await api.post('/products/categories', categoryForm);
-        alert('Category created!');
+      // Build FormData to support image upload
+      const formData = new FormData();
+      formData.append('name', categoryForm.name);
+      if (categoryForm.description) formData.append('description', categoryForm.description);
+      if (categoryForm.parentId !== null && categoryForm.parentId !== undefined) {
+        formData.append('parentId', String(categoryForm.parentId));
       }
-      setCategoryForm({ name: '', description: '' });
+      if (categoryImageFile) formData.append('image', categoryImageFile);
+
+      if (editingCategory) {
+        await api.put(`/products/categories/${editingCategory.id}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      } else {
+        await api.post('/products/categories', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      }
+      setCategoryForm({ name: '', description: '', parentId: null });
       setEditingCategory(null);
+      setCategoryImageFile(null);
+      setCategoryImagePreview(null);
 
       // Close modal
       const modalElement = document.getElementById('categoryModal');
@@ -345,14 +372,27 @@ export default function ProductsPage() {
     }
   };
 
+  const handleAddSubCategoryClick = (parentCat: Category) => {
+    setEditingCategory(null);
+    setCategoryForm({ name: '', description: '', parentId: parentCat.id });
+    setCategoryImageFile(null);
+    setCategoryImagePreview(null);
+    
+    const modalElement = document.getElementById('categoryModal');
+    if (modalElement) {
+      const bootstrap = require('bootstrap');
+      const modal = new bootstrap.Modal(modalElement);
+      modal.show();
+    }
+  };
+
   const handleEditCategoryClick = (cat: Category) => {
     setEditingCategory(cat);
-    setCategoryForm({
-      name: cat.name,
-      description: cat.description || '',
-    });
+    setCategoryForm({ name: cat.name, description: cat.description || '', parentId: cat.parentId || null });
+    setCategoryImageFile(null);
+    // Show existing image as preview
+    setCategoryImagePreview(cat.image ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/${cat.image}` : null);
     
-    // Open modal
     const modalElement = document.getElementById('categoryModal');
     if (modalElement) {
       const bootstrap = require('bootstrap');
@@ -595,7 +635,7 @@ export default function ProductsPage() {
               >
                 <option value="">{t('common', 'all')} {t('common', 'category')}</option>
                 {categories.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <option key={c.id} value={c.id}>{c.fullPath ? c.fullPath : c.name}</option>
                 ))}
               </select>
             </div>
@@ -696,7 +736,8 @@ export default function ProductsPage() {
             <table className="table mb-0 align-middle">
               <thead>
                 <tr style={{ backgroundColor: 'var(--light-bg)' }}>
-                  <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top">Category Name</th>
+                  <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top">Category Name & Hierarchy</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top">Hierarchy Level</th>
                   <th className="fw-bold text-dark py-3 border-bottom-0 border-top">Description</th>
                   <th className="fw-bold text-dark py-3 border-bottom-0 border-top">Products Count</th>
                   {isAdmin && <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-center">Actions</th>}
@@ -705,21 +746,42 @@ export default function ProductsPage() {
               <tbody>
                 {categories.length === 0 ? (
                   <tr>
-                    <td colSpan={isAdmin ? 4 : 3} className="text-center py-4 text-muted">No categories created in the system</td>
+                    <td colSpan={isAdmin ? 5 : 4} className="text-center py-4 text-muted">No categories created in the system</td>
                   </tr>
                 ) : (
                   applyPagination(categories, categoryPage, categoryRowsPerPage).map((cat, index) => (
                     <tr key={cat.id}>
-                      <td className="fw-bold text-dark">{cat.name}</td>
+                      <td className="fw-bold text-dark ps-3">
+                        <div className="d-flex align-items-center gap-2">
+                          {cat.image ? (
+                            <img
+                              src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'}/${cat.image}`}
+                              alt={cat.name}
+                              style={{ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #dee2e6' }}
+                            />
+                          ) : (
+                            <i className={`bi ${cat.level ? 'bi-diagram-3 text-secondary' : 'bi-folder-fill text-warning'} fs-6`}></i>
+                          )}
+                          <span>{cat.fullPath ? cat.fullPath : cat.name}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`badge ${cat.level === 0 || !cat.level ? 'bg-primary-subtle text-primary border border-primary-subtle' : 'bg-secondary-subtle text-dark border'} rounded-pill px-2.5 py-1 fw-semibold`}>
+                          {cat.level === 0 || !cat.level ? 'Root Category' : `Level ${cat.level} Sub`}
+                        </span>
+                      </td>
                       <td className="text-muted">{cat.description || 'No description provided'}</td>
                       <td><span className="badge bg-primary rounded-pill">{cat._count?.products || 0} items</span></td>
                       {isAdmin && (
                         <td>
-                          <div className="d-flex justify-content-center gap-2">
-                            <button className="btn btn-sm btn-outline-info p-1 px-2 d-flex align-items-center" onClick={() => handleEditCategoryClick(cat)} style={{ borderColor: '#0dcaf0', color: '#0dcaf0' }}>
+                          <div className="d-flex justify-content-center gap-1.5">
+                            <button className="btn btn-sm btn-outline-success p-1 px-2 d-flex align-items-center gap-1 fw-semibold" title="Add Sub-Category under this item" onClick={() => handleAddSubCategoryClick(cat)}>
+                              <i className="bi bi-plus-circle-fill"></i> + Sub
+                            </button>
+                            <button className="btn btn-sm btn-outline-info p-1 px-2 d-flex align-items-center" title="Edit Category" onClick={() => handleEditCategoryClick(cat)} style={{ borderColor: '#0dcaf0', color: '#0dcaf0' }}>
                               <i className="bi bi-pencil-fill"></i>
                             </button>
-                            <button className="btn btn-sm btn-outline-danger p-1 px-2 d-flex align-items-center" onClick={() => handleDeleteCategory(cat.id)} style={{ borderColor: '#dc3545', color: '#dc3545' }}>
+                            <button className="btn btn-sm btn-outline-danger p-1 px-2 d-flex align-items-center" title="Delete Category" onClick={() => handleDeleteCategory(cat.id)} style={{ borderColor: '#dc3545', color: '#dc3545' }}>
                               <i className="bi bi-trash-fill"></i>
                             </button>
                           </div>
@@ -829,7 +891,7 @@ export default function ProductsPage() {
                     >
                       <option value="">-- Select Category --</option>
                       {categories.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
+                        <option key={c.id} value={c.id}>{c.fullPath ? c.fullPath : c.name}</option>
                       ))}
                     </select>
                   </div>
@@ -946,12 +1008,75 @@ export default function ProductsPage() {
             </div>
             <form onSubmit={handleCategorySubmit}>
               <div className="modal-body p-4">
+                {/* Category Image Upload */}
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Category Image (Optional)</label>
+                  <div
+                    className="border rounded-3 d-flex flex-column align-items-center justify-content-center p-3 gap-2"
+                    style={{ borderStyle: 'dashed', cursor: 'pointer', minHeight: '100px', backgroundColor: 'var(--light-bg, #f8f9fa)' }}
+                    onClick={() => categoryImageInputRef.current?.click()}
+                  >
+                    {categoryImagePreview ? (
+                      <img
+                        src={categoryImagePreview}
+                        alt="Category preview"
+                        style={{ maxHeight: '80px', maxWidth: '100%', objectFit: 'contain', borderRadius: '8px' }}
+                      />
+                    ) : (
+                      <>
+                        <i className="bi bi-image text-muted fs-2"></i>
+                        <span className="text-muted fs-8">Click to upload category image</span>
+                      </>
+                    )}
+                    {categoryImagePreview && (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={(e) => { e.stopPropagation(); setCategoryImageFile(null); setCategoryImagePreview(null); }}
+                      >
+                        <i className="bi bi-trash-fill me-1"></i>Remove
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={categoryImageInputRef}
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setCategoryImageFile(file);
+                        setCategoryImagePreview(URL.createObjectURL(file));
+                      }
+                    }}
+                  />
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label fw-semibold">Parent Category (Optional)</label>
+                  <select
+                    className="form-select"
+                    value={categoryForm.parentId || ''}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, parentId: e.target.value ? Number(e.target.value) : null })}
+                  >
+                    <option value="">None (Root Category)</option>
+                    {categories
+                      .filter((c) => !editingCategory || c.id !== editingCategory.id)
+                      .map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.fullPath ? c.fullPath : c.name}
+                        </option>
+                      ))}
+                  </select>
+                  <small className="text-muted fs-8">Select a parent to create a sub-category (e.g. खाद्यान्न &gt; चामल)</small>
+                </div>
                 <div className="mb-3">
                   <label className="form-label fw-semibold">Category Name</label>
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="E.g. Household Groceries"
+                    placeholder="E.g. Basmati Rice / कुट्टो ठुलो"
                     value={categoryForm.name}
                     onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
                     required
@@ -961,7 +1086,7 @@ export default function ProductsPage() {
                   <label className="form-label fw-semibold">Brief Description</label>
                   <textarea
                     className="form-control"
-                    rows={3}
+                    rows={2}
                     placeholder="Describe product category contents..."
                     value={categoryForm.description}
                     onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
