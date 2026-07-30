@@ -5,12 +5,14 @@ import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useModal } from '@/context/ModalContext';
 
 import TableControls, { applyPagination } from '@/components/TableControls';
 export default function SettingsPage() {
   const router = useRouter();
   const { user, token, api } = useAuth();
   const { t, language, setLanguage } = useLanguage();
+  const { showAlert, showConfirm } = useModal();
   const isAdmin = user?.role?.name === 'Admin' || user?.role?.name === 'Super Admin';
 
   const [loading, setLoading] = useState(true);
@@ -91,7 +93,7 @@ export default function SettingsPage() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (e) {
-      alert('Error creating settings backup file.');
+      showAlert('Error creating settings backup file.', { title: 'Backup Error', type: 'danger' });
     }
   };
 
@@ -100,7 +102,7 @@ export default function SettingsPage() {
     if (!file) return;
 
     if (!isAdmin) {
-      alert('Only administrators are authorized to perform system restoration');
+      showAlert('Only administrators are authorized to perform system restoration', { title: 'Access Denied', type: 'danger' });
       return;
     }
 
@@ -113,7 +115,7 @@ export default function SettingsPage() {
         setSubmitting(true);
         if (backupData.type === 'TENANT_SCOPED_BACKUP' || backupData.data) {
           const res = await api.post('/settings/backup/import', backupData);
-          alert(res.data?.message || 'Tenant data successfully restored!');
+          showAlert(res.data?.message || 'Tenant data successfully restored!', { title: 'Restoration Complete', type: 'success' });
         } else {
           if (!backupData.form || typeof backupData.form.storeName !== 'string') {
             throw new Error('Invalid settings backup file format.');
@@ -136,13 +138,13 @@ export default function SettingsPage() {
             taxRateDefault: Number(backupData.form.taxRateDefault),
           };
           await api.put('/settings', payload);
-          alert('Configuration settings successfully restored!');
+          showAlert('Configuration settings successfully restored!', { title: 'Restoration Complete', type: 'success' });
         }
         setSubmitting(false);
         loadSettings();
       } catch (err: any) {
         setSubmitting(false);
-        alert(err.response?.data?.message || err.message || 'Error parsing backup file.');
+        showAlert(err.response?.data?.message || err.message || 'Error parsing backup file.', { title: 'Restoration Failed', type: 'danger' });
       }
     };
     reader.readAsText(file);
@@ -151,7 +153,7 @@ export default function SettingsPage() {
 
   const handleGenerateDBBackup = async () => {
     if (!isAdmin) {
-      alert('Only administrators are authorized to create company backups');
+      showAlert('Only administrators are authorized to create company backups', { title: 'Access Denied', type: 'danger' });
       return;
     }
 
@@ -193,27 +195,39 @@ export default function SettingsPage() {
       }, 1500);
     } catch (err: any) {
       setBackupStatus('idle');
-      alert(err.response?.data?.message || 'Error generating tenant backup file.');
+      showAlert(err.response?.data?.message || 'Error generating tenant backup file.', { title: 'Backup Failed', type: 'danger' });
     }
   };
 
   const handleRestoreDBBackup = (name: string) => {
     if (!isAdmin) {
-      alert('Only administrators are authorized to perform restorations');
+      showAlert('Only administrators are authorized to perform restorations', { title: 'Access Denied', type: 'danger' });
       return;
     }
-    const confirmRestore = window.confirm(`Are you sure you want to restore the entire database from snapshot: ${name}? This will overwrite current transaction logs.`);
-    if (confirmRestore) {
-      alert(`Database successfully restored from snapshot ${name}!`);
-    }
+    showConfirm({
+      title: 'Confirm Restoration',
+      message: `Are you sure you want to restore the entire database from snapshot: ${name}? This will overwrite current transaction logs.`,
+      type: 'warning',
+      onConfirm: () => {
+        showAlert(`Database successfully restored from snapshot ${name}!`, { title: 'Restore Success', type: 'success' });
+      }
+    });
   };
 
   const handleDeleteDBBackup = (id: number) => {
     if (!isAdmin) {
-      alert('Only administrators are authorized to delete backups');
+      showAlert('Only administrators are authorized to delete backups', { title: 'Access Denied', type: 'danger' });
       return;
     }
-    setBackupHistory(prev => prev.filter(b => b.id !== id));
+    showConfirm({
+      title: 'Confirm Delete',
+      message: 'Are you sure you want to delete this backup snapshot?',
+      type: 'danger',
+      onConfirm: () => {
+        setBackupHistory(prev => prev.filter(b => b.id !== id));
+        showAlert('Backup snapshot deleted successfully', { title: 'Deleted', type: 'info' });
+      }
+    });
   };
 
   const loadSettings = async () => {
@@ -262,7 +276,7 @@ export default function SettingsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin) {
-      alert('Only administrators are authorized to change system configurations');
+      showAlert('Only administrators are authorized to change system configurations', { title: 'Access Denied', type: 'danger' });
       return;
     }
 
@@ -274,47 +288,47 @@ export default function SettingsPage() {
         printCopies: Number(form.printCopies),
       };
       await api.put('/settings', payload);
-      alert('Store settings successfully updated!');
+      showAlert('Store settings successfully updated!', { title: 'Store Settings', type: 'success' });
       setSubmitting(false);
       loadSettings();
     } catch (err: any) {
       setSubmitting(false);
-      alert(err.response?.data?.message || 'Error updating settings');
+      showAlert(err.response?.data?.message || 'Error updating settings', { title: 'Update Failed', type: 'danger' });
     }
   };
 
   const handleSaveNotifications = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin) {
-      alert('Only administrators are authorized to change system configurations');
+      showAlert('Only administrators are authorized to change system configurations', { title: 'Access Denied', type: 'danger' });
       return;
     }
     localStorage.setItem('smartpos_notifications', JSON.stringify(notifConfig));
-    alert('Notification settings successfully updated!');
+    showAlert('Notification settings successfully updated!', { title: 'Notifications', type: 'success' });
   };
 
   const handleSaveSecurityConfig = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin) {
-      alert('Only administrators are authorized to change security settings');
+      showAlert('Only administrators are authorized to change security settings', { title: 'Access Denied', type: 'danger' });
       return;
     }
     localStorage.setItem('smartpos_security', JSON.stringify(securityConfig));
-    alert('Security configurations successfully updated!');
+    showAlert('Security configurations successfully updated!', { title: 'Security', type: 'success' });
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin) {
-      alert('Only administrators are authorized to perform security changes');
+      showToast('Only administrators are authorized to perform security changes', 'danger');
       return;
     }
     if (securityForm.newPassword !== securityForm.confirmPassword) {
-      alert('New password and confirm password do not match');
+      showToast('New password and confirm password do not match', 'danger');
       return;
     }
     if (securityForm.newPassword.length < 6) {
-      alert('Password must be at least 6 characters');
+      showToast('Password must be at least 6 characters', 'danger');
       return;
     }
     setSubmitting(true);
@@ -322,7 +336,7 @@ export default function SettingsPage() {
       await api.patch(`/users/${user.id}/reset-password`, {
         newPassword: securityForm.newPassword,
       });
-      alert('Password updated successfully!');
+      showToast('Password updated successfully!', 'success');
       setSecurityForm({
         currentPassword: '',
         newPassword: '',
@@ -331,7 +345,7 @@ export default function SettingsPage() {
       setSubmitting(false);
     } catch (err: any) {
       setSubmitting(false);
-      alert(err.response?.data?.message || 'Error updating password');
+      showToast(err.response?.data?.message || 'Error updating password', 'danger');
     }
   };
 
@@ -1176,7 +1190,6 @@ export default function SettingsPage() {
       </div>
       <div className="row g-4 justify-content-center">
         <div className="col-12 col-xl-11">
-          
           <h2 className="fw-bold mb-4" style={{ color: 'var(--primary)', fontFamily: 'var(--font-heading)', fontSize: '2rem' }}>{t('settings', 'title')}</h2>
 
           {!isAdmin && (
