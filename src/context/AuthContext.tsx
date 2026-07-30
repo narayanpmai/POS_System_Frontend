@@ -54,9 +54,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [superAdminCompanyId, setSuperAdminCompanyId] = useState<number | null>(null);
   const router = useRouter();
 
+  const getBaseURL = () => {
+    let url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+    return url.endsWith('/') ? url.slice(0, -1) : url;
+  };
+  const API_BASE_URL = getBaseURL();
+  axios.defaults.baseURL = API_BASE_URL;
+
   // Unified configured Axios instance
   const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
+    baseURL: API_BASE_URL,
   });
 
   useEffect(() => {

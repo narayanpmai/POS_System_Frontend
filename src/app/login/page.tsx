@@ -95,7 +95,7 @@ export default function LoginPage() {
           <div className="mb-4">
             <div className="d-flex justify-content-between align-items-center mb-2">
               <label className="form-label text-light fs-7 fw-medium mb-0 opacity-75">{t('auth', 'password') || 'Password'}</label>
-              <Link href="/login" onClick={(e) => { e.preventDefault(); alert('Demo password reset feature. To log in, please use admin@pos.com with password admin123'); }} className="text-decoration-none" style={{ color: '#eab308', fontSize: '0.8rem', opacity: 0.9, transition: 'opacity 0.2s' }} onMouseOver={(e) => e.currentTarget.style.opacity = '1'} onMouseOut={(e) => e.currentTarget.style.opacity = '0.9'}>Forgot password?</Link>
+              <Link href="/login" onClick={(e) => { e.preventDefault(); alert('Password reset requested. Please contact system administrator.'); }} className="text-decoration-none" style={{ color: '#eab308', fontSize: '0.8rem', opacity: 0.9, transition: 'opacity 0.2s' }} onMouseOver={(e) => e.currentTarget.style.opacity = '1'} onMouseOut={(e) => e.currentTarget.style.opacity = '0.9'}>Forgot password?</Link>
             </div>
             <div className="input-group">
               <span className="input-group-text border-0 text-light" style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}><i className="bi bi-shield-lock"></i></span>
