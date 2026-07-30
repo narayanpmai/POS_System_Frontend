@@ -66,6 +66,7 @@ export default function ProductsPage() {
   // Catalogs
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [categoryTree, setCategoryTree] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [storeSettings, setStoreSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -143,8 +144,9 @@ export default function ProductsPage() {
     setLoading(true);
     try {
       const catUrl = categoryId ? `&categoryId=${categoryId}` : '';
-      const [prodRes, categoriesRes, brandsRes, settingsRes] = await Promise.all([
+      const [prodRes, flatCatsRes, treeCatsRes, brandsRes, settingsRes] = await Promise.all([
         api.get(`/products?page=${page}&limit=${rowsPerPage}&search=${search}${catUrl}`),
+        api.get(`/products/categories`),
         api.get(`/products/categories/tree`),
         api.get(`/brands`),
         api.get('/settings')
@@ -152,7 +154,8 @@ export default function ProductsPage() {
       setProducts(prodRes.data.items || []);
       setTotalPages(prodRes.data.totalPages || 1);
       setTotalProducts(prodRes.data.total || 0);
-      setCategories(categoriesRes.data || []);
+      setCategories(flatCatsRes.data || []);
+      setCategoryTree(treeCatsRes.data || []);
       setBrands(brandsRes.data || []);
       setStoreSettings(settingsRes.data || null);
     } catch (err) {
@@ -903,7 +906,7 @@ export default function ProductsPage() {
                     );
                   };
 
-                  return categories.map(root => renderCategoryRow(root, 0));
+                  return categoryTree.map(root => renderCategoryRow(root, 0));
                 })()}
               </tbody>
             </table>
