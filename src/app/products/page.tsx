@@ -322,28 +322,134 @@ export default function ProductsPage() {
   };
 
   const printBarcodeNow = () => {
-    setPrintMode('single');
-    document.body.classList.add('printing-barcode-single');
-    setTimeout(() => {
+    const printContent = document.getElementById('printable-receipt-modal');
+    if (!printContent) return;
+
+    const printWin = window.open('', '_blank', 'width=500,height=500');
+    if (!printWin) {
       window.print();
-    }, 150);
+      return;
+    }
+
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Print Barcode - ${selectedProductForBarcode?.name || 'Product'}</title>
+          <style>
+            @page {
+              size: auto;
+              margin: 0;
+            }
+            body {
+              font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              margin: 0;
+              padding: 0;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              background-color: #ffffff;
+            }
+            .barcode-container {
+              border: 1px dashed #666;
+              padding: 20px 30px;
+              border-radius: 8px;
+              text-align: center;
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              background: #fff;
+              box-sizing: border-box;
+            }
+            .barcode-container * {
+              box-sizing: border-box;
+            }
+            h6, h5, p {
+              margin: 0;
+            }
+            svg {
+              max-width: 100%;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="barcode-container">
+            ${printContent.innerHTML}
+          </div>
+          <script>
+            window.onload = function() {
+              window.focus();
+              window.print();
+              window.close();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWin.document.close();
   };
 
   const handlePrintAllBarcodes = async () => {
     try {
       const res = await api.get('/products?limit=1000');
-      const fullCatalog = res.data.items || products;
-      setAllProductsForPrint(fullCatalog);
-    } catch {
-      setAllProductsForPrint(products);
+      const catalog: Product[] = res.data.items || products;
+
+      const printWin = window.open('', '_blank', 'width=900,height=700');
+      if (!printWin) return;
+
+      const itemsHtml = catalog
+        .map(
+          (prod) => `
+        <div style="border: 1px dashed #ccc; padding: 12px; text-align: center; border-radius: 8px; background: white; page-break-inside: avoid; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+          <div style="font-size: 14px; font-weight: bold; margin-bottom: 2px;">${prod.name}</div>
+          <div style="font-size: 10px; color: #666; margin-bottom: 5px;">${prod.category?.name || 'Store'}</div>
+          <svg id="bc-${prod.id}"></svg>
+          <div style="font-size: 14px; font-weight: bold; margin-top: 5px;">Rs. ${Number(prod.price).toFixed(2)}</div>
+        </div>
+      `
+        )
+        .join('');
+
+      printWin.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Bulk Barcodes</title>
+            <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+            <style>
+              @page { size: A4; margin: 10mm; }
+              body { font-family: system-ui, sans-serif; margin: 0; padding: 10px; background: #fff; }
+              .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; width: 100%; }
+            </style>
+          </head>
+          <body>
+            <div class="grid">${itemsHtml}</div>
+            <script>
+              window.onload = function() {
+                const items = ${JSON.stringify(catalog)};
+                items.forEach(prod => {
+                  try {
+                    JsBarcode("#bc-" + prod.id, prod.barcode || prod.SKU || "UNKNOWN", {
+                      width: 1.5, height: 40, fontSize: 12, margin: 5
+                    });
+                  } catch(e){}
+                });
+                setTimeout(function() {
+                  window.focus();
+                  window.print();
+                  window.close();
+                }, 300);
+              };
+            </script>
+          </body>
+        </html>
+      `);
+      printWin.document.close();
+    } catch (err) {
+      console.error(err);
     }
-    setPrintMode('bulk');
-    document.body.classList.add('printing-bulk-barcode');
-    setTimeout(() => {
-      window.print();
-      document.body.classList.remove('printing-bulk-barcode');
-      setPrintMode(null);
-    }, 200);
   };
 
   const handleEditProductClick = (prod: Product) => {
