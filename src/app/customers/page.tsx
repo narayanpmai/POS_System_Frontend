@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import { useModal } from '@/context/ModalContext';
 import { formatAdToBs } from '@/utils/nepaliDate';
-import axios from 'axios';
-
-import TableControls, { applyPagination } from '@/components/TableControls';
+import TableControls from '@/components/TableControls';
+
 interface Customer {
   id: number;
   name: string;
@@ -29,14 +29,14 @@ export default function CustomersPage() {
   const router = useRouter();
   const { token, api } = useAuth();
   const { t } = useLanguage();
+  const { showAlert, showConfirm } = useModal();
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalCustomers, setTotalCustomers] = useState(0);
 
   // CRUD Forms
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -50,9 +50,9 @@ export default function CustomersPage() {
     if (!token) return;
     setLoading(true);
     try {
-      const res = await api.get(`/customers?page=${page}&limit=10&search=${search}`);
+      const res = await api.get(`/customers?page=${currentPage}&limit=${rowsPerPage}&search=${search}`);
       setCustomers(res.data.items || []);
-      setTotalPages(res.data.totalPages || 1);
+      setTotalCustomers(res.data.total || 0);
       setLoading(false);
     } catch (err) {
       console.error('Error fetching customers directory:', err);
@@ -62,7 +62,7 @@ export default function CustomersPage() {
 
   useEffect(() => {
     loadCustomers();
-  }, [token, page, search]);
+  }, [token, currentPage, rowsPerPage, search]);
 
   const handleCustomerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,10 +76,10 @@ export default function CustomersPage() {
     try {
       if (editingCustomer) {
         await api.put(`/customers/${editingCustomer.id}`, payload);
-        alert('Customer profile updated!');
+        showAlert('Customer profile updated successfully!', { type: 'success', title: 'Success' });
       } else {
         await api.post('/customers', payload);
-        alert('Customer profile created!');
+        showAlert('Customer profile created successfully!', { type: 'success', title: 'Success' });
       }
       setCustomerForm({ name: '', email: '', phone: '', address: '' });
       setEditingCustomer(null);
@@ -92,7 +92,7 @@ export default function CustomersPage() {
 
       loadCustomers();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error processing customer profile');
+      showAlert(err.response?.data?.message || 'Error processing customer profile', { type: 'danger', title: 'Error' });
     }
   };
 
@@ -112,13 +112,18 @@ export default function CustomersPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this customer?')) return;
+    const confirmed = await showConfirm(
+      'Are you sure you want to delete this customer? This action cannot be undone.',
+      { title: 'Delete Customer', confirmText: 'Delete', cancelText: 'Cancel' }
+    );
+    if (!confirmed) return;
+
     try {
       await api.delete(`/customers/${id}`);
-      alert('Customer successfully removed');
+      showAlert('Customer successfully removed', { type: 'success', title: 'Customer Deleted' });
       loadCustomers();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Cannot delete customer with purchase history');
+      showAlert(err.response?.data?.message || 'Cannot delete customer with purchase history', { type: 'warning', title: 'Cannot Delete' });
     }
   };
 
@@ -132,7 +137,7 @@ export default function CustomersPage() {
       const modal = new bootstrap.Modal(modalElement);
       modal.show();
     } catch (err) {
-      alert('Error fetching customer history logs');
+      showAlert('Error fetching customer history logs', { type: 'danger', title: 'Error' });
     }
   };
 
@@ -140,72 +145,81 @@ export default function CustomersPage() {
     <AuthLayout>
       <div className="d-flex align-items-center gap-2 mb-3">
         <button className="btn btn-outline-secondary btn-sm" onClick={() => router.back()} title="Go back">
-          <i className="bi bi-arrow-left"></i> Back
+          <i className="bi bi-arrow-left me-1"></i>Back
         </button>
-        <h4 className="fw-bold m-0 text-dark">{t('customer', 'title') || 'Customers'}</h4>
-      </div>
-      {/* Search and Action Bar */}
-      <div className="card p-3 border-none rounded-lg shadow-sm mb-4" style={{ backgroundColor: 'var(--light-card)', border: '1px solid var(--border-color)' }}>
-        <div className="row g-3 align-items-center">
-          <div className="col-12 col-md-8">
-            <input
-              type="text"
-              className="form-control"
-              placeholder={t('customer', 'search_customers')}
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            />
-          </div>
-          <div className="col-12 col-md-4 text-md-end">
-            <button
-              className="btn btn-primary rounded-md d-flex align-items-center gap-2 ms-auto"
-              data-bs-toggle="modal"
-              data-bs-target="#customerModal"
-              onClick={() => {
-                setEditingCustomer(null);
-                setCustomerForm({ name: '', email: '', phone: '', address: '' });
-              }}
-            >
-              <i className="bi bi-person-plus-fill"></i>
-              <span>{t('customer', 'add_customer')}</span>
-            </button>
-          </div>
-        </div>
       </div>
 
-      {/* Directory Table */}
-      <div className="card border-none rounded-lg p-4 shadow-sm" style={{ backgroundColor: 'var(--light-card)', border: '1px solid var(--border-color)' }}>
-        <h5 className="fw-bold mb-4 d-flex align-items-center gap-2">
-          <i className="bi bi-people-fill text-primary"></i>
-          {t('customer', 'title')}
-        </h5>
-        
+      {/* Header section */}
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+          <h2 className="fw-bold text-dark mb-1">{t('customer', 'customer_directory')}</h2>
+          <p className="text-muted small m-0">{t('customer', 'subtitle')}</p>
+        </div>
+        <button
+          className="btn btn-primary d-flex align-items-center gap-2 fw-semibold px-3 py-2 rounded-md shadow-sm"
+          onClick={() => {
+            setEditingCustomer(null);
+            setCustomerForm({ name: '', email: '', phone: '', address: '' });
+            const modalElement = document.getElementById('customerModal');
+            const bootstrap = require('bootstrap');
+            const modal = new bootstrap.Modal(modalElement);
+            modal.show();
+          }}
+        >
+          <i className="bi bi-person-plus-fill"></i>
+          <span>{t('customer', 'add_customer')}</span>
+        </button>
+      </div>
+
+      {/* Main Directory Table Container */}
+      <div className="card border-0 shadow-sm rounded-lg p-3">
+        {/* Search Control */}
+        <div className="row g-2 mb-3">
+          <div className="col-md-5">
+            <div className="input-group">
+              <span className="input-group-text bg-white text-muted border-end-0">
+                <i className="bi bi-search"></i>
+              </span>
+              <input
+                type="text"
+                className="form-control border-start-0 ps-0"
+                placeholder={t('customer', 'search_placeholder')}
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Directory Table */}
         <div className="table-responsive">
-          <table className="table custom-table m-0">
+          <table className="table custom-table m-0 align-middle">
             <thead>
               <tr>
-                <th>{t('common', 'sn') || 'S.N.'}</th>
                 <th>{t('customer', 'customer_name')}</th>
                 <th>{t('common', 'phone')}</th>
                 <th>{t('common', 'email')}</th>
-                <th>Tier & Wallet</th>
-                <th>{t('customer', 'loyalty_points')}</th>
+                <th>Membership / Wallet</th>
+                <th>Points Balance</th>
                 <th>{t('common', 'actions')}</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-4">
+                  <td colSpan={6} className="text-center py-4">
                     <div className="spinner-border text-primary" role="status"></div>
                   </td>
                 </tr>
               ) : customers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-4 text-muted">{t('customer', 'no_customers')}</td>
+                  <td colSpan={6} className="text-center py-4 text-muted">{t('customer', 'no_customers')}</td>
                 </tr>
               ) : (
-                customers.map((cust, index) => (
+                customers.map((cust) => (
                   <tr key={cust.id}>
                     <td className="fw-bold text-dark">{cust.name}</td>
                     <td>{cust.phone || <span className="text-muted fs-8">None</span>}</td>
@@ -241,6 +255,16 @@ export default function CustomersPage() {
           </table>
         </div>
 
+        <TableControls
+          total={totalCustomers}
+          currentPage={currentPage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={(n) => {
+            setRowsPerPage(n);
+            setCurrentPage(1);
+          }}
+          onPageChange={setCurrentPage}
+        />
       </div>
 
       {/* ==========================================

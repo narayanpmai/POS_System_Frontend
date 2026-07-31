@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBsFull } from '@/utils/nepaliDate';
 import { printThermalReceipt } from '@/utils/printReceipt';
+import SearchableCustomerSelect from '@/components/SearchableCustomerSelect';
 
 interface UnitConversion {
   id: number;
@@ -576,26 +577,19 @@ export default function POSPage() {
             </div>
 
             {/* Customer select */}
-            <div className="mb-3 d-flex gap-2">
-              <select
-                className="form-select"
-                value={selectedCustomerId || ''}
-                onChange={(e) => setSelectedCustomerId(Number(e.target.value) || null)}
-                style={{ borderRadius: '8px', padding: '10px 14px', backgroundColor: 'var(--light-bg)', fontSize: '0.9rem' }}
-              >
-                <option value="">{t('pos', 'walk_in_customer') || 'Walk-In Customer (Default)'}</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} {c.phone ? `(${c.phone})` : ''}
-                  </option>
-                ))}
-              </select>
+            <div className="mb-3 d-flex gap-2 align-items-center">
+              <SearchableCustomerSelect
+                customers={customers}
+                selectedCustomerId={selectedCustomerId}
+                onSelectCustomer={setSelectedCustomerId}
+              />
               <button
-                className="btn btn-outline-primary d-flex align-items-center justify-content-center"
+                className="btn btn-outline-primary d-flex align-items-center justify-content-center flex-shrink-0"
                 type="button"
                 data-bs-toggle="modal"
                 data-bs-target="#newCustomerModal"
-                style={{ borderRadius: '8px', width: '42px' }}
+                style={{ borderRadius: '8px', width: '42px', height: '40px' }}
+                title="Add New Customer"
               >
                 <i className="bi bi-person-plus-fill"></i>
               </button>

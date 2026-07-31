@@ -27,7 +27,7 @@ interface TableControlsProps {
   onPageChange: (p: number) => void;
 }
 
-export const ROWS_OPTIONS = [5, 10, 25, 50, 100];
+export const ROWS_OPTIONS = [5, 10, 25, 50, 100, 500];
 
 /**
  * Slices data array for the current page.
@@ -59,7 +59,7 @@ export default function TableControls({
         <span>Rows per page:</span>
         <select
           className="form-select form-select-sm"
-          style={{ width: '75px' }}
+          style={{ width: '85px' }}
           value={rowsPerPage}
           onChange={(e) => onRowsPerPageChange(Number(e.target.value))}
           aria-label="Rows per page"
