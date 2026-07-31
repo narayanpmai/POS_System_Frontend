@@ -60,10 +60,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
   const API_BASE_URL = getBaseURL();
   axios.defaults.baseURL = API_BASE_URL;
+  axios.defaults.withCredentials = true;
 
   // Unified configured Axios instance
   const api = axios.create({
     baseURL: API_BASE_URL,
+    withCredentials: true,
   });
 
   useEffect(() => {
@@ -88,7 +90,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Effect to load session on start
+  // Effect to load session on start and handle hard refreshes
   useEffect(() => {
     const initAuth = async () => {
       const storedToken = localStorage.getItem('smartpos_token');
@@ -118,6 +120,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         api.get('/fiscal-years/active', { timeout: 3000 })
           .then((fyRes) => setActiveFiscalYear(fyRes.data))
           .catch(() => {});
+      } else {
+        // Hard Refresh Recovery: Try restoring session via HttpOnly Refresh Cookie
+        try {
+          const refreshToken = localStorage.getItem('smartpos_refresh_token');
+          const refreshRes = await axios.post('/auth/refresh', { refresh_token: refreshToken }, { withCredentials: true });
+          if (refreshRes.data?.access_token) {
+            const newAccessToken = refreshRes.data.access_token;
+            setToken(newAccessToken);
+            localStorage.setItem('smartpos_token', newAccessToken);
+            api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+            axios.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+          }
+        } catch (err) {
+          // No active session cookie found, stay logged out
+        }
       }
       setLoading(false);
     };
@@ -129,9 +146,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setError(null);
     try {
       const res = await api.post('/auth/login', { email, password });
-      const { access_token, user: loggedUser } = res.data;
+      const { access_token, refresh_token, user: loggedUser } = res.data;
 
       localStorage.setItem('smartpos_token', access_token);
+      if (refresh_token) {
+        localStorage.setItem('smartpos_refresh_token', refresh_token);
+      }
       localStorage.setItem('smartpos_user', JSON.stringify(loggedUser));
 
       setToken(access_token);
@@ -161,9 +181,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setError(null);
     try {
       const res = await api.post('/auth/register', { name, email, password, role: 'Cashier' });
-      const { access_token, user: registeredUser } = res.data;
+      const { access_token, refresh_token, user: registeredUser } = res.data;
 
       localStorage.setItem('smartpos_token', access_token);
+      if (refresh_token) {
+        localStorage.setItem('smartpos_refresh_token', refresh_token);
+      }
       localStorage.setItem('smartpos_user', JSON.stringify(registeredUser));
 
       setToken(access_token);
@@ -183,31 +206,57 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('smartpos_token');
-    localStorage.removeItem('smartpos_user');
-    localStorage.removeItem('smartpos_superadmin_company');
-    delete api.defaults.headers.common['Authorization'];
-    delete axios.defaults.headers.common['Authorization'];
-    delete api.defaults.headers.common['x-company-id'];
-    delete axios.defaults.headers.common['x-company-id'];
-    setToken(null);
-    setUser(null);
-    setSuperAdminCompanyId(null);
-    window.location.href = '/login';
+  const logout = async () => {
+    try {
+      const refreshToken = localStorage.getItem('smartpos_refresh_token');
+      await api.post('/auth/logout', { refresh_token: refreshToken });
+    } catch (e) {
+      // Ignore API errors on logout
+    } finally {
+      localStorage.removeItem('smartpos_token');
+      localStorage.removeItem('smartpos_refresh_token');
+      localStorage.removeItem('smartpos_user');
+      localStorage.removeItem('smartpos_superadmin_company');
+      delete api.defaults.headers.common['Authorization'];
+      delete axios.defaults.headers.common['Authorization'];
+      delete api.defaults.headers.common['x-company-id'];
+      delete axios.defaults.headers.common['x-company-id'];
+      setToken(null);
+      setUser(null);
+      setSuperAdminCompanyId(null);
+      window.location.href = '/login';
+    }
   };
 
-  // Setup global Axios interceptor for 401 Unauthorized
+  // Setup global Axios interceptor for 401 Unauthorized with Auto-Refresh Token Retry
   useEffect(() => {
     const interceptor = api.interceptors.response.use(
       (response) => response,
-      (error) => {
-        if (error.response?.status === 401) {
-          if (error.response.data) {
-            error.response.data.message = 'Session expired. Please log in again.';
+      async (error) => {
+        const originalRequest = error.config;
+        if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/')) {
+          originalRequest._retry = true;
+          try {
+            const refreshToken = localStorage.getItem('smartpos_refresh_token');
+            const res = await axios.post('/auth/refresh', { refresh_token: refreshToken }, { withCredentials: true });
+            const { access_token, refresh_token: newRefreshToken } = res.data;
+
+            if (access_token) {
+              setToken(access_token);
+              localStorage.setItem('smartpos_token', access_token);
+              if (newRefreshToken) {
+                localStorage.setItem('smartpos_refresh_token', newRefreshToken);
+              }
+
+              api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+              axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+              originalRequest.headers['Authorization'] = `Bearer ${access_token}`;
+
+              return api(originalRequest);
+            }
+          } catch (refreshErr) {
+            logout();
           }
-          // Auto-logout if token is invalid or expired
-          logout();
         }
         return Promise.reject(error);
       }

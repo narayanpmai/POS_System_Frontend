@@ -6,9 +6,14 @@ import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBs } from '@/utils/nepaliDate';
-import BSDatePicker from '@/components/BSDatePicker';
-
-import TableControls, { applyPagination } from '@/components/TableControls';
+import TableControls from '@/components/TableControls';
+import {
+  useGetExpensesQuery,
+  useCreateExpenseMutation,
+  useUpdateExpenseMutation,
+  useDeleteExpenseMutation,
+} from '@/redux/api/expensesApi';
+
 export default function ExpensesPage() {
   const router = useRouter();
   const { token, api, activeFiscalYear } = useAuth();
@@ -16,11 +21,24 @@ export default function ExpensesPage() {
   
   // Tabs & Lists State
   const [activeTab, setActiveTab] = useState<'expenses' | 'categories'>('expenses');
-  const [expenses, setExpenses] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [catLoading, setCatLoading] = useState(false);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState('');
+
+  // RTK Query for Expenses
+  const { data: expenseData, isFetching: loading } = useGetExpensesQuery({
+    page: currentPage,
+    limit: rowsPerPage,
+    search,
+  });
+  const [createExpense] = useCreateExpenseMutation();
+  const [updateExpense] = useUpdateExpenseMutation();
+  const [deleteExpense] = useDeleteExpenseMutation();
+
+  const expenses: any[] = expenseData?.items || [];
+  const totalExpenses = expenseData?.total || 0;
 
   // Expense Form State
   const [isEditing, setIsEditing] = useState(false);
@@ -39,22 +57,18 @@ export default function ExpensesPage() {
 
   useEffect(() => {
     if (!token) return;
-    loadData();
+    loadCategories();
   }, [token, activeFiscalYear]);
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadCategories = async () => {
+    setCatLoading(true);
     try {
-      const [expRes, catRes] = await Promise.all([
-        api.get('/expenses'),
-        api.get('/expense-categories')
-      ]);
-      setExpenses(expRes.data || []);
-      setCategories(catRes.data || []);
+      const catRes = await api.get('/expense-categories');
+      setCategories(catRes.data?.items || catRes.data || []);
     } catch (err) {
-      console.error('Error loading expenses data:', err);
+      console.error('Error loading expense categories:', err);
     }
-    setLoading(false);
+    setCatLoading(false);
   };
 
   // --- EXPENSE HANDLERS ---
@@ -72,10 +86,10 @@ export default function ExpensesPage() {
 
     try {
       if (isEditing && editingExpenseId) {
-        await api.put(`/expenses/${editingExpenseId}`, payload);
+        await updateExpense({ id: editingExpenseId, data: payload }).unwrap();
         alert(t('expenses', 'success_update'));
       } else {
-        await api.post('/expenses', payload);
+        await createExpense(payload).unwrap();
         alert(t('expenses', 'success_add'));
       }
 
@@ -86,10 +100,8 @@ export default function ExpensesPage() {
         const modal = bootstrap.Modal.getInstance(modalElement);
         modal?.hide();
       }
-
-      loadData();
     } catch (err: any) {
-      alert(err.response?.data?.message || t('common', 'error'));
+      alert(err?.data?.message || err?.message || t('common', 'error'));
     }
   };
 
@@ -113,11 +125,10 @@ export default function ExpensesPage() {
   const handleDeleteExpense = async (id: number) => {
     if (!confirm(t('expenses', 'confirm_delete'))) return;
     try {
-      await api.delete(`/expenses/${id}`);
+      await deleteExpense(id).unwrap();
       alert(t('expenses', 'success_delete'));
-      loadData();
     } catch (err: any) {
-      alert(err.response?.data?.message || t('common', 'error'));
+      alert(err?.data?.message || t('common', 'error'));
     }
   };
 
@@ -151,13 +162,17 @@ export default function ExpensesPage() {
     try {
       if (isEditingCategory && editingCategoryId) {
         await api.put(`/expense-categories/${editingCategoryId}`, payload);
-        alert(t('common', 'updated_successfully'));
+        alert(t('common', 'success_update') || 'Category updated');
       } else {
         await api.post('/expense-categories', payload);
-        alert(t('common', 'saved_successfully'));
+        alert(t('common', 'success_add') || 'Category created');
       }
 
-      // Close modal
+      setCategoryName('');
+      setCategoryDescription('');
+      setIsEditingCategory(false);
+      setEditingCategoryId(null);
+
       const modalElement = document.getElementById('expenseCategoryModal');
       if (modalElement) {
         const bootstrap = require('bootstrap');
@@ -165,7 +180,7 @@ export default function ExpensesPage() {
         modal?.hide();
       }
 
-      loadData();
+      loadCategories();
     } catch (err: any) {
       alert(err.response?.data?.message || t('common', 'error'));
     }
@@ -186,11 +201,11 @@ export default function ExpensesPage() {
   };
 
   const handleDeleteCategory = async (id: number) => {
-    if (!confirm(t('common', 'confirm_delete'))) return;
+    if (!confirm('Are you sure you want to delete this expense category?')) return;
     try {
       await api.delete(`/expense-categories/${id}`);
-      alert(t('common', 'deleted_successfully'));
-      loadData();
+      alert('Expense category deleted');
+      loadCategories();
     } catch (err: any) {
       alert(err.response?.data?.message || t('common', 'error'));
     }
@@ -218,6 +233,7 @@ export default function ExpensesPage() {
         </button>
         <h4 className="fw-bold m-0 text-dark">{t('expenses', 'title') || 'Expenses'}</h4>
       </div>
+
       {/* Tab Selectors & Header Action */}
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <ul className="nav nav-pills border-0 bg-white p-1 rounded-pill shadow-sm" style={{ border: '1px solid #dee2e6' }}>
@@ -257,6 +273,17 @@ export default function ExpensesPage() {
           ========================================== */}
       {activeTab === 'expenses' && (
         <div className="card border-0 rounded-md shadow-sm p-4" style={{ backgroundColor: 'var(--light-card)' }}>
+          {/* Search */}
+          <div className="mb-3 col-md-4">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Search expenses..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+            />
+          </div>
+
           <div className="table-responsive">
             <table className="table mb-0 align-middle">
               <thead>
@@ -279,7 +306,7 @@ export default function ExpensesPage() {
                     <td colSpan={6} className="text-center py-5 text-muted">{t('expenses', 'no_expenses')}</td>
                   </tr>
                 ) : (
-                  applyPagination(expenses, currentPage, rowsPerPage).map((exp, index) => (
+                  expenses.map((exp) => (
                     <tr key={exp.id}>
                       <td className="ps-3 border-bottom py-3 text-secondary">{formatAdToBs(exp.date)}</td>
                       <td className="border-bottom fw-bold text-dark">{exp.referenceNo || `EXP-${exp.id}`}</td>
@@ -288,7 +315,7 @@ export default function ExpensesPage() {
                           {exp.category}
                         </span>
                       </td>
-                      <td className="border-bottom fw-bold text-danger">Rs. {exp.amount.toFixed(2)}</td>
+                      <td className="border-bottom fw-bold text-danger">Rs. {Number(exp.amount).toFixed(2)}</td>
                       <td className="border-bottom text-secondary">{exp.description || <span className="text-muted fs-8">{t('common', 'none')}</span>}</td>
                       <td className="border-bottom text-center">
                         <div className="d-flex justify-content-center gap-2">
@@ -307,13 +334,13 @@ export default function ExpensesPage() {
             </table>
           </div>
 
-        <TableControls
-          total={expenses.length}
-          currentPage={currentPage}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={(n) => { setRowsPerPage(n); setCurrentPage(1); }}
-          onPageChange={setCurrentPage}
-        />
+          <TableControls
+            total={totalExpenses}
+            currentPage={currentPage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={(n) => { setRowsPerPage(n); setCurrentPage(1); }}
+            onPageChange={setCurrentPage}
+          />
         </div>
       )}
 
@@ -328,23 +355,23 @@ export default function ExpensesPage() {
                 <tr style={{ backgroundColor: 'var(--light-bg)' }}>
                   <th className="fw-bold text-dark py-3 ps-3 border-bottom-0 border-top" style={{ width: '30%' }}>Category Name</th>
                   <th className="fw-bold text-dark py-3 border-bottom-0 border-top" style={{ width: '50%' }}>Description</th>
-                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-center" style={{ width: '20%' }}>Actions</th>
+                  <th className="fw-bold text-dark py-3 border-bottom-0 border-top text-center" style={{ width: '20%' }}>{t('common', 'actions')}</th>
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
+                {catLoading ? (
                   <tr>
-                    <td colSpan={3} className="text-center py-5 text-muted">Loading expense categories...</td>
+                    <td colSpan={3} className="text-center py-5 text-muted">Loading categories...</td>
                   </tr>
                 ) : categories.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="text-center py-5 text-muted">No expense categories found. Click "Add Category" to create one.</td>
+                    <td colSpan={3} className="text-center py-5 text-muted">No expense categories found.</td>
                   </tr>
                 ) : (
                   categories.map((cat) => (
                     <tr key={cat.id}>
-                      <td className="ps-3 border-bottom py-3 fw-bold text-dark">{cat.name}</td>
-                      <td className="border-bottom text-secondary">{cat.description || <span className="text-muted fs-8">No description provided</span>}</td>
+                      <td className="ps-3 border-bottom fw-bold text-dark">{cat.name}</td>
+                      <td className="border-bottom text-secondary">{cat.description || <span className="text-muted fs-8">{t('common', 'none')}</span>}</td>
                       <td className="border-bottom text-center">
                         <div className="d-flex justify-content-center gap-2">
                           <button className="btn btn-sm btn-outline-info p-1 px-2 d-flex align-items-center" onClick={() => handleEditCategory(cat)} style={{ borderColor: '#0dcaf0', color: '#0dcaf0' }}>
@@ -364,85 +391,75 @@ export default function ExpensesPage() {
         </div>
       )}
 
-      {/* ==========================================
-          MODAL: LOG EXPENSE FORM
-          ========================================== */}
-      <div className="modal fade text-dark" id="expenseModal" tabIndex={-1} aria-labelledby="expenseModalLabel" aria-hidden="true">
-        <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '450px' }}>
-          <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '12px', overflow: 'hidden' }}>
-            <div className="modal-header bg-white border-bottom p-3 d-flex align-items-center justify-content-between">
-              <h5 className="modal-title fw-bold text-dark m-0" id="expenseModalLabel" style={{ fontSize: '1.1rem' }}>
+      {/* EXPENSE MODAL */}
+      <div className="modal fade" id="expenseModal" tabIndex={-1} aria-hidden="true">
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content border-0 shadow">
+            <div className="modal-header border-bottom-0 pb-0">
+              <h5 className="modal-title fw-bold text-dark">
                 {isEditing ? t('expenses', 'edit_expense') : t('expenses', 'add_expense')}
               </h5>
-              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" style={{ fontSize: '0.8rem' }}></button>
+              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form onSubmit={handleExpenseSubmit}>
-              <div className="modal-body p-4" style={{ backgroundColor: 'var(--light-card)' }}>
+              <div className="modal-body py-4">
                 <div className="mb-3">
-                  <label className="form-label fw-bold text-secondary fs-8 mb-1">{t('common', 'reference')}</label>
+                  <label className="form-label fw-semibold text-secondary">{t('common', 'reference')} *</label>
                   <input
                     type="text"
-                    className="form-control border-1 p-2"
+                    className="form-control"
+                    required
                     value={referenceNo}
                     onChange={(e) => setReferenceNo(e.target.value)}
-                    required
-                    style={{ borderRadius: '6px' }}
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label fw-bold text-secondary fs-8 mb-1">{t('common', 'bs_date')}</label>
-                  <BSDatePicker
+                  <label className="form-label fw-semibold text-secondary">{t('expenses', 'expense_date')}</label>
+                  <input
+                    type="date"
+                    className="form-control"
                     value={date}
-                    onChange={(val) => setDate(val)}
-                    className="form-control border-1 p-2"
+                    onChange={(e) => setDate(e.target.value)}
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label fw-bold text-secondary fs-8 mb-1">{t('expenses', 'expense_category')}</label>
-                  <select 
-                    className="form-select border-1 p-2" 
-                    value={category} 
+                  <label className="form-label fw-semibold text-secondary">{t('expenses', 'expense_category')}</label>
+                  <select
+                    className="form-select"
+                    value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    style={{ borderRadius: '6px' }}
-                    required
                   >
-                    {categories.length === 0 ? (
-                      <option value="">No Categories Configured</option>
-                    ) : (
-                      categories.map((cat) => (
-                        <option key={cat.id} value={cat.name}>{cat.name}</option>
-                      ))
-                    )}
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.name}>{c.name}</option>
+                    ))}
+                    {categories.length === 0 && <option value="Miscellaneous">Miscellaneous</option>}
                   </select>
                 </div>
                 <div className="mb-3">
-                  <label className="form-label fw-bold text-secondary fs-8 mb-1">{t('common', 'amount')} (Rs.)</label>
+                  <label className="form-label fw-semibold text-secondary">{t('expenses', 'expense_amount')} (Rs.) *</label>
                   <input
-                    type="number" min="0" step="any"
-                    
-                    className="form-control border-1 p-2"
-                    placeholder="0.00"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value !== '' ? Number(e.target.value) : '')}
+                    type="number"
+                    step="0.01"
+                    className="form-control"
                     required
-                    style={{ borderRadius: '6px' }}
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value ? Number(e.target.value) : '')}
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label fw-bold text-secondary fs-8 mb-1">{t('expenses', 'expense_notes')}</label>
+                  <label className="form-label fw-semibold text-secondary">{t('expenses', 'expense_notes')}</label>
                   <textarea
-                    className="form-control border-1 p-2"
-                    rows={3}
-                    placeholder="Expense details..."
+                    className="form-control"
+                    rows={2}
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    style={{ borderRadius: '6px', resize: 'none' }}
                   />
                 </div>
               </div>
-              <div className="modal-footer border-0 p-3 bg-white d-flex justify-content-end">
-                <button type="submit" className="btn btn-primary px-4 py-2 fw-semibold animate-pulse" style={{ backgroundColor: '#991b1b', border: 'none', borderRadius: '4px', fontSize: '0.9rem' }}>
-                  {t('expenses', 'save_expense')}
+              <div className="modal-footer border-top-0 pt-0">
+                <button type="button" className="btn btn-light" data-bs-dismiss="modal">{t('common', 'cancel')}</button>
+                <button type="submit" className="btn btn-primary px-4" style={{ backgroundColor: '#991b1b', borderColor: '#991b1b' }}>
+                  {t('common', 'save')}
                 </button>
               </div>
             </form>
@@ -450,47 +467,42 @@ export default function ExpensesPage() {
         </div>
       </div>
 
-      {/* ==========================================
-          MODAL: ADD/EDIT EXPENSE CATEGORY FORM
-          ========================================== */}
-      <div className="modal fade text-dark" id="expenseCategoryModal" tabIndex={-1} aria-labelledby="expenseCategoryModalLabel" aria-hidden="true">
-        <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '450px' }}>
-          <div className="modal-content border-0 shadow-lg" style={{ borderRadius: '12px', overflow: 'hidden' }}>
-            <div className="modal-header bg-white border-bottom p-3 d-flex align-items-center justify-content-between">
-              <h5 className="modal-title fw-bold text-dark m-0" id="expenseCategoryModalLabel" style={{ fontSize: '1.1rem' }}>
-                {isEditingCategory ? 'Edit Expense Category' : 'Add Expense Category'}
+      {/* EXPENSE CATEGORY MODAL */}
+      <div className="modal fade" id="expenseCategoryModal" tabIndex={-1} aria-hidden="true">
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content border-0 shadow">
+            <div className="modal-header border-bottom-0 pb-0">
+              <h5 className="modal-title fw-bold text-dark">
+                {isEditingCategory ? 'Edit Category' : 'Add Expense Category'}
               </h5>
-              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" style={{ fontSize: '0.8rem' }}></button>
+              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form onSubmit={handleCategorySubmit}>
-              <div className="modal-body p-4" style={{ backgroundColor: 'var(--light-card)' }}>
+              <div className="modal-body py-4">
                 <div className="mb-3">
-                  <label className="form-label fw-bold text-secondary fs-8 mb-1">Category Name</label>
+                  <label className="form-label fw-semibold text-secondary">Category Name *</label>
                   <input
                     type="text"
-                    className="form-control border-1 p-2"
-                    placeholder="e.g. Travel & Lodging"
+                    className="form-control"
+                    required
                     value={categoryName}
                     onChange={(e) => setCategoryName(e.target.value)}
-                    required
-                    style={{ borderRadius: '6px' }}
                   />
                 </div>
                 <div className="mb-3">
-                  <label className="form-label fw-bold text-secondary fs-8 mb-1">Description</label>
+                  <label className="form-label fw-semibold text-secondary">Description</label>
                   <textarea
-                    className="form-control border-1 p-2"
-                    rows={3}
-                    placeholder="Brief description of expenses under this category..."
+                    className="form-control"
+                    rows={2}
                     value={categoryDescription}
                     onChange={(e) => setCategoryDescription(e.target.value)}
-                    style={{ borderRadius: '6px', resize: 'none' }}
                   />
                 </div>
               </div>
-              <div className="modal-footer border-0 p-3 bg-white d-flex justify-content-end">
-                <button type="submit" className="btn btn-primary px-4 py-2 fw-semibold" style={{ backgroundColor: '#991b1b', border: 'none', borderRadius: '4px', fontSize: '0.9rem' }}>
-                  Save Category
+              <div className="modal-footer border-top-0 pt-0">
+                <button type="button" className="btn btn-light" data-bs-dismiss="modal">{t('common', 'cancel')}</button>
+                <button type="submit" className="btn btn-primary px-4" style={{ backgroundColor: '#991b1b', borderColor: '#991b1b' }}>
+                  {t('common', 'save')}
                 </button>
               </div>
             </form>

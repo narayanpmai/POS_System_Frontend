@@ -77,7 +77,7 @@ export default function Navbar() {
 
         {/* Mobile Hamburger Button */}
         <button 
-          className="btn btn-light d-lg-none border shadow-sm rounded-md d-flex align-items-center justify-content-center"
+          className="btn btn-light d-xl-none border shadow-sm rounded-md d-flex align-items-center justify-content-center"
           type="button" 
           data-bs-toggle="offcanvas" 
           data-bs-target="#mobileSidebar" 
@@ -89,7 +89,7 @@ export default function Navbar() {
 
         {/* Fiscal Year Badge */}
         {activeFiscalYear ? (
-          <div className="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2 d-none d-md-flex align-items-center gap-2">
+          <div className="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2 d-none d-lg-flex align-items-center gap-2">
             <i className="bi bi-calendar-check"></i>
             <span className="fw-medium">{language === 'ne' ? 'आर्थिक वर्ष:' : 'FY:'} {activeFiscalYear.name}</span>
           </div>
@@ -103,8 +103,8 @@ export default function Navbar() {
           </a>
         )}
 
-        {/* Nepali Clock Widget */}
-        <div className="d-none d-sm-block">
+        {/* Nepali Clock Widget (Visible on Large Desktop Displays >= 1400px) */}
+        <div className="d-none d-xxl-block">
           <NepaliClock />
         </div>
       </div>
@@ -200,7 +200,6 @@ export default function Navbar() {
                   <span className="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1">
                     {user?.role?.name || 'Cashier'}
                   </span>
-                  <small className="text-muted">ID: #{user?.id}</small>
                 </div>
                 {user?.email && (
                   <small className="text-muted d-block text-truncate mt-1" style={{ fontSize: '0.75rem' }}>

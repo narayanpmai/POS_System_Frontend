@@ -23,16 +23,19 @@ export default function PurchaseReturnsPage() {
   const [reason, setReason] = useState('');
   const [items, setItems] = useState([{ purchaseItemId: '', quantity: 1 }]);
 
+  const [totalReturns, setTotalReturns] = useState(0);
+
   useEffect(() => {
     if (!token) return;
     loadData();
-  }, [token]);
+  }, [token, currentPage, rowsPerPage]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/purchase-returns');
-      setReturns(res.data || []);
+      const res = await api.get(`/purchase-returns?page=${currentPage}&limit=${rowsPerPage}`);
+      setReturns(res.data?.items || res.data || []);
+      setTotalReturns(res.data?.total || (Array.isArray(res.data) ? res.data.length : 0));
     } catch (err) {
       console.error('Error fetching purchase returns:', err);
     } finally {
@@ -119,7 +122,7 @@ export default function PurchaseReturnsPage() {
                     </td>
                   </tr>
                 ) : (
-                  applyPagination(returns, currentPage, rowsPerPage).map((ret, index) => (
+                  returns.map((ret) => (
                     <tr key={ret.id}>
                       <td className="fw-bold">{ret.returnNo}</td>
                       <td>{ret.purchase?.poNumber || '-'}</td>
@@ -137,7 +140,7 @@ export default function PurchaseReturnsPage() {
             </table>
           </div>
           <TableControls
-            total={returns.length}
+            total={totalReturns}
             currentPage={currentPage}
             rowsPerPage={rowsPerPage}
             onRowsPerPageChange={(n) => { setRowsPerPage(n); setCurrentPage(1); }}

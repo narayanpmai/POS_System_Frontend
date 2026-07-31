@@ -23,16 +23,19 @@ export default function SalesReturnsPage() {
   const [reason, setReason] = useState('');
   const [items, setItems] = useState([{ saleItemId: '', quantity: 1 }]);
 
+  const [totalReturns, setTotalReturns] = useState(0);
+
   useEffect(() => {
     if (!token) return;
     loadData();
-  }, [token]);
+  }, [token, currentPage, rowsPerPage]);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const res = await api.get('/sales-returns');
-      setReturns(res.data || []);
+      const res = await api.get(`/sales-returns?page=${currentPage}&limit=${rowsPerPage}`);
+      setReturns(res.data?.items || res.data || []);
+      setTotalReturns(res.data?.total || (Array.isArray(res.data) ? res.data.length : 0));
     } catch (err) {
       console.error('Error fetching sales returns:', err);
     } finally {
@@ -116,7 +119,7 @@ export default function SalesReturnsPage() {
                     <td colSpan={5} className="text-center py-4 text-muted">{language === 'ne' ? 'कुनै फिर्ता फेला परेन' : 'No returns found'}</td>
                   </tr>
                 ) : (
-                  applyPagination(returns, currentPage, rowsPerPage).map((ret, index) => (
+                  returns.map((ret) => (
                     <tr key={ret.id}>
                       <td className="fw-bold">{ret.returnNo}</td>
                       <td>{ret.sale?.invoiceNo || '-'}</td>
@@ -133,7 +136,7 @@ export default function SalesReturnsPage() {
             </table>
           </div>
           <TableControls
-            total={returns.length}
+            total={totalReturns}
             currentPage={currentPage}
             rowsPerPage={rowsPerPage}
             onRowsPerPageChange={(n) => { setRowsPerPage(n); setCurrentPage(1); }}

@@ -21,7 +21,13 @@ export default function SettingsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   // Submenu Selection
-  const [activeTab, setActiveTab] = useState<'general' | 'preferences' | 'notifications' | 'security' | 'backup' | 'help' | 'faq'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'units' | 'preferences' | 'notifications' | 'security' | 'backup' | 'help' | 'faq'>('general');
+
+  // Global Unit Conversions State
+  const [globalUnits, setGlobalUnits] = useState<any[]>([]);
+  const [newBaseUnit, setNewBaseUnit] = useState('kg');
+  const [newFactor, setNewFactor] = useState('');
+  const [newSecondaryUnit, setNewSecondaryUnit] = useState('');
 
   // Help states
   const [diagStatus, setDiagStatus] = useState<'idle' | 'running' | 'done'>('idle');
@@ -63,6 +69,41 @@ export default function SettingsPage() {
     newPassword: '',
     confirmPassword: '',
   });
+
+  // Active Sessions & Device Security states
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [sessionStats, setSessionStats] = useState({ totalSessions: 0, uniqueIPs: 0, uniqueDevices: 0 });
+  const [loadingSessions, setLoadingSessions] = useState(false);
+  const [revokingId, setRevokingId] = useState<number | null>(null);
+
+  const loadSessions = async () => {
+    setLoadingSessions(true);
+    try {
+      const [sessRes, statsRes] = await Promise.all([
+        api.get('/users/sessions'),
+        api.get('/users/sessions/stats'),
+      ]);
+      setSessions(sessRes.data || []);
+      setSessionStats(statsRes.data || { totalSessions: 0, uniqueIPs: 0, uniqueDevices: 0 });
+    } catch (err) {
+      console.error('Failed to load active sessions:', err);
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
+
+  const handleRevokeSession = async (sessionId: number) => {
+    setRevokingId(sessionId);
+    try {
+      await api.delete(`/users/sessions/${sessionId}`);
+      showToast('Session revoked successfully', 'success');
+      loadSessions();
+    } catch (err: any) {
+      showToast(err.response?.data?.message || 'Failed to revoke session', 'danger');
+    } finally {
+      setRevokingId(null);
+    }
+  };
 
   // Backup & Restore states
   const [backupStatus, setBackupStatus] = useState<'idle' | 'generating' | 'success'>('idle');
@@ -255,8 +296,54 @@ export default function SettingsPage() {
     }
   };
 
+  const loadGlobalUnits = async () => {
+    try {
+      const res = await api.get('/unit-conversions');
+      const globals = (res.data || []).filter((u: any) => u.productId === null || !u.productId);
+      setGlobalUnits(globals);
+    } catch (err) {
+      console.error('Error fetching global unit conversions:', err);
+    }
+  };
+
+  const handleAddGlobalUnit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBaseUnit || !newFactor || !newSecondaryUnit) return;
+    try {
+      await api.post('/unit-conversions', {
+        baseUnit: newBaseUnit.trim(),
+        secondaryUnit: newSecondaryUnit.trim(),
+        conversionFactor: Number(newFactor),
+      });
+      showAlert('Global unit conversion added successfully!', { title: 'Success', type: 'success' });
+      setNewFactor('');
+      setNewSecondaryUnit('');
+      loadGlobalUnits();
+    } catch (err: any) {
+      showAlert(err.response?.data?.message || err.message || 'Error adding unit conversion', { title: 'Error', type: 'danger' });
+    }
+  };
+
+  const handleDeleteGlobalUnit = async (id: number) => {
+    showConfirm({
+      title: 'Confirm Delete',
+      message: 'Are you sure you want to delete this global unit conversion rule?',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/unit-conversions/${id}`);
+          showAlert('Global unit conversion deleted', { title: 'Deleted', type: 'info' });
+          loadGlobalUnits();
+        } catch (err: any) {
+          showAlert(err.response?.data?.message || 'Error deleting conversion', { title: 'Error', type: 'danger' });
+        }
+      }
+    });
+  };
+
   useEffect(() => {
     loadSettings();
+    loadGlobalUnits();
   }, [token]);
 
   // Load mock settings from localStorage on client side mount
@@ -272,6 +359,12 @@ export default function SettingsPage() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'security') {
+      loadSessions();
+    }
+  }, [activeTab]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -462,6 +555,115 @@ export default function SettingsPage() {
         </div>
       )}
     </form>
+  );
+
+  const renderGlobalUnits = () => (
+    <div>
+      <div className="d-flex align-items-center gap-2 mb-3 pb-1">
+        <i className="bi bi-calculator fs-5 text-primary"></i>
+        <h5 className="fw-bold text-dark m-0">Global Unit Conversions</h5>
+      </div>
+      <p className="text-muted small mb-4">
+        Define store-wide unit conversion rules once (e.g. 1 kg = 1000 gram, 1 liter = 1000 ml). All products with matching units automatically inherit these rules across POS and Inventory without per-product setup.
+      </p>
+
+      {isAdmin && (
+        <form onSubmit={handleAddGlobalUnit} className="card p-3 mb-4 border bg-light">
+          <h6 className="fw-bold text-dark mb-3">Add Global Conversion Rule</h6>
+          <div className="row g-3 align-items-end">
+            <div className="col-12 col-sm-3">
+              <label className="form-label fs-8 fw-bold text-secondary mb-1">Base Unit</label>
+              <input
+                type="text"
+                className="form-control"
+                style={inputStyle}
+                placeholder="e.g. kg, liter, dozen"
+                value={newBaseUnit}
+                onChange={(e) => setNewBaseUnit(e.target.value)}
+                required
+              />
+            </div>
+            <div className="col-auto text-center pb-2 fw-bold text-muted fs-5 align-self-end mb-1">=</div>
+            <div className="col-12 col-sm-3">
+              <label className="form-label fs-8 fw-bold text-secondary mb-1">Conversion Factor</label>
+              <input
+                type="number"
+                step="any"
+                className="form-control"
+                style={inputStyle}
+                placeholder="e.g. 1000"
+                value={newFactor}
+                onChange={(e) => setNewFactor(e.target.value)}
+                required
+              />
+            </div>
+            <div className="col-12 col-sm-3">
+              <label className="form-label fs-8 fw-bold text-secondary mb-1">Secondary Unit</label>
+              <input
+                type="text"
+                className="form-control"
+                style={inputStyle}
+                placeholder="e.g. gram, ml, pcs"
+                value={newSecondaryUnit}
+                onChange={(e) => setNewSecondaryUnit(e.target.value)}
+                required
+              />
+            </div>
+            <div className="col-12 col-sm">
+              <button type="submit" className="btn btn-primary w-100 fw-bold py-2 shadow-sm" style={{ whiteSpace: 'nowrap', borderRadius: '10px' }}>
+                <i className="bi bi-plus-circle me-1"></i> Add Rule
+              </button>
+            </div>
+          </div>
+        </form>
+      )}
+
+      <h6 className="fw-bold text-dark mb-3">Active Global Rules ({globalUnits.length})</h6>
+      <div className="table-responsive">
+        <table className="table align-middle custom-table">
+          <thead>
+            <tr>
+              <th>Base Unit</th>
+              <th>Conversion Rule</th>
+              <th>Secondary Unit</th>
+              {isAdmin && <th className="text-center">Action</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {globalUnits.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="text-center py-4 text-muted">
+                  No global unit conversion rules defined yet. Add rules above (e.g. 1 kg = 1000 gram).
+                </td>
+              </tr>
+            ) : (
+              globalUnits.map((u) => (
+                <tr key={u.id}>
+                  <td className="fw-bold text-dark">{u.baseUnit}</td>
+                  <td>
+                    <span className="badge bg-info-subtle text-info px-2.5 py-1 rounded-pill fw-bold">
+                      1 {u.baseUnit} = {u.conversionFactor} {u.secondaryUnit}
+                    </span>
+                  </td>
+                  <td className="fw-bold text-primary">{u.secondaryUnit}</td>
+                  {isAdmin && (
+                    <td className="text-center">
+                      <button
+                        className="btn btn-sm btn-outline-danger p-1 px-2"
+                        onClick={() => handleDeleteGlobalUnit(u.id)}
+                        title="Delete Rule"
+                      >
+                        <i className="bi bi-trash-fill"></i>
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 
   const renderSystemPreferences = () => (
@@ -764,6 +966,125 @@ export default function SettingsPage() {
           </div>
         )}
       </form>
+
+      {/* Active Device Sessions Table matching reference app */}
+      <div className="mt-5 pt-4 border-top" style={{ borderColor: 'var(--border-color)' }}>
+        <div className="d-flex align-items-center justify-content-between mb-3">
+          <div>
+            <div className="d-flex align-items-center gap-2 mb-1">
+              <i className="bi bi-display fs-5 text-primary"></i>
+              <h5 className="fw-bold text-dark m-0">Active Device Sessions</h5>
+            </div>
+            <p className="text-muted small m-0">Review active logged-in devices for your account and revoke stale access.</p>
+          </div>
+          <button
+            type="button"
+            className="btn btn-outline-secondary btn-sm rounded-pill px-3 fw-bold d-flex align-items-center gap-1"
+            onClick={loadSessions}
+            disabled={loadingSessions}
+          >
+            <i className={`bi bi-arrow-clockwise ${loadingSessions ? 'spin' : ''}`}></i>
+            <span>Refresh</span>
+          </button>
+        </div>
+
+        {/* Metric Cards matching reference app */}
+        <div className="row g-3 mb-4">
+          <div className="col-12 col-md-4">
+            <div className="card p-3 border-0 shadow-sm bg-primary-subtle text-primary rounded-4">
+              <div className="d-flex align-items-center justify-content-between">
+                <div>
+                  <div className="fs-4 fw-black">{sessionStats.totalSessions}</div>
+                  <div className="small fw-semibold">Active Sessions</div>
+                </div>
+                <i className="bi bi-shield-check fs-1 opacity-75"></i>
+              </div>
+            </div>
+          </div>
+          <div className="col-12 col-md-4">
+            <div className="card p-3 border-0 shadow-sm bg-info-subtle text-info rounded-4">
+              <div className="d-flex align-items-center justify-content-between">
+                <div>
+                  <div className="fs-4 fw-black">{sessionStats.uniqueIPs}</div>
+                  <div className="small fw-semibold">Unique IP Addresses</div>
+                </div>
+                <i className="bi bi-globe fs-1 opacity-75"></i>
+              </div>
+            </div>
+          </div>
+          <div className="col-12 col-md-4">
+            <div className="card p-3 border-0 shadow-sm bg-success-subtle text-success rounded-4">
+              <div className="d-flex align-items-center justify-content-between">
+                <div>
+                  <div className="fs-4 fw-black">{sessionStats.uniqueDevices}</div>
+                  <div className="small fw-semibold">Unique Devices</div>
+                </div>
+                <i className="bi bi-laptop fs-1 opacity-75"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sessions Table */}
+        <div className="table-responsive border rounded-3 bg-white shadow-sm">
+          <table className="table align-middle custom-table mb-0">
+            <thead className="bg-light">
+              <tr>
+                <th>Device</th>
+                <th>IP Address</th>
+                <th>Logged In At</th>
+                <th>Status</th>
+                <th className="text-center">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loadingSessions ? (
+                <tr>
+                  <td colSpan={5} className="text-center py-4 text-muted">
+                    <span className="spinner-border spinner-border-sm me-2"></span> Loading active sessions...
+                  </td>
+                </tr>
+              ) : sessions.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="text-center py-4 text-muted">
+                    No active sessions found.
+                  </td>
+                </tr>
+              ) : (
+                sessions.map((s, idx) => (
+                  <tr key={s.id}>
+                    <td>
+                      <div className="fw-bold text-dark">{s.deviceName}</div>
+                      <small className="text-muted text-uppercase">{s.deviceType}</small>
+                    </td>
+                    <td className="font-monospace small text-dark">{s.ipAddress}</td>
+                    <td className="small text-muted">{new Date(s.createdAt).toLocaleString()}</td>
+                    <td>
+                      <span className={`badge rounded-pill ${idx === 0 ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary'}`}>
+                        {idx === 0 ? 'Current Session' : 'Active'}
+                      </span>
+                    </td>
+                    <td className="text-center">
+                      {idx === 0 ? (
+                        <span className="text-muted small">-</span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold"
+                          onClick={() => handleRevokeSession(s.id)}
+                          disabled={revokingId === s.id}
+                        >
+                          {revokingId === s.id ? 'Revoking...' : 'Revoke'}
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 
@@ -1190,7 +1511,6 @@ export default function SettingsPage() {
       </div>
       <div className="row g-4 justify-content-center">
         <div className="col-12 col-xl-11">
-          <h2 className="fw-bold mb-4" style={{ color: 'var(--primary)', fontFamily: 'var(--font-heading)', fontSize: '2rem' }}>{t('settings', 'title')}</h2>
 
           {!isAdmin && (
             <div className="alert alert-warning border-0 rounded-lg p-3 d-flex align-items-center gap-3 mb-4 shadow-sm" role="alert">
@@ -1218,6 +1538,17 @@ export default function SettingsPage() {
                     <span>{t('settings', 'store_settings')}</span>
                   </button>
 
+                  {/* Global Unit Conversions */}
+                  <button
+                    className={`nav-link text-start d-flex align-items-center gap-3 px-3 py-2.5 fw-semibold settings-nav-item ${
+                      activeTab === 'units' ? 'active' : ''
+                    }`}
+                    onClick={() => setActiveTab('units')}
+                  >
+                    <i className="bi bi-calculator fs-5"></i>
+                    <span>Unit Conversions</span>
+                  </button>
+
                   {/* System Preferences */}
                   <button
                     className={`nav-link text-start d-flex align-items-center gap-3 px-3 py-2.5 fw-semibold settings-nav-item ${
@@ -1226,7 +1557,7 @@ export default function SettingsPage() {
                     onClick={() => setActiveTab('preferences')}
                   >
                     <i className="bi bi-sliders fs-5"></i>
-                    <span>{t('common', 'settings')}</span>
+                    <span>System Preferences</span>
                   </button>
 
                   {/* Notifications */}
@@ -1299,6 +1630,7 @@ export default function SettingsPage() {
                 ) : (
                   <div>
                     {activeTab === 'general' && renderGeneralSettings()}
+                    {activeTab === 'units' && renderGlobalUnits()}
                     {activeTab === 'preferences' && renderSystemPreferences()}
                     {activeTab === 'notifications' && renderNotifications()}
                     {activeTab === 'security' && renderSecurity()}

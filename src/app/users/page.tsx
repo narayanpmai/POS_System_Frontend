@@ -44,24 +44,27 @@ export default function UserControlPage() {
   const [resetUserId, setResetUserId] = useState<number | null>(null);
   const [newPassword, setNewPassword] = useState('');
 
+  const [totalUsers, setTotalUsers] = useState(0);
+
   useEffect(() => {
     if (!token) return;
     loadData();
-  }, [token]);
+  }, [token, currentPage, rowsPerPage]);
 
   const loadData = async () => {
     setLoading(true);
     try {
       const [uRes, rRes] = await Promise.all([
-        api.get('/users'),
+        api.get(`/users?page=${currentPage}&limit=${rowsPerPage}`),
         api.get('/users/roles')
       ]);
-      setUsers(uRes.data);
+      setUsers(uRes.data?.items || uRes.data || []);
+      setTotalUsers(uRes.data?.total || (Array.isArray(uRes.data) ? uRes.data.length : 0));
       setRoles(rRes.data);
 
       if (user?.role?.name === 'Super Admin') {
         const cRes = await api.get('/companies');
-        setCompanies(cRes.data);
+        setCompanies(cRes.data?.items || cRes.data || []);
       }
     } catch (err) {
       console.error(err);
@@ -330,7 +333,7 @@ export default function UserControlPage() {
             <tbody>
               {loading ? (
                 <tr><td colSpan={7} className="text-center py-4">Loading users...</td></tr>
-              ) : applyPagination(users, currentPage, rowsPerPage).map((u) => (
+              ) : users.map((u) => (
                 <tr key={u.id}>
                   <td className="fw-bold">{u.name}</td>
                   <td>{u.email}</td>
@@ -394,7 +397,7 @@ export default function UserControlPage() {
         </div>
 
         <TableControls 
-          totalItems={users.length} 
+          total={totalUsers} 
           rowsPerPage={rowsPerPage} 
           currentPage={currentPage} 
           onRowsPerPageChange={(val) => { setRowsPerPage(val); setCurrentPage(1); }} 

@@ -1,20 +1,40 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
-import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import TableControls, { applyPagination } from '@/components/TableControls';
+import TableControls from '@/components/TableControls';
+import {
+  useGetBrandsQuery,
+  useCreateBrandMutation,
+  useUpdateBrandMutation,
+  useDeleteBrandMutation,
+} from '@/redux/api/brandsApi';
+import { Formik } from 'formik';
+import FormikInput from '@/components/form/FormikInput';
+import FormikSelect from '@/components/form/FormikSelect';
+import { brandValidationSchema } from '@/utils/validationSchemas';
 
 export default function BrandsPage() {
   const router = useRouter();
-  const { token, api } = useAuth();
   const { t } = useLanguage();
-  const [brands, setBrands] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState('');
+
+  // RTK Query hooks
+  const { data: brandData, isFetching: loading } = useGetBrandsQuery({
+    page: currentPage,
+    limit: rowsPerPage,
+    search,
+  });
+  const [createBrand] = useCreateBrandMutation();
+  const [updateBrand] = useUpdateBrandMutation();
+  const [deleteBrand] = useDeleteBrandMutation();
+
+  const brands: any[] = brandData?.items || [];
+  const totalBrands = brandData?.total || 0;
 
   // Form State
   const [isEditing, setIsEditing] = useState(false);
@@ -22,32 +42,16 @@ export default function BrandsPage() {
   const [name, setName] = useState('');
   const [status, setStatus] = useState('ACTIVE');
 
-  useEffect(() => {
-    if (!token) return;
-    loadBrands();
-  }, [token]);
-
-  const loadBrands = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/brands');
-      setBrands(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-    setLoading(false);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
     try {
       if (isEditing && editingBrandId) {
-        await api.put(`/brands/${editingBrandId}`, { name, status });
+        await updateBrand({ id: editingBrandId, data: { name, status } }).unwrap();
         alert(t('brands', 'success_update'));
       } else {
-        await api.post('/brands', { name, status });
+        await createBrand({ name, status }).unwrap();
         alert(t('brands', 'success_add'));
       }
       setName('');
@@ -62,10 +66,8 @@ export default function BrandsPage() {
         const modal = bootstrap.Modal.getInstance(modalElement);
         modal?.hide();
       }
-
-      loadBrands();
     } catch (err: any) {
-      alert(err.response?.data?.message || t('common', 'error'));
+      alert(err?.data?.message || err?.message || t('common', 'error'));
     }
   };
 
@@ -86,11 +88,10 @@ export default function BrandsPage() {
   const handleDelete = async (id: number) => {
     if (!confirm(t('brands', 'confirm_delete'))) return;
     try {
-      await api.delete(`/brands/${id}`);
+      await deleteBrand(id).unwrap();
       alert(t('brands', 'success_delete'));
-      loadBrands();
     } catch (err: any) {
-      alert(err.response?.data?.message || t('brands', 'error_delete'));
+      alert(err?.data?.message || t('brands', 'error_delete'));
     }
   };
 
@@ -124,6 +125,17 @@ export default function BrandsPage() {
           </button>
         </div>
 
+        {/* Search */}
+        <div className="mb-3 col-md-4">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Search brands by name..."
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+          />
+        </div>
+
         {/* Table */}
         <div className="table-responsive">
           <table className="table mb-0 align-middle">
@@ -146,7 +158,7 @@ export default function BrandsPage() {
                   <td colSpan={5} className="text-center py-5 text-muted">{t('brands', 'no_brands')}</td>
                 </tr>
               ) : (
-                applyPagination(brands, currentPage, rowsPerPage).map((brand, index) => (
+                brands.map((brand, index) => (
                   <tr key={brand.id}>
                     <td className="ps-3 border-bottom py-3 text-secondary">{(currentPage - 1) * rowsPerPage + index + 1}</td>
                     <td className="border-bottom fw-semibold text-dark">{brand.name}</td>
@@ -173,7 +185,7 @@ export default function BrandsPage() {
           </table>
         </div>
         <TableControls
-          total={brands.length}
+          total={totalBrands}
           currentPage={currentPage}
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={(n) => { setRowsPerPage(n); setCurrentPage(1); }}
@@ -181,42 +193,77 @@ export default function BrandsPage() {
         />
       </div>
 
-      {/* Brand Form Modal */}
-      <div className="modal fade text-dark" id="brandModal" tabIndex={-1} aria-labelledby="brandModalLabel" aria-hidden="true">
+      {/* Modal */}
+      <div className="modal fade" id="brandModal" tabIndex={-1} aria-hidden="true">
         <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content border-0 shadow-lg rounded-lg">
-            <div className="modal-header bg-primary text-white border-none p-3.5">
-              <h5 className="modal-title fw-bold" id="brandModalLabel">
+          <div className="modal-content border-0 shadow">
+            <div className="modal-header border-bottom-0 pb-0">
+              <h5 className="modal-title fw-bold text-dark">
                 {isEditing ? t('brands', 'edit_brand') : t('brands', 'add_brand')}
               </h5>
-              <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form onSubmit={handleSubmit}>
-              <div className="modal-body p-4">
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">{t('brands', 'brand_name')}</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder={t('brands', 'brand_placeholder')}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">{t('common', 'status')}</label>
-                  <select className="form-select" value={status} onChange={(e) => setStatus(e.target.value)}>
-                    <option value="ACTIVE">{t('common', 'active')}</option>
-                    <option value="INACTIVE">{t('common', 'inactive')}</option>
-                  </select>
-                </div>
-              </div>
-              <div className="modal-footer border-top p-3">
-                <button type="button" className="btn btn-light rounded-md" data-bs-dismiss="modal">{t('common', 'cancel')}</button>
-                <button type="submit" className="btn btn-primary rounded-md">{isEditing ? t('brands', 'save_changes') : t('brands', 'save_brand')}</button>
-              </div>
-            </form>
+            <Formik
+              enableReinitialize
+              initialValues={{
+                name: name || '',
+                status: status || 'ACTIVE',
+              }}
+              validationSchema={brandValidationSchema}
+              onSubmit={async (values, { setSubmitting }) => {
+                try {
+                  if (isEditing && editingBrandId) {
+                    await updateBrand({ id: editingBrandId, data: { name: values.name.trim(), status: values.status } }).unwrap();
+                    alert(t('brands', 'success_update'));
+                  } else {
+                    await createBrand({ name: values.name.trim(), status: values.status }).unwrap();
+                    alert(t('brands', 'success_add'));
+                  }
+                  setName('');
+                  setStatus('ACTIVE');
+                  setIsEditing(false);
+                  setEditingBrandId(null);
+
+                  const modalElement = document.getElementById('brandModal');
+                  if (modalElement) {
+                    const bootstrap = require('bootstrap');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    modal?.hide();
+                  }
+                } catch (err: any) {
+                  alert(err?.data?.message || err?.message || t('common', 'error'));
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+            >
+              {({ handleSubmit, isSubmitting }) => (
+                <form onSubmit={handleSubmit}>
+                  <div className="modal-body py-4">
+                    <FormikInput
+                      label={t('common', 'name')}
+                      name="name"
+                      placeholder="Enter brand name"
+                      required
+                    />
+                    <FormikSelect
+                      label={t('common', 'status')}
+                      name="status"
+                      options={[
+                        { label: t('common', 'active'), value: 'ACTIVE' },
+                        { label: t('common', 'inactive'), value: 'INACTIVE' },
+                      ]}
+                    />
+                  </div>
+                  <div className="modal-footer border-top-0 pt-0">
+                    <button type="button" className="btn btn-light" data-bs-dismiss="modal">{t('common', 'cancel')}</button>
+                    <button type="submit" className="btn btn-primary px-4" style={{ backgroundColor: '#0d6efd' }} disabled={isSubmitting}>
+                      {t('common', 'save')}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </Formik>
           </div>
         </div>
       </div>

@@ -202,35 +202,27 @@ h1, h2, h3, h4, h5, h6 {
   transition: var(--transition-smooth);
 }
 
-/* Responsive Viewport Overrides for Laptop Screens (13"-15.6") */
+/* Responsive Viewport Overrides for Laptop & Tablet Screens */
 @media (max-width: 1400px) {
   .main-content {
-    margin-left: 230px;
+    margin-left: 240px;
     padding: 20px;
   }
   .custom-sidebar {
-    width: 230px !important;
+    width: 240px !important;
   }
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1199.98px) {
   .main-content {
-    margin-left: 210px;
+    margin-left: 0 !important;
     padding: 16px;
-  }
-  .custom-sidebar {
-    width: 210px !important;
-  }
-  .sidebar-link {
-    padding: 10px 14px !important;
-    font-size: 0.88rem !important;
   }
 }
 
-@media (max-width: 991.98px) {
+@media (max-width: 575.98px) {
   .main-content {
-    margin-left: 0;
-    padding: 16px;
+    padding: 12px 10px;
   }
 }
 

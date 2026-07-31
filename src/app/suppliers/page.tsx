@@ -1,20 +1,39 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
-import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-
-import TableControls, { applyPagination } from '@/components/TableControls';
+import TableControls from '@/components/TableControls';
+import {
+  useGetSuppliersQuery,
+  useCreateSupplierMutation,
+  useUpdateSupplierMutation,
+  useDeleteSupplierMutation,
+} from '@/redux/api/suppliersApi';
+import { Formik } from 'formik';
+import FormikInput from '@/components/form/FormikInput';
+import { supplierValidationSchema } from '@/utils/validationSchemas';
+
 export default function SuppliersPage() {
   const router = useRouter();
-  const { token, api } = useAuth();
   const { t } = useLanguage();
-  const [suppliers, setSuppliers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState('');
+
+  // RTK Query hooks
+  const { data: supplierData, isFetching: loading } = useGetSuppliersQuery({
+    page: currentPage,
+    limit: rowsPerPage,
+    search,
+  });
+  const [createSupplier] = useCreateSupplierMutation();
+  const [updateSupplier] = useUpdateSupplierMutation();
+  const [deleteSupplier] = useDeleteSupplierMutation();
+
+  const suppliers: any[] = supplierData?.items || [];
+  const totalSuppliers = supplierData?.total || 0;
 
   // Form State
   const [isEditing, setIsEditing] = useState(false);
@@ -24,22 +43,6 @@ export default function SuppliersPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
-
-  useEffect(() => {
-    if (!token) return;
-    loadSuppliers();
-  }, [token]);
-
-  const loadSuppliers = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/suppliers');
-      setSuppliers(res.data.items || []);
-    } catch (err) {
-      console.error(err);
-    }
-    setLoading(false);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,10 +57,10 @@ export default function SuppliersPage() {
 
     try {
       if (isEditing && editingSupplierId) {
-        await api.put(`/suppliers/${editingSupplierId}`, payload);
+        await updateSupplier({ id: editingSupplierId, data: payload }).unwrap();
         alert(t('suppliers', 'success_update'));
       } else {
-        await api.post('/suppliers', payload);
+        await createSupplier(payload).unwrap();
         alert(t('suppliers', 'success_add'));
       }
       
@@ -76,10 +79,8 @@ export default function SuppliersPage() {
         const modal = bootstrap.Modal.getInstance(modalElement);
         modal?.hide();
       }
-
-      loadSuppliers();
     } catch (err: any) {
-      alert(err.response?.data?.message || t('common', 'error'));
+      alert(err?.data?.message || err?.message || t('common', 'error'));
     }
   };
 
@@ -102,11 +103,10 @@ export default function SuppliersPage() {
   const handleDelete = async (id: number) => {
     if (!confirm(t('suppliers', 'confirm_delete'))) return;
     try {
-      await api.delete(`/suppliers/${id}`);
+      await deleteSupplier(id).unwrap();
       alert(t('suppliers', 'success_delete'));
-      loadSuppliers();
     } catch (err: any) {
-      alert(err.response?.data?.message || t('suppliers', 'error_delete'));
+      alert(err?.data?.message || t('suppliers', 'error_delete'));
     }
   };
 
@@ -142,6 +142,17 @@ export default function SuppliersPage() {
           </button>
         </div>
 
+        {/* Search */}
+        <div className="mb-3 col-md-4">
+          <input
+            type="text"
+            className="form-control"
+            placeholder="Search suppliers by name, phone or email..."
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
+          />
+        </div>
+
         {/* Table */}
         <div className="table-responsive">
           <table className="table mb-0 align-middle">
@@ -165,7 +176,7 @@ export default function SuppliersPage() {
                   <td colSpan={6} className="text-center py-5 text-muted">{t('suppliers', 'no_suppliers')}</td>
                 </tr>
               ) : (
-                applyPagination(suppliers, currentPage, rowsPerPage).map((supp, index) => (
+                suppliers.map((supp, index) => (
                   <tr key={supp.id}>
                     <td className="ps-3 border-bottom py-3 text-secondary">{(currentPage - 1) * rowsPerPage + index + 1}</td>
                     <td className="border-bottom fw-semibold text-dark">{supp.name}</td>
@@ -189,7 +200,7 @@ export default function SuppliersPage() {
           </table>
         </div>
         <TableControls
-          total={suppliers.length}
+          total={totalSuppliers}
           currentPage={currentPage}
           rowsPerPage={rowsPerPage}
           onRowsPerPageChange={(n) => { setRowsPerPage(n); setCurrentPage(1); }}
@@ -197,70 +208,99 @@ export default function SuppliersPage() {
         />
       </div>
 
-      {/* Supplier Form Modal */}
-      <div className="modal fade text-dark" id="supplierModal" tabIndex={-1} aria-labelledby="supplierModalLabel" aria-hidden="true">
-        <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '450px' }}>
-          <div className="modal-content border-0 shadow-lg rounded-lg" style={{ borderRadius: '12px', overflow: 'hidden' }}>
-            <div className="modal-header bg-white border-bottom p-3 d-flex align-items-center justify-content-between">
-              <h5 className="modal-title fw-bold text-dark m-0" id="supplierModalLabel" style={{ fontSize: '1.1rem' }}>
-                {isEditing ? t('suppliers', 'edit_supplier') : t('suppliers', 'new_supplier')}
+      {/* Modal */}
+      <div className="modal fade" id="supplierModal" tabIndex={-1} aria-hidden="true">
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content border-0 shadow">
+            <div className="modal-header border-bottom-0 pb-0">
+              <h5 className="modal-title fw-bold text-dark">
+                {isEditing ? t('suppliers', 'edit_supplier') : t('suppliers', 'add_supplier')}
               </h5>
-              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" style={{ fontSize: '0.8rem' }}></button>
+              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form onSubmit={handleSubmit}>
-              <div className="modal-body p-4" style={{ backgroundColor: 'var(--light-card)' }}>
-                <div className="mb-3">
-                  <label className="form-label fw-bold text-secondary fs-8 mb-1">{t('common', 'name')}</label>
-                  <input
-                    type="text"
-                    className="form-control border-1 p-2"
-                    placeholder=""
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                    style={{ borderRadius: '6px' }}
-                  />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-bold text-secondary fs-8 mb-1">{t('common', 'email')}</label>
-                  <input
-                    type="email"
-                    className="form-control border-1 p-2"
-                    placeholder=""
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    style={{ borderRadius: '6px' }}
-                  />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-bold text-secondary fs-8 mb-1">{t('common', 'phone')}</label>
-                  <input
-                    type="text"
-                    className="form-control border-1 p-2"
-                    placeholder=""
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    style={{ borderRadius: '6px' }}
-                  />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-bold text-secondary fs-8 mb-1">{t('common', 'address')}</label>
-                  <textarea
-                    className="form-control border-1 p-2"
-                    rows={3}
-                    placeholder=""
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    style={{ borderRadius: '6px', resize: 'none' }}
-                  />
-                </div>
-              </div>
-              <div className="modal-footer border-0 p-3 bg-white d-flex justify-content-end">
-                <button type="submit" className="btn btn-primary px-4 py-2 fw-semibold" style={{ backgroundColor: '#0066ff', border: 'none', borderRadius: '20px', fontSize: '0.9rem' }}>
-                  {t('suppliers', 'save_supplier')}
-                </button>
-              </div>
-            </form>
+            <Formik
+              enableReinitialize
+              initialValues={{
+                name: name || '',
+                email: email || '',
+                phone: phone || '',
+                address: address || '',
+              }}
+              validationSchema={supplierValidationSchema}
+              onSubmit={async (values, { setSubmitting }) => {
+                const payload = {
+                  name: values.name.trim(),
+                  email: values.email?.trim() || undefined,
+                  phone: values.phone?.trim() || undefined,
+                  address: values.address?.trim() || undefined,
+                };
+
+                try {
+                  if (isEditing && editingSupplierId) {
+                    await updateSupplier({ id: editingSupplierId, data: payload }).unwrap();
+                    alert(t('suppliers', 'success_update'));
+                  } else {
+                    await createSupplier(payload).unwrap();
+                    alert(t('suppliers', 'success_add'));
+                  }
+                  
+                  setName('');
+                  setEmail('');
+                  setPhone('');
+                  setAddress('');
+                  setIsEditing(false);
+                  setEditingSupplierId(null);
+
+                  const modalElement = document.getElementById('supplierModal');
+                  if (modalElement) {
+                    const bootstrap = require('bootstrap');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    modal?.hide();
+                  }
+                } catch (err: any) {
+                  alert(err?.data?.message || err?.message || t('common', 'error'));
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+            >
+              {({ handleSubmit, isSubmitting }) => (
+                <form onSubmit={handleSubmit}>
+                  <div className="modal-body py-4">
+                    <FormikInput
+                      label={t('common', 'name')}
+                      name="name"
+                      placeholder="Enter supplier name"
+                      required
+                    />
+                    <FormikInput
+                      label={t('common', 'email')}
+                      name="email"
+                      type="email"
+                      placeholder="supplier@example.com"
+                    />
+                    <FormikInput
+                      label={t('common', 'phone')}
+                      name="phone"
+                      placeholder="Phone number"
+                    />
+                    <FormikInput
+                      label={t('common', 'address')}
+                      name="address"
+                      type="textarea"
+                      rows={2}
+                      placeholder="Address details"
+                    />
+                  </div>
+                  <div className="modal-footer border-top-0 pt-0">
+                    <button type="button" className="btn btn-light" data-bs-dismiss="modal">{t('common', 'cancel')}</button>
+                    <button type="submit" className="btn btn-primary px-4" style={{ backgroundColor: '#0d6efd' }} disabled={isSubmitting}>
+                      {t('common', 'save')}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </Formik>
           </div>
         </div>
       </div>

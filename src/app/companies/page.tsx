@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 
 import AuthLayout from '@/components/AuthLayout';
 import { formatAdToBs } from '@/utils/nepaliDate';
+import TableControls from '@/components/TableControls';
 
 interface CompanyUser {
   id: number;
@@ -67,16 +68,21 @@ export default function CompaniesPage() {
   const [showInactive, setShowInactive] = useState(false);
   const isSuperAdmin = user?.role?.name === 'Super Admin';
 
+  const [totalCompanies, setTotalCompanies] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+
   useEffect(() => {
     if (isSuperAdmin) {
       fetchCompanies(showInactive);
     }
-  }, [isSuperAdmin, showInactive]);
+  }, [isSuperAdmin, showInactive, currentPage, rowsPerPage]);
 
   const fetchCompanies = async (includeInactive = showInactive) => {
     try {
-      const res = await api.get(`/companies?includeInactive=${includeInactive}`);
-      setCompanies(res.data);
+      const res = await api.get(`/companies?page=${currentPage}&limit=${rowsPerPage}&includeInactive=${includeInactive}`);
+      setCompanies(res.data?.items || res.data || []);
+      setTotalCompanies(res.data?.total || (Array.isArray(res.data) ? res.data.length : 0));
     } catch (err) {
       console.error('Error fetching companies', err);
     } finally {
@@ -382,6 +388,14 @@ export default function CompaniesPage() {
                 </tbody>
               </table>
             </div>
+
+            <TableControls
+              total={totalCompanies}
+              currentPage={currentPage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={(n) => { setRowsPerPage(n); setCurrentPage(1); }}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </div>
       )}

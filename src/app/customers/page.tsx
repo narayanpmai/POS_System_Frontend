@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
@@ -8,6 +8,15 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useModal } from '@/context/ModalContext';
 import { formatAdToBs } from '@/utils/nepaliDate';
 import TableControls from '@/components/TableControls';
+import {
+  useGetCustomersQuery,
+  useCreateCustomerMutation,
+  useUpdateCustomerMutation,
+  useDeleteCustomerMutation,
+} from '@/redux/api/customersApi';
+import { Formik } from 'formik';
+import FormikInput from '@/components/form/FormikInput';
+import { customerValidationSchema } from '@/utils/validationSchemas';
 
 interface Customer {
   id: number;
@@ -27,16 +36,26 @@ interface Customer {
 
 export default function CustomersPage() {
   const router = useRouter();
-  const { token, api } = useAuth();
+  const { api } = useAuth();
   const { t } = useLanguage();
   const { showAlert, showConfirm } = useModal();
 
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(true);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [totalCustomers, setTotalCustomers] = useState(0);
+
+  // RTK Query hooks
+  const { data: customerData, isFetching: loading } = useGetCustomersQuery({
+    page: currentPage,
+    limit: rowsPerPage,
+    search,
+  });
+  const [createCustomer] = useCreateCustomerMutation();
+  const [updateCustomer] = useUpdateCustomerMutation();
+  const [deleteCustomer] = useDeleteCustomerMutation();
+
+  const customers: Customer[] = customerData?.items || [];
+  const totalCustomers = customerData?.total || 0;
 
   // CRUD Forms
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -45,24 +64,6 @@ export default function CustomersPage() {
   });
 
   const [activeHistoryCustomer, setActiveHistoryCustomer] = useState<Customer | null>(null);
-
-  const loadCustomers = async () => {
-    if (!token) return;
-    setLoading(true);
-    try {
-      const res = await api.get(`/customers?page=${currentPage}&limit=${rowsPerPage}&search=${search}`);
-      setCustomers(res.data.items || []);
-      setTotalCustomers(res.data.total || 0);
-      setLoading(false);
-    } catch (err) {
-      console.error('Error fetching customers directory:', err);
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadCustomers();
-  }, [token, currentPage, rowsPerPage, search]);
 
   const handleCustomerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,10 +76,10 @@ export default function CustomersPage() {
 
     try {
       if (editingCustomer) {
-        await api.put(`/customers/${editingCustomer.id}`, payload);
+        await updateCustomer({ id: editingCustomer.id, data: payload }).unwrap();
         showAlert('Customer profile updated successfully!', { type: 'success', title: 'Success' });
       } else {
-        await api.post('/customers', payload);
+        await createCustomer(payload).unwrap();
         showAlert('Customer profile created successfully!', { type: 'success', title: 'Success' });
       }
       setCustomerForm({ name: '', email: '', phone: '', address: '' });
@@ -89,10 +90,8 @@ export default function CustomersPage() {
       const bootstrap = require('bootstrap');
       const modal = bootstrap.Modal.getInstance(modalElement);
       modal?.hide();
-
-      loadCustomers();
     } catch (err: any) {
-      showAlert(err.response?.data?.message || 'Error processing customer profile', { type: 'danger', title: 'Error' });
+      showAlert(err?.data?.message || err?.message || 'Error processing customer profile', { type: 'danger', title: 'Error' });
     }
   };
 
@@ -119,11 +118,10 @@ export default function CustomersPage() {
     if (!confirmed) return;
 
     try {
-      await api.delete(`/customers/${id}`);
+      await deleteCustomer(id).unwrap();
       showAlert('Customer successfully removed', { type: 'success', title: 'Customer Deleted' });
-      loadCustomers();
     } catch (err: any) {
-      showAlert(err.response?.data?.message || 'Cannot delete customer with purchase history', { type: 'warning', title: 'Cannot Delete' });
+      showAlert(err?.data?.message || 'Cannot delete customer with purchase history', { type: 'warning', title: 'Cannot Delete' });
     }
   };
 
@@ -279,55 +277,78 @@ export default function CustomersPage() {
               </h5>
               <button type="button" className="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form onSubmit={handleCustomerSubmit}>
-              <div className="modal-body p-4">
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">{t('customer', 'customer_name')}</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="E.g. Richard Hendricks"
-                    value={customerForm.name}
-                    onChange={(e) => setCustomerForm({ ...customerForm, name: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">{t('common', 'phone')}</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="E.g. +1 555-0199"
-                    value={customerForm.phone}
-                    onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })}
-                  />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">{t('common', 'email')}</label>
-                  <input
-                    type="email"
-                    className="form-control"
-                    placeholder="E.g. richard@piedpiper.com"
-                    value={customerForm.email}
-                    onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })}
-                  />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label fw-semibold">{t('common', 'address')}</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="E.g. Palo Alto, CA"
-                    value={customerForm.address}
-                    onChange={(e) => setCustomerForm({ ...customerForm, address: e.target.value })}
-                  />
-                </div>
-              </div>
-              <div className="modal-footer border-top p-3">
-                <button type="button" className="btn btn-light rounded-md" data-bs-dismiss="modal">{t('common', 'cancel')}</button>
-                <button type="submit" className="btn btn-primary rounded-md">{t('common', 'save')}</button>
-              </div>
-            </form>
+            <Formik
+              enableReinitialize
+              initialValues={{
+                name: customerForm.name || '',
+                email: customerForm.email || '',
+                phone: customerForm.phone || '',
+                address: customerForm.address || '',
+              }}
+              validationSchema={customerValidationSchema}
+              onSubmit={async (values, { setSubmitting }) => {
+                const payload = {
+                  name: values.name.trim(),
+                  email: values.email?.trim() || undefined,
+                  phone: values.phone?.trim() || undefined,
+                  address: values.address?.trim() || undefined,
+                };
+
+                try {
+                  if (editingCustomer) {
+                    await updateCustomer({ id: editingCustomer.id, data: payload }).unwrap();
+                    showAlert('Customer profile updated successfully!', { type: 'success', title: 'Success' });
+                  } else {
+                    await createCustomer(payload).unwrap();
+                    showAlert('Customer profile created successfully!', { type: 'success', title: 'Success' });
+                  }
+                  setCustomerForm({ name: '', email: '', phone: '', address: '' });
+                  setEditingCustomer(null);
+
+                  const modalElement = document.getElementById('customerModal');
+                  const bootstrap = require('bootstrap');
+                  const modal = bootstrap.Modal.getInstance(modalElement);
+                  modal?.hide();
+                } catch (err: any) {
+                  showAlert(err?.data?.message || err?.message || 'Error processing customer profile', { type: 'danger', title: 'Error' });
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+            >
+              {({ handleSubmit, isSubmitting }) => (
+                <form onSubmit={handleSubmit}>
+                  <div className="modal-body p-4">
+                    <FormikInput
+                      label={t('customer', 'customer_name')}
+                      name="name"
+                      placeholder="E.g. Richard Hendricks"
+                      required
+                    />
+                    <FormikInput
+                      label={t('common', 'phone')}
+                      name="phone"
+                      placeholder="E.g. +1 555-0199"
+                    />
+                    <FormikInput
+                      label={t('common', 'email')}
+                      name="email"
+                      type="email"
+                      placeholder="E.g. richard@piedpiper.com"
+                    />
+                    <FormikInput
+                      label={t('common', 'address')}
+                      name="address"
+                      placeholder="E.g. Palo Alto, CA"
+                    />
+                  </div>
+                  <div className="modal-footer border-top p-3">
+                    <button type="button" className="btn btn-light rounded-md" data-bs-dismiss="modal">{t('common', 'cancel')}</button>
+                    <button type="submit" className="btn btn-primary rounded-md" disabled={isSubmitting}>{t('common', 'save')}</button>
+                  </div>
+                </form>
+              )}
+            </Formik>
           </div>
         </div>
       </div>

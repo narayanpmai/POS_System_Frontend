@@ -78,6 +78,58 @@ export default function POSPage() {
   // Hardware Barcode Scanner Ref & Integration (Smart HC-6052 & USB HID presentation scanners)
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Shift Register States
+  const [currentShift, setCurrentShift] = useState<any | null>(null);
+  const [showShiftModal, setShowShiftModal] = useState(false);
+  const [shiftMode, setShiftMode] = useState<'START' | 'CLOSE'>('START');
+  const [openingFloat, setOpeningFloat] = useState<number>(5000);
+  const [closingCount, setClosingCount] = useState<number>(0);
+  const [reconciliationSummary, setReconciliationSummary] = useState<any | null>(null);
+  const [submittingShift, setSubmittingShift] = useState(false);
+
+  const fetchCurrentShift = async () => {
+    try {
+      const res = await api.get('/shifts/current');
+      setCurrentShift(res.data || null);
+    } catch (err) {
+      console.error('Failed to load current shift:', err);
+    }
+  };
+
+  const handleStartShiftSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSubmittingShift(true);
+      const res = await api.post('/shifts/start', { cashStart: Number(openingFloat) });
+      setCurrentShift(res.data);
+      setShowShiftModal(false);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to start shift');
+    } finally {
+      setSubmittingShift(false);
+    }
+  };
+
+  const handleCloseShiftSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSubmittingShift(true);
+      const res = await api.post('/shifts/close', { cashEnd: Number(closingCount) });
+      setReconciliationSummary(res.data);
+      setCurrentShift(null);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to close shift');
+    } finally {
+      setSubmittingShift(false);
+    }
+  };
+
+  useEffect(() => {
+    if (token) {
+      fetchCurrentShift();
+    }
+  }, [token]);
+
   // Auto-focus search input on page mount
   useEffect(() => {
     if (searchInputRef.current) {
@@ -512,6 +564,36 @@ export default function POSPage() {
               </button>
             </div>
             
+            {/* Shift Register Control Button */}
+            {currentShift ? (
+              <button
+                className="btn btn-outline-success px-3 d-flex align-items-center gap-2 border fw-semibold shadow-sm"
+                onClick={() => {
+                  setShiftMode('CLOSE');
+                  setReconciliationSummary(null);
+                  setShowShiftModal(true);
+                }}
+                title="Active Cash Register Shift - Click to Close Shift & Reconcile"
+              >
+                <i className="bi bi-cash-stack text-success fs-5"></i>
+                <span className="d-none d-md-inline">Shift Active (Float: Rs. {currentShift.cashStart})</span>
+                <span className="badge bg-success text-white">Close Shift</span>
+              </button>
+            ) : (
+              <button
+                className="btn btn-warning px-3 d-flex align-items-center gap-2 border fw-semibold shadow-sm text-dark"
+                onClick={() => {
+                  setShiftMode('START');
+                  setReconciliationSummary(null);
+                  setShowShiftModal(true);
+                }}
+                title="Start Cashier Shift & Set Opening Cash Float"
+              >
+                <i className="bi bi-door-open-fill text-dark fs-5"></i>
+                <span>Open Shift Float</span>
+              </button>
+            )}
+
             <button 
               className="btn btn-outline-secondary px-3 d-flex align-items-center justify-content-center border"
               style={{ borderRadius: '6px', border: '1px solid #dee2e6', backgroundColor: 'var(--light-card)' }}
@@ -909,6 +991,129 @@ export default function POSPage() {
           </div>
         </div>
       </div>
+      {/* ==========================================
+          SHIFT REGISTER MODAL (OPEN / CLOSE SHIFT)
+          ========================================== */}
+      {showShiftModal && (
+        <div className="modal d-block tab-active" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1060 }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content rounded-4 border-0 shadow-lg" style={{ backgroundColor: 'var(--light-card)' }}>
+              <div className="modal-header border-bottom py-3">
+                <h5 className="modal-title fw-bold d-flex align-items-center gap-2">
+                  <i className={`bi ${shiftMode === 'START' ? 'bi-door-open-fill text-warning' : 'bi-cash-register text-primary'}`}></i>
+                  {shiftMode === 'START' ? 'Start Shift (Opening Cash Float)' : 'Close Shift & Drawer Reconciliation'}
+                </h5>
+                <button type="button" className="btn-close" onClick={() => setShowShiftModal(false)}></button>
+              </div>
+
+              {shiftMode === 'START' ? (
+                <form onSubmit={handleStartShiftSubmit}>
+                  <div className="modal-body p-4">
+                    <p className="text-muted small mb-3">
+                      Enter the initial cash float handed to you at the beginning of your cashier counter shift.
+                    </p>
+                    <div className="mb-3">
+                      <label className="form-label fw-bold">Opening Cash Float (Rs.)</label>
+                      <div className="input-group input-group-lg">
+                        <span className="input-group-text bg-light fw-bold">Rs.</span>
+                        <input
+                          type="number"
+                          className="form-control fw-bold"
+                          value={openingFloat}
+                          onChange={(e) => setOpeningFloat(Number(e.target.value))}
+                          min="0"
+                          required
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="modal-footer border-top p-3">
+                    <button type="button" className="btn btn-light" onClick={() => setShowShiftModal(false)}>Cancel</button>
+                    <button type="submit" className="btn btn-warning px-4 fw-bold text-dark" disabled={submittingShift}>
+                      {submittingShift ? 'Opening...' : 'Start Shift'}
+                    </button>
+                  </div>
+                </form>
+              ) : reconciliationSummary ? (
+                <div className="modal-body p-4 text-center">
+                  <div className={`p-3 rounded-3 mb-3 ${reconciliationSummary.isBalanced ? 'bg-success-subtle text-success border border-success' : 'bg-warning-subtle text-dark border border-warning'}`}>
+                    <i className={`bi ${reconciliationSummary.isBalanced ? 'bi-check-circle-fill fs-1' : 'bi-exclamation-triangle-fill fs-1'}`}></i>
+                    <h5 className="fw-bold mt-2">
+                      {reconciliationSummary.isBalanced ? 'Register Shift Balanced Cleanly!' : 'Shift Closed with Cash Variance'}
+                    </h5>
+                  </div>
+
+                  <div className="table-responsive text-start mb-3">
+                    <table className="table table-bordered">
+                      <tbody>
+                        <tr>
+                          <td className="fw-semibold">Opening Float:</td>
+                          <td className="text-end fw-bold">Rs. {Number(reconciliationSummary.cashStart).toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                          <td className="fw-semibold">Total Cash Sales Collected:</td>
+                          <td className="text-end fw-bold text-success">+Rs. {Number(reconciliationSummary.totalCashSales).toFixed(2)}</td>
+                        </tr>
+                        <tr className="table-light">
+                          <td className="fw-bold">Expected Drawer Cash:</td>
+                          <td className="text-end fw-bold">Rs. {Number(reconciliationSummary.expectedCash).toFixed(2)}</td>
+                        </tr>
+                        <tr className="table-light">
+                          <td className="fw-bold">Actual Counted Cash:</td>
+                          <td className="text-end fw-bold">Rs. {Number(reconciliationSummary.actualCountedCash).toFixed(2)}</td>
+                        </tr>
+                        <tr className={reconciliationSummary.variance === 0 ? 'table-success' : reconciliationSummary.variance > 0 ? 'table-info' : 'table-danger'}>
+                          <td className="fw-bold">Variance (Shortage / Over):</td>
+                          <td className="text-end fw-bold">
+                            {reconciliationSummary.variance >= 0 ? `+Rs. ${reconciliationSummary.variance.toFixed(2)}` : `-Rs. ${Math.abs(reconciliationSummary.variance).toFixed(2)}`}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <button className="btn btn-primary px-4 fw-bold w-100" onClick={() => setShowShiftModal(false)}>
+                    Done
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleCloseShiftSubmit}>
+                  <div className="modal-body p-4">
+                    <div className="alert alert-info py-2 small mb-3">
+                      <strong>Active Shift Started At:</strong> {currentShift?.startTime ? new Date(currentShift.startTime).toLocaleTimeString() : 'N/A'}<br />
+                      <strong>Opening Float:</strong> Rs. {currentShift?.cashStart || 0}
+                    </div>
+
+                    <div className="mb-3">
+                      <label className="form-label fw-bold">Counted Physical Drawer Cash (Rs.)</label>
+                      <div className="input-group input-group-lg">
+                        <span className="input-group-text bg-light fw-bold">Rs.</span>
+                        <input
+                          type="number"
+                          className="form-control fw-bold"
+                          value={closingCount}
+                          onChange={(e) => setClosingCount(Number(e.target.value))}
+                          min="0"
+                          required
+                          autoFocus
+                          placeholder="Count cash in drawer..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="modal-footer border-top p-3">
+                    <button type="button" className="btn btn-light" onClick={() => setShowShiftModal(false)}>Cancel</button>
+                    <button type="submit" className="btn btn-danger px-4 fw-bold" disabled={submittingShift}>
+                      {submittingShift ? 'Closing...' : 'Close Shift & Reconcile'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </AuthLayout>
   );
 }

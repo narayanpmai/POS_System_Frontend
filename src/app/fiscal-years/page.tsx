@@ -6,11 +6,15 @@ import { useAuth, FiscalYear } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBsFull, toDevanagari } from '@/utils/nepaliDate';
 import BSDatePicker from '@/components/BSDatePicker';
+import TableControls from '@/components/TableControls';
 
 export default function FiscalYearsPage() {
   const { api, refreshFiscalYear, loading: authLoading, isAuthenticated } = useAuth();
   const { t, language } = useLanguage();
   const [fiscalYears, setFiscalYears] = useState<FiscalYear[]>([]);
+  const [totalFiscalYears, setTotalFiscalYears] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
   // Form states
@@ -21,17 +25,75 @@ export default function FiscalYearsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [quickLoading, setQuickLoading] = useState<string | null>(null);
 
+  // Fiscal Year Rollover Wizard States
+  const [showRolloverModal, setShowRolloverModal] = useState(false);
+  const [rolloverStep, setRolloverStep] = useState<1 | 2 | 3>(1);
+  const [selectedFyForRollover, setSelectedFyForRollover] = useState<FiscalYear | null>(null);
+  const [rolloverSummary, setRolloverSummary] = useState<any>(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
+  const [nextFyName, setNextFyName] = useState('');
+  const [nextFyStart, setNextFyStart] = useState('');
+  const [nextFyEnd, setNextFyEnd] = useState('');
+  const [isRollingOver, setIsRollingOver] = useState(false);
+
+  const openRolloverWizard = async (fy: FiscalYear) => {
+    setSelectedFyForRollover(fy);
+    setRolloverStep(1);
+    setShowRolloverModal(true);
+    setLoadingSummary(true);
+
+    // Auto calculate next FY dates (e.g. 2083/84 -> 2084/85)
+    const yearParts = fy.name.split('/');
+    if (yearParts.length === 2) {
+      const y1 = parseInt(yearParts[0], 10) + 1;
+      const y2 = (parseInt(yearParts[1], 10) + 1).toString().padStart(2, '0');
+      setNextFyName(`${y1}/${y2}`);
+    } else {
+      setNextFyName('New Fiscal Year');
+    }
+
+    try {
+      const res = await api.get(`/fiscal-years/${fy.id}/rollover-summary`);
+      setRolloverSummary(res.data);
+    } catch (err) {
+      console.error('Failed to fetch rollover summary', err);
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
+
+  const handleExecuteRollover = async () => {
+    if (!selectedFyForRollover) return;
+    try {
+      setIsRollingOver(true);
+      await api.post(`/fiscal-years/${selectedFyForRollover.id}/close`, {
+        name: nextFyName,
+        startDate: nextFyStart || new Date().toISOString().split('T')[0],
+        endDate: nextFyEnd || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      });
+      alert(language === 'ne' ? 'आर्थिक वर्ष सफलतापूर्वक बन्द र प्रारम्भिक स्टक स्थानान्तरण गरियो!' : 'Fiscal Year successfully closed and opening stock carried forward!');
+      setShowRolloverModal(false);
+      fetchFiscalYears();
+      refreshFiscalYear();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to complete Fiscal Year rollover');
+    } finally {
+      setIsRollingOver(false);
+    }
+  };
+
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
       fetchFiscalYears();
     }
-  }, [authLoading, isAuthenticated]);
+  }, [authLoading, isAuthenticated, currentPage, rowsPerPage]);
 
   const fetchFiscalYears = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/fiscal-years');
-      setFiscalYears(res.data);
+      const res = await api.get(`/fiscal-years?page=${currentPage}&limit=${rowsPerPage}`);
+      setFiscalYears(res.data?.items || res.data || []);
+      setTotalFiscalYears(res.data?.total || (Array.isArray(res.data) ? res.data.length : 0));
     } catch (err: any) {
       console.error('Failed to load fiscal years:', err);
     } finally {
@@ -477,7 +539,12 @@ export default function FiscalYearsPage() {
                               </td>
 
                               <td className="py-3">
-                                {fy.isActive ? (
+                                {(fy as any).isClosed ? (
+                                  <span className="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-2 fw-bold shadow-sm d-inline-flex align-items-center">
+                                    <i className="bi bi-lock-fill me-1"></i>
+                                    {language === 'ne' ? '🔒 बन्द (Closed)' : '🔒 Closed'}
+                                  </span>
+                                ) : fy.isActive ? (
                                   <span className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2 fw-bold shadow-sm d-inline-flex align-items-center">
                                     <span className="p-1 bg-success rounded-circle me-2" style={{ width: '8px', height: '8px' }}></span>
                                     {language === 'ne' ? 'सक्रिय (चालु वर्ष)' : 'Active (Current)'}
@@ -492,7 +559,19 @@ export default function FiscalYearsPage() {
 
                               <td className="text-end py-3">
                                 <div className="d-flex justify-content-end align-items-center gap-2">
-                                  {!fy.isActive && (
+                                  {fy.isActive && !(fy as any).isClosed && (
+                                    <button
+                                      type="button"
+                                      className="btn btn-sm btn-outline-warning text-dark fw-bold rounded-pill px-3 py-1 d-inline-flex align-items-center hover-lift shadow-sm"
+                                      onClick={() => openRolloverWizard(fy)}
+                                      title="Close & Rollover Fiscal Year"
+                                    >
+                                      <i className="bi bi-arrow-repeat me-1 text-primary"></i>
+                                      {language === 'ne' ? 'रोलओभर / बन्द गर्नुहोस्' : 'Close & Rollover'}
+                                    </button>
+                                  )}
+
+                                  {!fy.isActive && !(fy as any).isClosed && (
                                     <button
                                       type="button"
                                       className="btn btn-sm btn-outline-success fw-bold rounded-pill px-3 py-1 d-inline-flex align-items-center hover-lift shadow-sm"
@@ -544,11 +623,214 @@ export default function FiscalYearsPage() {
                     </tbody>
                   </table>
                 </div>
+                <TableControls
+                  total={totalFiscalYears}
+                  currentPage={currentPage}
+                  rowsPerPage={rowsPerPage}
+                  onRowsPerPageChange={(n) => { setRowsPerPage(n); setCurrentPage(1); }}
+                  onPageChange={setCurrentPage}
+                />
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* 3-STEP FISCAL YEAR ROLLOVER WIZARD MODAL */}
+      {showRolloverModal && selectedFyForRollover && (
+        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}>
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+              <div className="modal-header bg-primary text-white py-3 px-4">
+                <div className="d-flex align-items-center gap-2">
+                  <i className="bi bi-arrow-repeat fs-4"></i>
+                  <div>
+                    <h5 className="modal-title fw-bold m-0">Fiscal Year Rollover Wizard</h5>
+                    <small className="opacity-75">Closing Period: {selectedFyForRollover.name}</small>
+                  </div>
+                </div>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setShowRolloverModal(false)}></button>
+              </div>
+
+              <div className="modal-body p-4">
+                {/* Step Progress Bar */}
+                <div className="d-flex justify-content-between mb-4 position-relative">
+                  <div className={`step-item ${rolloverStep >= 1 ? 'active text-primary fw-bold' : 'text-muted'}`}>
+                    <span className="badge rounded-circle me-1 bg-primary text-white">1</span> Financial Audit
+                  </div>
+                  <div className={`step-item ${rolloverStep >= 2 ? 'active text-primary fw-bold' : 'text-muted'}`}>
+                    <span className="badge rounded-circle me-1 bg-primary text-white">2</span> Next Period Setup
+                  </div>
+                  <div className={`step-item ${rolloverStep >= 3 ? 'active text-primary fw-bold' : 'text-muted'}`}>
+                    <span className="badge rounded-circle me-1 bg-primary text-white">3</span> Confirm Stock Rollover
+                  </div>
+                </div>
+
+                {/* STEP 1: FINANCIAL AUDIT SUMMARY */}
+                {rolloverStep === 1 && (
+                  <div>
+                    <h6 className="fw-bold text-dark mb-3">Step 1: Period Financial & Inventory Summary</h6>
+                    {loadingSummary ? (
+                      <div className="text-center py-5">
+                        <span className="spinner-border text-primary"></span>
+                        <p className="small text-muted mt-2">Calculating financial balances...</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="row g-3 mb-4">
+                          <div className="col-6 col-md-3">
+                            <div className="p-3 bg-light rounded-3 text-center border">
+                              <div className="small text-muted fw-semibold">Total Sales</div>
+                              <div className="fs-5 fw-bold text-success">Rs. {rolloverSummary?.totalSales?.toLocaleString()}</div>
+                            </div>
+                          </div>
+                          <div className="col-6 col-md-3">
+                            <div className="p-3 bg-light rounded-3 text-center border">
+                              <div className="small text-muted fw-semibold">Total Purchases</div>
+                              <div className="fs-5 fw-bold text-danger">Rs. {rolloverSummary?.totalPurchases?.toLocaleString()}</div>
+                            </div>
+                          </div>
+                          <div className="col-6 col-md-3">
+                            <div className="p-3 bg-light rounded-3 text-center border">
+                              <div className="small text-muted fw-semibold">Operating Expenses</div>
+                              <div className="fs-5 fw-bold text-warning">Rs. {rolloverSummary?.totalExpenses?.toLocaleString()}</div>
+                            </div>
+                          </div>
+                          <div className="col-6 col-md-3">
+                            <div className="p-3 bg-light rounded-3 text-center border">
+                              <div className="small text-muted fw-semibold">Net Period Profit</div>
+                              <div className={`fs-5 fw-bold ${rolloverSummary?.netProfit >= 0 ? 'text-success' : 'text-danger'}`}>
+                                Rs. {rolloverSummary?.netProfit?.toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="alert alert-info d-flex align-items-center gap-3 rounded-3">
+                          <i className="bi bi-box-seam fs-3 text-info"></i>
+                          <div>
+                            <div className="fw-bold">Active Inventory Valuation</div>
+                            <div className="small">
+                              {rolloverSummary?.totalProductsCount} products in catalog with total asset value of{' '}
+                              <strong>Rs. {rolloverSummary?.totalInventoryValue?.toLocaleString()}</strong> will be carried forward.
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* STEP 2: NEXT PERIOD SETUP */}
+                {rolloverStep === 2 && (
+                  <div>
+                    <h6 className="fw-bold text-dark mb-3">Step 2: Define Next Fiscal Year Details</h6>
+                    <div className="mb-3">
+                      <label className="form-label fw-semibold">Next Fiscal Year Name *</label>
+                      <input
+                        type="text"
+                        className="form-control form-control-lg"
+                        value={nextFyName}
+                        onChange={(e) => setNextFyName(e.target.value)}
+                        placeholder="e.g. 2084/85"
+                        required
+                      />
+                    </div>
+                    <div className="row g-3">
+                      <div className="col-md-6">
+                        <label className="form-label fw-semibold">Start Date</label>
+                        <input
+                          type="date"
+                          className="form-control"
+                          value={nextFyStart}
+                          onChange={(e) => setNextFyStart(e.target.value)}
+                        />
+                      </div>
+                      <div className="col-md-6">
+                        <label className="form-label fw-semibold">End Date</label>
+                        <input
+                          type="date"
+                          className="form-control"
+                          value={nextFyEnd}
+                          onChange={(e) => setNextFyEnd(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 3: FINAL CONFIRMATION */}
+                {rolloverStep === 3 && (
+                  <div>
+                    <div className="alert alert-warning border-warning rounded-3 p-3 mb-4">
+                      <div className="d-flex align-items-center gap-2 mb-1">
+                        <i className="bi bi-exclamation-triangle-fill fs-5 text-warning"></i>
+                        <h6 className="fw-bold m-0 text-dark">Lock & Carryforward Confirmation</h6>
+                      </div>
+                      <p className="small text-dark m-0">
+                        Closing <strong>{selectedFyForRollover.name}</strong> will lock its financial ledger permanently.
+                        All inventory stock levels will be snapshotted and carried forward into <strong>{nextFyName}</strong> as Opening Stock.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-light rounded-3 border">
+                      <div className="d-flex justify-content-between mb-2">
+                        <span className="text-muted">Closing FY:</span>
+                        <span className="fw-bold text-danger">{selectedFyForRollover.name} (🔒 Lock)</span>
+                      </div>
+                      <div className="d-flex justify-content-between mb-2">
+                        <span className="text-muted">Next Active FY:</span>
+                        <span className="fw-bold text-success">{nextFyName} (✨ Active)</span>
+                      </div>
+                      <div className="d-flex justify-content-between">
+                        <span className="text-muted">Products Stock Transferred:</span>
+                        <span className="fw-bold text-dark">{rolloverSummary?.totalProductsCount} catalog items</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="modal-footer bg-light px-4 py-3 d-flex justify-content-between">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary rounded-pill px-4"
+                  onClick={() => {
+                    if (rolloverStep > 1) setRolloverStep((s) => (s - 1) as any);
+                    else setShowRolloverModal(false);
+                  }}
+                >
+                  {rolloverStep === 1 ? 'Cancel' : 'Back'}
+                </button>
+
+                {rolloverStep < 3 ? (
+                  <button
+                    type="button"
+                    className="btn btn-primary rounded-pill px-4 fw-bold"
+                    onClick={() => setRolloverStep((s) => (s + 1) as any)}
+                    disabled={loadingSummary}
+                  >
+                    Next Step <i className="bi bi-arrow-right ms-1"></i>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-success rounded-pill px-4 fw-bold"
+                    onClick={handleExecuteRollover}
+                    disabled={isRollingOver}
+                  >
+                    {isRollingOver ? (
+                      <><span className="spinner-border spinner-border-sm me-2"></span> Executing Rollover...</>
+                    ) : (
+                      <><i className="bi bi-check-circle-fill me-1"></i> Confirm & Execute Rollover</>
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         .hover-highlight:hover {

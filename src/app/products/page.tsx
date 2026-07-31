@@ -11,6 +11,7 @@ import * as XLSX from 'xlsx';
 import TableControls, { applyPagination } from '@/components/TableControls';
 import CascadingCategorySelect from '@/components/CascadingCategorySelect';
 import { printBarcodeLabel } from '@/utils/printBarcode';
+import { useGetProductsQuery } from '@/redux/api/productsApi';
 
 interface Category {
   id: number;
@@ -66,27 +67,19 @@ export default function ProductsPage() {
   const isAdmin = user?.role?.name === 'Admin' || user?.role?.name === 'Super Admin';
 
   // Catalogs
-  const [products, setProducts] = useState<Product[]>([]);
   const [allProductsForPrint, setAllProductsForPrint] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryTree, setCategoryTree] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [storeSettings, setStoreSettings] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  // Super Admin specific state
-  // Using global filter from Navbar, so no local company selection needed
-
 
   // Pagination & Filters
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<string>('');
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [totalProducts, setTotalProducts] = useState(0);
   const [selectedProductForView, setSelectedProductForView] = useState<any>(null);
   const [selectedProductForBarcode, setSelectedProductForBarcode] = useState<any>(null);
-  const [totalPages, setTotalPages] = useState(1);
 
   const [categoryPage, setCategoryPage] = useState(1);
   const [categoryRowsPerPage, setCategoryRowsPerPage] = useState(10);
@@ -141,35 +134,40 @@ export default function ProductsPage() {
     });
   };
 
-  // Load items
+  // RTK Query for Products
+  const { data: productData, isFetching: loading, refetch: refetchProducts } = useGetProductsQuery({
+    page,
+    limit: rowsPerPage,
+    search,
+    categoryId,
+  });
+
+  const products = productData?.items || [];
+  const totalProducts = productData?.total || 0;
+  const totalPages = productData?.totalPages || 1;
+
+  // Auxiliary catalogs
   const loadCatalogs = async () => {
     if (!token) return;
-    setLoading(true);
     try {
-      const catUrl = categoryId ? `&categoryId=${categoryId}` : '';
-      const [prodRes, flatCatsRes, treeCatsRes, brandsRes, settingsRes] = await Promise.all([
-        api.get(`/products?page=${page}&limit=${rowsPerPage}&search=${search}${catUrl}`),
+      const [flatCatsRes, treeCatsRes, brandsRes, settingsRes] = await Promise.all([
         api.get(`/products/categories`),
         api.get(`/products/categories/tree`),
         api.get(`/brands`),
         api.get('/settings')
       ]);
-      setProducts(prodRes.data.items || []);
-      setTotalPages(prodRes.data.totalPages || 1);
-      setTotalProducts(prodRes.data.total || 0);
-      setCategories(flatCatsRes.data || []);
+      setCategories(Array.isArray(flatCatsRes.data) ? flatCatsRes.data : (flatCatsRes.data?.items || []));
       setCategoryTree(treeCatsRes.data || []);
-      setBrands(brandsRes.data || []);
+      setBrands(Array.isArray(brandsRes.data) ? brandsRes.data : (brandsRes.data?.items || []));
       setStoreSettings(settingsRes.data || null);
     } catch (err) {
       console.error('Error fetching catalog data:', err);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     loadCatalogs();
-  }, [token, page, rowsPerPage, search, categoryId]);
+  }, [token]);
 
   // Clean up print mode & modal backdrop on print/cancel
   useEffect(() => {
@@ -640,7 +638,7 @@ export default function ProductsPage() {
         <h4 className="fw-bold m-0 text-dark">{t('product', 'title') || 'Products'}</h4>
       </div>
       {/* Tab Selectors */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <ul className="nav nav-pills border-0 bg-white p-1 rounded-pill shadow-sm" style={{ border: '1px solid var(--border-color)' }}>
           <li className="nav-item">
             <button
@@ -974,13 +972,13 @@ export default function ProductsPage() {
                     );
                   };
 
-                  return categoryTree.map(root => renderCategoryRow(root, 0));
+                  return applyPagination(categoryTree, categoryPage, categoryRowsPerPage).map(root => renderCategoryRow(root, 0));
                 })()}
               </tbody>
             </table>
 
             <TableControls
-              total={categories.length}
+              total={categoryTree.length}
               currentPage={categoryPage}
               rowsPerPage={categoryRowsPerPage}
               onRowsPerPageChange={(n) => { setCategoryRowsPerPage(n); setCategoryPage(1); }}
@@ -1116,20 +1114,32 @@ export default function ProductsPage() {
 
                 {/* Row 3 */}
                 <div className="row g-3 mb-3">
-                  <div className="col-12 col-md-4">
-                    <label className="form-label fw-bold text-secondary fs-8 mb-1">Purchase Price <span className="text-danger">*</span></label>
-                    <div className="input-group">
-                      <span className="input-group-text bg-light text-secondary border-end-0" style={{ fontSize: '0.9rem' }}>Rs.</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="form-control border-start-0 ps-1"
-                        value={purchasePrice}
-                        onChange={(e) => setPurchasePrice(e.target.value === '' ? '' : Number(e.target.value))}
-                        required
-                      />
+                  {editingProduct ? (
+                    <div className="col-12 col-md-4">
+                      <label className="form-label fw-bold text-secondary fs-8 mb-1">
+                        Avg Purchase Price (WACP) <span className="badge bg-secondary-subtle text-secondary small ms-1">Auto</span>
+                      </label>
+                      <div className="input-group">
+                        <span className="input-group-text bg-light text-secondary border-end-0" style={{ fontSize: '0.9rem' }}>Rs.</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          className="form-control border-start-0 ps-1 bg-light text-muted"
+                          value={purchasePrice}
+                          disabled
+                          title="Purchase Price is automatically calculated via Purchases (WACP)"
+                        />
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="col-12 col-md-4 d-flex align-items-center">
+                      <div className="alert alert-info py-2 px-3 m-0 small w-100 rounded-3 border-info border-opacity-25" style={{ fontSize: '0.78rem' }}>
+                        <i className="bi bi-info-circle me-1 text-info"></i>
+                        <strong>Note:</strong> Cost Price (WACP) is auto-calculated when stock is received via <strong>Purchases</strong>.
+                      </div>
+                    </div>
+                  )}
+
                   <div className="col-12 col-md-4">
                     <label className="form-label fw-bold text-secondary fs-8 mb-1">Selling Price <span className="text-danger">*</span></label>
                     <div className="input-group">
@@ -1144,12 +1154,15 @@ export default function ProductsPage() {
                       />
                     </div>
                   </div>
+
                   <div className="col-12 col-md-4">
-                    <label className="form-label fw-bold text-secondary fs-8 mb-1">Alert Qty</label>
+                    <label className="form-label fw-bold text-secondary fs-8 mb-1">Low Stock Alert Qty <span className="text-danger">*</span></label>
                     <input
-                      type="number" step="any" className="form-control"
+                      type="number"
+                      className="form-control"
                       value={alertQty}
-                      onChange={(e) => setAlertQty(e.target.value === '' ? '' : Number(e.target.value))}
+                      onChange={(e) => setAlertQty(Number(e.target.value))}
+                      required
                     />
                   </div>
                 </div>

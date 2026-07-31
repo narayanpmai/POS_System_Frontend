@@ -25,8 +25,8 @@ export default function Sidebar() {
     { en: 'Products',      ne: 'उत्पादनहरू',            path: '/products',      icon: 'bi-box',                   show: true },
     { en: 'Stock',         ne: 'स्टक / इन्भेन्टरी',     path: '/inventory',     icon: 'bi-boxes',                 show: !isSuperAdmin },
     { en: 'Suppliers',     ne: 'आपूर्तिकर्ताहरू',       path: '/suppliers',     icon: 'bi-truck',                 show: !isSuperAdmin },
-    { en: 'Purchases',     ne: 'खरिदहरू',              path: '/purchases',     icon: 'bi-cart-check',            show: !isSuperAdmin },
-    { en: 'Purchase Returns', ne: 'खरिद फिर्ता',        path: '/purchase-returns', icon: 'bi-cart-x',             show: !isSuperAdmin },
+    { en: 'Purchases',     ne: 'खरिदहरू',              path: '/purchases',     icon: 'bi-cart-check',            show: isAdmin },
+    { en: 'Purchase Returns', ne: 'खरिद फिर्ता',        path: '/purchase-returns', icon: 'bi-cart-x',             show: isAdmin },
     { en: 'Customers',     ne: 'ग्राहकहरू',             path: '/customers',     icon: 'bi-people',                show: !isSuperAdmin },
     { en: 'Expenses',      ne: 'खर्चहरू',              path: '/expenses',      icon: 'bi-wallet2',               show: !isSuperAdmin },
     { en: 'Incomes',       ne: 'आयहरू',                path: '/incomes',       icon: 'bi-cash-stack',            show: !isSuperAdmin },
@@ -39,7 +39,7 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className="custom-sidebar d-none d-lg-flex">
+      <aside className="custom-sidebar d-none d-xl-flex">
       <div className="sidebar-header">
         <Link href="/dashboard" className="text-decoration-none">
           <div className="sidebar-brand-title d-flex align-items-center gap-2" style={{ padding: '0.5rem 0' }}>
@@ -67,7 +67,7 @@ export default function Sidebar() {
       </aside>
 
       {/* Mobile Offcanvas Sidebar */}
-      <div className="offcanvas offcanvas-start d-lg-none shadow" tabIndex={-1} id="mobileSidebar" aria-labelledby="mobileSidebarLabel" style={{ width: '280px', backgroundColor: 'var(--glass-bg)' }}>
+      <div className="offcanvas offcanvas-start d-xl-none shadow" tabIndex={-1} id="mobileSidebar" aria-labelledby="mobileSidebarLabel" style={{ width: '280px', backgroundColor: 'var(--glass-bg)' }}>
         <div className="offcanvas-header border-bottom">
           <Link href="/dashboard" className="text-decoration-none" data-bs-dismiss="offcanvas">
             <div className="sidebar-brand-title d-flex align-items-center gap-2" style={{ padding: '0.2rem 0' }}>
