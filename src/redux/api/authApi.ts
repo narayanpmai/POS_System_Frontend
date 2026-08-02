@@ -6,14 +6,14 @@ export const authApi = baseApi.injectEndpoints({
     getMe: builder.query<{ user: User }, void>({
       query: () => '/auth/me',
     }),
-    login: builder.mutation<{ user: User }, { email: string; password: string }>({
+    login: builder.mutation<{ user: User; access_token?: string }, { email: string; password: string }>({
       query: (credentials) => ({
         url: '/auth/login',
         method: 'POST',
         body: credentials,
       }),
     }),
-    register: builder.mutation<{ user: User }, { name: string; email: string; password: string; role?: string }>({
+    register: builder.mutation<{ user: User; access_token?: string }, { name: string; email: string; password: string; role?: string }>({
       query: (userData) => ({
         url: '/auth/register',
         method: 'POST',

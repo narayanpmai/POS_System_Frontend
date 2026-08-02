@@ -24,6 +24,7 @@ export interface FiscalYear {
 
 interface AuthState {
   user: User | null;
+  token: string | null;
   activeFiscalYear: FiscalYear | null;
   superAdminCompanyId: number | null;
   loading: boolean;
@@ -32,6 +33,7 @@ interface AuthState {
 
 const initialState: AuthState = {
   user: null,
+  token: null,
   activeFiscalYear: null,
   superAdminCompanyId: null,
   loading: true,
@@ -42,8 +44,11 @@ export const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setUser: (state, action: PayloadAction<User | null>) => {
-      state.user = action.payload;
+    setUser: (state, action: PayloadAction<{ user: User | null; token?: string | null }>) => {
+      state.user = action.payload.user;
+      if (action.payload.token !== undefined) {
+        state.token = action.payload.token;
+      }
       state.loading = false;
     },
     setActiveFiscalYear: (state, action: PayloadAction<FiscalYear | null>) => {
@@ -60,6 +65,7 @@ export const authSlice = createSlice({
     },
     clearAuth: (state) => {
       state.user = null;
+      state.token = null;
       state.activeFiscalYear = null;
       state.superAdminCompanyId = null;
       state.loading = false;

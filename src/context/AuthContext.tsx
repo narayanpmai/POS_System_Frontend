@@ -88,16 +88,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Initial Auth Check via RTK Query getMe
   useEffect(() => {
     const initAuth = async () => {
+      if (typeof window !== 'undefined') {
+        const path = window.location.pathname;
+        if (path === '/login' || path === '/register') {
+          dispatch(setUser({ user: null }));
+          return;
+        }
+      }
+
       try {
         const res = await dispatch(authApi.endpoints.getMe.initiate()).unwrap();
         if (res?.user) {
-          dispatch(setUser(res.user));
+          dispatch(setUser({ user: res.user }));
           refreshFiscalYear();
         }
       } catch (err) {
-        try {
-          await dispatch(authApi.endpoints.logout.initiate()).unwrap();
-        } catch (e) {}
         dispatch(clearAuth());
       }
     };
@@ -107,7 +112,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const login = async (email: string, password: string) => {
     try {
       const res = await loginMutation({ email, password }).unwrap();
-      dispatch(setUser(res.user));
+      dispatch(setUser({ user: res.user, token: res.access_token }));
       refreshFiscalYear();
       router.push('/dashboard');
     } catch (err: any) {
@@ -118,7 +123,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const register = async (name: string, email: string, password: string) => {
     try {
       const res = await registerMutation({ name, email, password }).unwrap();
-      dispatch(setUser(res.user));
+      dispatch(setUser({ user: res.user, token: res.access_token }));
       router.push('/dashboard');
     } catch (err: any) {
       throw err;
