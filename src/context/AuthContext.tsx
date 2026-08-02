@@ -1,30 +1,25 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios, { AxiosInstance } from 'axios';
-
-interface User {
-  id: number;
-  email: string;
-  name: string;
-  roleId: number;
-  active: boolean;
-  role: {
-    id: number;
-    name: string;
-    description?: string;
-  };
-  companyId: number;
-}
-
-export interface FiscalYear {
-  id: number;
-  name: string;
-  startDate: string;
-  endDate: string;
-  isActive: boolean;
-}
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState } from '@/redux/store';
+import {
+  setUser,
+  setActiveFiscalYear,
+  setSuperAdminCompanyId as setSuperAdminCompanyIdAction,
+  clearAuth,
+  User,
+  FiscalYear,
+} from '@/redux/slices/authSlice';
+import {
+  useLoginMutation,
+  useRegisterMutation,
+  useLogoutMutation,
+  useLazyGetActiveFiscalYearQuery,
+  authApi,
+} from '@/redux/api/authApi';
 
 interface AuthContextType {
   user: User | null;
@@ -46,12 +41,16 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [activeFiscalYear, setActiveFiscalYear] = useState<FiscalYear | null>(null);
-  const [superAdminCompanyId, setSuperAdminCompanyId] = useState<number | null>(null);
+  const dispatch = useDispatch();
   const router = useRouter();
+  const { user, activeFiscalYear, superAdminCompanyId, loading, error } = useSelector(
+    (state: RootState) => state.auth
+  );
+
+  const [loginMutation] = useLoginMutation();
+  const [registerMutation] = useRegisterMutation();
+  const [logoutMutation] = useLogoutMutation();
+  const [triggerFiscalYear] = useLazyGetActiveFiscalYearQuery();
 
   const getBaseURL = () => {
     let url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
@@ -61,7 +60,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   axios.defaults.baseURL = API_BASE_URL;
   axios.defaults.withCredentials = true;
 
-  // Configured Axios instance with automatic HttpOnly Cookie credentials
   const api = axios.create({
     baseURL: API_BASE_URL,
     withCredentials: true,
@@ -80,129 +78,66 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const refreshFiscalYear = async () => {
     if (!user) return;
     try {
-      const res = await api.get('/fiscal-years/active');
-      setActiveFiscalYear(res.data);
+      const fy = await triggerFiscalYear().unwrap();
+      dispatch(setActiveFiscalYear(fy));
     } catch (err) {
       console.error('Failed to load active fiscal year');
     }
   };
 
-  // Effect to load session on start via 100% HttpOnly Cookie
+  // Initial Auth Check via RTK Query getMe
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const res = await api.get('/auth/me');
-        if (res.data?.user) {
-          setUser(res.data.user);
-          api.get('/fiscal-years/active', { timeout: 3000 })
-            .then((fyRes) => setActiveFiscalYear(fyRes.data))
-            .catch(() => {});
+        const res = await dispatch(authApi.endpoints.getMe.initiate()).unwrap();
+        if (res?.user) {
+          dispatch(setUser(res.user));
+          refreshFiscalYear();
         }
       } catch (err) {
-        // Try refreshing via HttpOnly refresh_token cookie
         try {
-          const refreshRes = await api.post('/auth/refresh');
-          if (refreshRes.data) {
-            const profileRes = await api.get('/auth/me');
-            if (profileRes.data?.user) {
-              setUser(profileRes.data.user);
-              api.get('/fiscal-years/active', { timeout: 3000 })
-                .then((fyRes) => setActiveFiscalYear(fyRes.data))
-                .catch(() => {});
-            }
-          }
-        } catch (refreshErr) {
-          setUser(null);
-        }
-      } finally {
-        setLoading(false);
+          await dispatch(authApi.endpoints.logout.initiate()).unwrap();
+        } catch (e) {}
+        dispatch(clearAuth());
       }
     };
     initAuth();
-  }, []);
+  }, [dispatch]);
 
   const login = async (email: string, password: string) => {
-    setLoading(true);
-    setError(null);
     try {
-      const res = await api.post('/auth/login', { email, password });
-      const loggedUser = res.data.user;
-
-      setUser(loggedUser);
-
-      try {
-        const fyRes = await api.get('/fiscal-years/active');
-        setActiveFiscalYear(fyRes.data);
-      } catch (e) {}
-
-      setLoading(false);
+      const res = await loginMutation({ email, password }).unwrap();
+      dispatch(setUser(res.user));
+      refreshFiscalYear();
       router.push('/dashboard');
     } catch (err: any) {
-      setLoading(false);
-      const errMsg = err.response?.data?.message || 'Login failed. Please check credentials.';
-      setError(Array.isArray(errMsg) ? errMsg[0] : errMsg);
       throw err;
     }
   };
 
   const register = async (name: string, email: string, password: string) => {
-    setLoading(true);
-    setError(null);
     try {
-      const res = await api.post('/auth/register', { name, email, password, role: 'Cashier' });
-      const registeredUser = res.data.user;
-
-      setUser(registeredUser);
-
-      setLoading(false);
+      const res = await registerMutation({ name, email, password }).unwrap();
+      dispatch(setUser(res.user));
       router.push('/dashboard');
     } catch (err: any) {
-      setLoading(false);
-      const errMsg = err.response?.data?.message || 'Registration failed. Try again.';
-      setError(Array.isArray(errMsg) ? errMsg[0] : errMsg);
       throw err;
     }
   };
 
   const logout = async () => {
     try {
-      await api.post('/auth/logout');
+      await logoutMutation().unwrap();
     } catch (e) {
-      // Ignore API errors on logout
     } finally {
-      delete api.defaults.headers.common['x-company-id'];
-      delete axios.defaults.headers.common['x-company-id'];
-      setUser(null);
-      setSuperAdminCompanyId(null);
+      dispatch(clearAuth());
       window.location.href = '/login';
     }
   };
 
-  // Global Axios response interceptor for automatic HttpOnly cookie token rotation
-  useEffect(() => {
-    const interceptor = api.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
-        if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/')) {
-          originalRequest._retry = true;
-          try {
-            await api.post('/auth/refresh');
-            return api(originalRequest);
-          } catch (refreshErr) {
-            logout();
-          }
-        }
-        return Promise.reject(error);
-      }
-    );
-
-    return () => {
-      api.interceptors.response.eject(interceptor);
-    };
-  }, []);
-
-  const clearError = () => setError(null);
+  const setSuperAdminCompanyId = (id: number | null) => {
+    dispatch(setSuperAdminCompanyIdAction(id));
+  };
 
   return (
     <AuthContext.Provider
@@ -215,7 +150,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         register,
         logout,
         error,
-        clearError,
+        clearError: () => {},
         api,
         activeFiscalYear,
         superAdminCompanyId,
