@@ -47,7 +47,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeFiscalYear, setActiveFiscalYear] = useState<FiscalYear | null>(null);
@@ -62,7 +61,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   axios.defaults.baseURL = API_BASE_URL;
   axios.defaults.withCredentials = true;
 
-  // Unified configured Axios instance
+  // Configured Axios instance with automatic credentials
   const api = axios.create({
     baseURL: API_BASE_URL,
     withCredentials: true,
@@ -70,18 +69,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (superAdminCompanyId) {
-      localStorage.setItem('smartpos_superadmin_company', superAdminCompanyId.toString());
       api.defaults.headers.common['x-company-id'] = superAdminCompanyId.toString();
       axios.defaults.headers.common['x-company-id'] = superAdminCompanyId.toString();
     } else {
-      localStorage.removeItem('smartpos_superadmin_company');
       delete api.defaults.headers.common['x-company-id'];
       delete axios.defaults.headers.common['x-company-id'];
     }
   }, [superAdminCompanyId]);
 
   const refreshFiscalYear = async () => {
-    if (!token) return;
+    if (!user) return;
     try {
       const res = await api.get('/fiscal-years/active');
       setActiveFiscalYear(res.data);
@@ -90,53 +87,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Effect to load session on start and handle hard refreshes
+  // Effect to load session on start via HttpOnly Cookie
   useEffect(() => {
     const initAuth = async () => {
-      const storedToken = localStorage.getItem('smartpos_token');
-      const storedUser = localStorage.getItem('smartpos_user');
-      const storedCompanyId = localStorage.getItem('smartpos_superadmin_company');
-
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch (e) {
-          localStorage.removeItem('smartpos_user');
-          localStorage.removeItem('smartpos_token');
+      try {
+        const res = await api.get('/auth/me');
+        if (res.data?.user) {
+          setUser(res.data.user);
+          api.get('/fiscal-years/active', { timeout: 3000 })
+            .then((fyRes) => setActiveFiscalYear(fyRes.data))
+            .catch(() => {});
         }
-        
-        // Attach bearer token to axios common header
-        api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-        axios.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
-        
-        if (storedCompanyId) {
-          setSuperAdminCompanyId(parseInt(storedCompanyId, 10));
-          api.defaults.headers.common['x-company-id'] = storedCompanyId;
-          axios.defaults.headers.common['x-company-id'] = storedCompanyId;
-        }
-
-        // Fetch fiscal year asynchronously without blocking session load
-        api.get('/fiscal-years/active', { timeout: 3000 })
-          .then((fyRes) => setActiveFiscalYear(fyRes.data))
-          .catch(() => {});
-      } else {
-        // Hard Refresh Recovery: Try restoring session via HttpOnly Refresh Cookie
+      } catch (err) {
+        // Try refreshing via HttpOnly refresh_token cookie
         try {
-          const refreshToken = localStorage.getItem('smartpos_refresh_token');
-          const refreshRes = await axios.post('/auth/refresh', { refresh_token: refreshToken }, { withCredentials: true });
-          if (refreshRes.data?.access_token) {
-            const newAccessToken = refreshRes.data.access_token;
-            setToken(newAccessToken);
-            localStorage.setItem('smartpos_token', newAccessToken);
-            api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
-            axios.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
+          const refreshRes = await api.post('/auth/refresh');
+          if (refreshRes.data) {
+            const profileRes = await api.get('/auth/me');
+            if (profileRes.data?.user) {
+              setUser(profileRes.data.user);
+              api.get('/fiscal-years/active', { timeout: 3000 })
+                .then((fyRes) => setActiveFiscalYear(fyRes.data))
+                .catch(() => {});
+            }
           }
-        } catch (err) {
-          // No active session cookie found, stay logged out
+        } catch (refreshErr) {
+          setUser(null);
         }
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     initAuth();
   }, []);
@@ -146,20 +126,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setError(null);
     try {
       const res = await api.post('/auth/login', { email, password });
-      const { access_token, refresh_token, user: loggedUser } = res.data;
+      const loggedUser = res.data.user;
 
-      localStorage.setItem('smartpos_token', access_token);
-      if (refresh_token) {
-        localStorage.setItem('smartpos_refresh_token', refresh_token);
-      }
-      localStorage.setItem('smartpos_user', JSON.stringify(loggedUser));
-
-      setToken(access_token);
       setUser(loggedUser);
-
-      // Attach token
-      api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
-      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
 
       try {
         const fyRes = await api.get('/fiscal-years/active');
@@ -181,20 +150,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setError(null);
     try {
       const res = await api.post('/auth/register', { name, email, password, role: 'Cashier' });
-      const { access_token, refresh_token, user: registeredUser } = res.data;
+      const registeredUser = res.data.user;
 
-      localStorage.setItem('smartpos_token', access_token);
-      if (refresh_token) {
-        localStorage.setItem('smartpos_refresh_token', refresh_token);
-      }
-      localStorage.setItem('smartpos_user', JSON.stringify(registeredUser));
-
-      setToken(access_token);
       setUser(registeredUser);
-
-      // Attach token
-      api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
-      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
 
       setLoading(false);
       router.push('/dashboard');
@@ -208,27 +166,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = async () => {
     try {
-      const refreshToken = localStorage.getItem('smartpos_refresh_token');
-      await api.post('/auth/logout', { refresh_token: refreshToken });
+      await api.post('/auth/logout');
     } catch (e) {
       // Ignore API errors on logout
     } finally {
-      localStorage.removeItem('smartpos_token');
-      localStorage.removeItem('smartpos_refresh_token');
-      localStorage.removeItem('smartpos_user');
-      localStorage.removeItem('smartpos_superadmin_company');
-      delete api.defaults.headers.common['Authorization'];
-      delete axios.defaults.headers.common['Authorization'];
       delete api.defaults.headers.common['x-company-id'];
       delete axios.defaults.headers.common['x-company-id'];
-      setToken(null);
       setUser(null);
       setSuperAdminCompanyId(null);
       window.location.href = '/login';
     }
   };
 
-  // Setup global Axios interceptor for 401 Unauthorized with Auto-Refresh Token Retry
+  // Global Axios response interceptor for automatic HttpOnly token rotation
   useEffect(() => {
     const interceptor = api.interceptors.response.use(
       (response) => response,
@@ -237,23 +187,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/')) {
           originalRequest._retry = true;
           try {
-            const refreshToken = localStorage.getItem('smartpos_refresh_token');
-            const res = await axios.post('/auth/refresh', { refresh_token: refreshToken }, { withCredentials: true });
-            const { access_token, refresh_token: newRefreshToken } = res.data;
-
-            if (access_token) {
-              setToken(access_token);
-              localStorage.setItem('smartpos_token', access_token);
-              if (newRefreshToken) {
-                localStorage.setItem('smartpos_refresh_token', newRefreshToken);
-              }
-
-              api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
-              axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
-              originalRequest.headers['Authorization'] = `Bearer ${access_token}`;
-
-              return api(originalRequest);
-            }
+            await api.post('/auth/refresh');
+            return api(originalRequest);
           } catch (refreshErr) {
             logout();
           }
@@ -265,7 +200,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       api.interceptors.response.eject(interceptor);
     };
-  }, []); // Ignore deps warning, logout doesn't change meaningfully
+  }, []);
 
   const clearError = () => setError(null);
 
@@ -273,9 +208,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     <AuthContext.Provider
       value={{
         user,
-        token,
+        token: user ? 'cookie-authenticated' : null,
         loading,
-        isAuthenticated: !!token,
+        isAuthenticated: !!user,
         login,
         register,
         logout,
