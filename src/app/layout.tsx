@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { AuthProvider } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { ModalProvider } from '@/context/ModalContext';
+import { CustomAlertProvider } from '@/context/CustomAlertContext';
 import ReduxProvider from '@/redux/ReduxProvider';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -31,8 +32,10 @@ export default function RootLayout({
           <AuthProvider>
             <LanguageProvider>
               <ModalProvider>
-                <InitBootstrap />
-                {children}
+                <CustomAlertProvider>
+                  <InitBootstrap />
+                  {children}
+                </CustomAlertProvider>
               </ModalProvider>
             </LanguageProvider>
           </AuthProvider>

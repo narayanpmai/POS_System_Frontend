@@ -7,6 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBsFull } from '@/utils/nepaliDate';
 import { printThermalReceipt } from '@/utils/printReceipt';
 import SearchableCustomerSelect from '@/components/SearchableCustomerSelect';
+import { useCustomAlert } from '@/context/CustomAlertContext';
 
 interface UnitConversion {
   id: number;
@@ -29,8 +30,8 @@ interface Product {
   cost: number;
   stock: number;
   minStockAlert: number;
-  taxRate: number;
-  category: Category;
+  taxRate?: number;
+  category?: Category;
   unitConversions?: UnitConversion[];
 }
 
@@ -55,6 +56,7 @@ interface CartItem {
 export default function POSPage() {
   const { token, api } = useAuth();
   const { t } = useLanguage();
+  const { showAlert } = useCustomAlert();
   
   // States
   const [products, setProducts] = useState<Product[]>([]);
@@ -104,7 +106,7 @@ export default function POSPage() {
       setCurrentShift(res.data);
       setShowShiftModal(false);
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to start shift');
+      showAlert(err.response?.data?.message || 'Failed to start shift', 'Shift Error', 'error');
     } finally {
       setSubmittingShift(false);
     }
@@ -118,7 +120,7 @@ export default function POSPage() {
       setReconciliationSummary(res.data);
       setCurrentShift(null);
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to close shift');
+      showAlert(err.response?.data?.message || 'Failed to close shift', 'Shift Error', 'error');
     } finally {
       setSubmittingShift(false);
     }
@@ -184,7 +186,7 @@ export default function POSPage() {
           e.preventDefault();
           const matched = processBarcodeScan(searchTerm);
           if (!matched) {
-            alert(`No product matched barcode/SKU: "${searchTerm}"`);
+            showAlert(`No product matched barcode/SKU: "${searchTerm}"`, 'Product Not Found', 'warning');
           }
           return;
         }
@@ -193,7 +195,7 @@ export default function POSPage() {
           e.preventDefault();
           const matched = processBarcodeScan(barcodeBuffer);
           if (!matched && !isInput) {
-            alert(`No product matched scanned barcode: "${barcodeBuffer}"`);
+            showAlert(`No product matched scanned barcode: "${barcodeBuffer}"`, 'Product Not Found', 'warning');
           }
           barcodeBuffer = '';
           return;
@@ -249,7 +251,7 @@ export default function POSPage() {
   // Add Item to Cart
   const addToCart = (product: Product) => {
     if (product.stock <= 0) {
-      alert(`"${product.name}" is out of stock!`);
+      showAlert(`"${product.name}" is out of stock!`, 'Out of Stock', 'warning');
       return;
     }
 
@@ -258,7 +260,7 @@ export default function POSPage() {
     if (existingIndex > -1) {
       const currentQty = cart[existingIndex].quantity;
       if (product.stock < currentQty + 1) {
-        alert(`Insufficient stock. Only ${product.stock} units available.`);
+        showAlert(`Insufficient stock. Only ${product.stock} units available.`, 'Insufficient Stock', 'warning');
         return;
       }
       
@@ -309,7 +311,7 @@ export default function POSPage() {
       newCart.splice(existingIndex, 1);
     } else {
       if (item.product.stock < item.quantity) {
-        alert(`Insufficient stock. Only ${item.product.stock} units available.`);
+        showAlert(`Insufficient stock. Only ${item.product.stock} units available.`, 'Insufficient Stock', 'warning');
         return;
       }
       recalculateCartItem(item);
@@ -348,7 +350,7 @@ export default function POSPage() {
       }
 
       if (item.product.stock < item.quantity) {
-        alert(`Insufficient stock. Only ${item.product.stock} units available.`);
+        showAlert(`Insufficient stock. Only ${item.product.stock} units available.`, 'Insufficient Stock', 'warning');
         item.quantity = item.product.stock;
         if (!isBaseUnit && item.conversionFactor) {
           item.selectedUnitQuantity = item.quantity * item.conversionFactor;
@@ -425,7 +427,7 @@ export default function POSPage() {
   // Checkout execution
   const handleCheckoutSubmit = async () => {
     if (cart.length === 0) {
-      alert('Cart is empty!');
+      showAlert('Cart is empty!', 'Empty Cart', 'info');
       return;
     }
 
@@ -483,7 +485,7 @@ export default function POSPage() {
       setSubmittingCheckout(false);
     } catch (err: any) {
       setSubmittingCheckout(false);
-      alert(err.response?.data?.message || t('common', 'error'));
+      showAlert(err.response?.data?.message || t('common', 'error'), 'Checkout Failed', 'error');
     }
   };
 
@@ -512,7 +514,7 @@ export default function POSPage() {
       html2pdf().set(opt).from(element).save();
     } catch (err) {
       console.error('Error generating PDF:', err);
-      alert('Error generating PDF file.');
+      showAlert('Error generating PDF file.', 'Download Error', 'error');
     }
   };
 
