@@ -47,7 +47,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeFiscalYear, setActiveFiscalYear] = useState<FiscalYear | null>(null);
@@ -62,7 +61,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   axios.defaults.baseURL = API_BASE_URL;
   axios.defaults.withCredentials = true;
 
-  // Configured Axios instance with automatic credentials & header propagation
+  // Configured Axios instance with automatic HttpOnly Cookie credentials
   const api = axios.create({
     baseURL: API_BASE_URL,
     withCredentials: true,
@@ -88,15 +87,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const applyToken = (accessToken: string) => {
-    if (accessToken) {
-      setToken(accessToken);
-      api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
-      axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
-    }
-  };
-
-  // Effect to load session on start via HttpOnly Cookie & Token Fallback
+  // Effect to load session on start via 100% HttpOnly Cookie
   useEffect(() => {
     const initAuth = async () => {
       try {
@@ -112,9 +103,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
           const refreshRes = await api.post('/auth/refresh');
           if (refreshRes.data) {
-            if (refreshRes.data.access_token) {
-              applyToken(refreshRes.data.access_token);
-            }
             const profileRes = await api.get('/auth/me');
             if (profileRes.data?.user) {
               setUser(profileRes.data.user);
@@ -125,7 +113,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         } catch (refreshErr) {
           setUser(null);
-          setToken(null);
         }
       } finally {
         setLoading(false);
@@ -139,11 +126,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setError(null);
     try {
       const res = await api.post('/auth/login', { email, password });
-      const { access_token, user: loggedUser } = res.data;
+      const loggedUser = res.data.user;
 
-      if (access_token) {
-        applyToken(access_token);
-      }
       setUser(loggedUser);
 
       try {
@@ -166,11 +150,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setError(null);
     try {
       const res = await api.post('/auth/register', { name, email, password, role: 'Cashier' });
-      const { access_token, user: registeredUser } = res.data;
+      const registeredUser = res.data.user;
 
-      if (access_token) {
-        applyToken(access_token);
-      }
       setUser(registeredUser);
 
       setLoading(false);
@@ -189,18 +170,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (e) {
       // Ignore API errors on logout
     } finally {
-      delete api.defaults.headers.common['Authorization'];
-      delete axios.defaults.headers.common['Authorization'];
       delete api.defaults.headers.common['x-company-id'];
       delete axios.defaults.headers.common['x-company-id'];
-      setToken(null);
       setUser(null);
       setSuperAdminCompanyId(null);
       window.location.href = '/login';
     }
   };
 
-  // Global Axios response interceptor for automatic token rotation
+  // Global Axios response interceptor for automatic HttpOnly cookie token rotation
   useEffect(() => {
     const interceptor = api.interceptors.response.use(
       (response) => response,
@@ -209,12 +187,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/')) {
           originalRequest._retry = true;
           try {
-            const refreshRes = await api.post('/auth/refresh');
-            if (refreshRes.data?.access_token) {
-              applyToken(refreshRes.data.access_token);
-              originalRequest.headers['Authorization'] = `Bearer ${refreshRes.data.access_token}`;
-              return api(originalRequest);
-            }
+            await api.post('/auth/refresh');
+            return api(originalRequest);
           } catch (refreshErr) {
             logout();
           }
@@ -234,7 +208,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     <AuthContext.Provider
       value={{
         user,
-        token: token || (user ? 'authenticated' : null),
+        token: user ? 'cookie-authenticated' : null,
         loading,
         isAuthenticated: !!user,
         login,
