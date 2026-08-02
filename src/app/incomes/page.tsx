@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBs } from '@/utils/nepaliDate';
 import TableControls from '@/components/TableControls';
+import { toSafeArray } from '@/utils/array';
 import {
   useGetIncomesQuery,
   useCreateIncomeMutation,
@@ -21,12 +22,17 @@ export default function IncomesPage() {
   
   // Tabs & Lists State
   const [activeTab, setActiveTab] = useState<'incomes' | 'categories'>('incomes');
-  const [storeSettings, setStoreSettings] = useState<any>(null);
-  const [selectedIncome, setSelectedIncome] = useState<any>(null);
   const [categories, setCategories] = useState<any[]>([]);
   const [catLoading, setCatLoading] = useState(false);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [storeSettings, setStoreSettings] = useState<any>(null);
+
+  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [categoryPage, setCategoryPage] = useState(1);
+  const [categoryRowsPerPage, setCategoryRowsPerPage] = useState(10);
+
+  // Search State
   const [search, setSearch] = useState('');
 
   // RTK Query for Incomes
@@ -39,7 +45,7 @@ export default function IncomesPage() {
   const [updateIncome] = useUpdateIncomeMutation();
   const [deleteIncome] = useDeleteIncomeMutation();
 
-  const incomes: any[] = incomeData?.items || [];
+  const incomes: any[] = toSafeArray(incomeData);
   const totalIncomes = incomeData?.total || 0;
 
   // Income Form State
@@ -58,7 +64,6 @@ export default function IncomesPage() {
   const [categoryDescription, setCategoryDescription] = useState('');
 
   useEffect(() => {
-    if (!token) return;
     loadAuxData();
   }, [token, activeFiscalYear]);
 
@@ -69,7 +74,7 @@ export default function IncomesPage() {
         api.get('/income-categories'),
         api.get('/settings')
       ]);
-      setCategories(catRes.data?.items || catRes.data || []);
+      setCategories(toSafeArray(catRes.data));
       setStoreSettings(settingsRes?.data || null);
     } catch (err) {
       console.error('Error loading income categories:', err);

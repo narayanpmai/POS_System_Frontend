@@ -8,6 +8,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBs } from '@/utils/nepaliDate';
 import TableControls from '@/components/TableControls';
 import { useCustomAlert } from '@/context/CustomAlertContext';
+import { toSafeArray } from '@/utils/array';
 import {
   useGetExpensesQuery,
   useCreateExpenseMutation,
@@ -25,8 +26,14 @@ export default function ExpensesPage() {
   const [activeTab, setActiveTab] = useState<'expenses' | 'categories'>('expenses');
   const [categories, setCategories] = useState<any[]>([]);
   const [catLoading, setCatLoading] = useState(false);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [categoryPage, setCategoryPage] = useState(1);
+  const [categoryRowsPerPage, setCategoryRowsPerPage] = useState(10);
+
+  // Search State
   const [search, setSearch] = useState('');
 
   // RTK Query for Expenses
@@ -39,7 +46,7 @@ export default function ExpensesPage() {
   const [updateExpense] = useUpdateExpenseMutation();
   const [deleteExpense] = useDeleteExpenseMutation();
 
-  const expenses: any[] = expenseData?.items || [];
+  const expenses: any[] = toSafeArray(expenseData);
   const totalExpenses = expenseData?.total || 0;
 
   // Expense Form State
@@ -58,7 +65,6 @@ export default function ExpensesPage() {
   const [categoryDescription, setCategoryDescription] = useState('');
 
   useEffect(() => {
-    if (!token) return;
     loadCategories();
   }, [token, activeFiscalYear]);
 
@@ -66,7 +72,7 @@ export default function ExpensesPage() {
     setCatLoading(true);
     try {
       const catRes = await api.get('/expense-categories');
-      setCategories(catRes.data?.items || catRes.data || []);
+      setCategories(toSafeArray(catRes.data));
     } catch (err) {
       console.error('Error loading expense categories:', err);
     }
