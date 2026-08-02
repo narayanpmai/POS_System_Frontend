@@ -7,6 +7,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import axios from 'axios';
 import Link from 'next/link';
 import { formatAdToBs, formatAdToBsShort } from '@/utils/nepaliDate';
+import { toSafeArray } from '@/utils/array';
 
 // Chart.js imports
 import {
@@ -61,18 +62,13 @@ interface ChartTimelineItem {
 export default function DashboardPage() {
   const { token, api, activeFiscalYear, user } = useAuth();
   const { t } = useLanguage();
+
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [chartData, setChartData] = useState<ChartTimelineItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [chartLoading, setChartLoading] = useState(true);
 
-  // Super Admin specific state
-  // Using global filter from Navbar, so no local company selection needed
-
-
   useEffect(() => {
-    if (!token) return;
-
     const fetchSummary = async () => {
       try {
         const res = await api.get('/reports/dashboard-summary');
@@ -87,7 +83,7 @@ export default function DashboardPage() {
     const fetchSalesTimeline = async () => {
       try {
         const res = await api.get('/reports/sales');
-        setChartData(res.data.timeline || []);
+        setChartData(toSafeArray(res.data?.timeline || res.data));
         setChartLoading(false);
       } catch (err) {
         console.error('Error fetching sales timeline:', err);
@@ -99,15 +95,17 @@ export default function DashboardPage() {
     fetchSalesTimeline();
   }, [token, activeFiscalYear]);
 
+  const safeChartData = toSafeArray(chartData);
+
   // Chart configuration
   const lineChartData = {
-    labels: chartData.map((d) => {
+    labels: safeChartData.map((d) => {
       return formatAdToBsShort(d.date);
     }),
     datasets: [
       {
         label: t('dashboard', 'today_revenue'),
-        data: chartData.map((d) => d.sales),
+        data: safeChartData.map((d) => d.sales),
         borderColor: '#0d6efd',
         backgroundColor: 'rgba(13, 110, 253, 0.1)',
         borderWidth: 2,
@@ -145,6 +143,9 @@ export default function DashboardPage() {
     },
   };
 
+  const lowStockAlerts = toSafeArray(summary?.lowStockAlerts);
+  const recentTransactions = toSafeArray(summary?.recentTransactions);
+
   if (loading) {
     return (
       <AuthLayout>
@@ -166,21 +167,21 @@ export default function DashboardPage() {
         <div className="col-12 col-sm-6 col-md-3">
           <div className="card stat-card stat-card-blue h-100 text-center animate-fade-in-up animate-delay-100">
             <span className="text-secondary fw-semibold d-block mb-2">{t('dashboard', 'today_sales')}</span>
-            <h3 className="m-0 fw-bold fs-4" style={{ color: 'var(--primary)' }}>Rs. {summary?.salesToday.toFixed(2) || '0.00'}</h3>
+            <h3 className="m-0 fw-bold fs-4" style={{ color: 'var(--primary)' }}>Rs. {summary?.salesToday?.toFixed(2) || '0.00'}</h3>
           </div>
         </div>
 
         <div className="col-12 col-sm-6 col-md-3">
           <div className="card stat-card stat-card-orange h-100 text-center animate-fade-in-up animate-delay-200">
             <span className="text-secondary fw-semibold d-block mb-2">{t('dashboard', 'this_month')}</span>
-            <h3 className="m-0 fw-bold fs-4" style={{ color: 'var(--secondary)' }}>Rs. {summary?.salesThisMonth?.toFixed(2) || summary?.salesThisWeek.toFixed(2) || '0.00'}</h3>
+            <h3 className="m-0 fw-bold fs-4" style={{ color: 'var(--secondary)' }}>Rs. {summary?.salesThisMonth?.toFixed(2) || summary?.salesThisWeek?.toFixed(2) || '0.00'}</h3>
           </div>
         </div>
 
         <div className="col-12 col-sm-6 col-md-3">
           <div className="card stat-card stat-card-blue h-100 text-center animate-fade-in-up animate-delay-300">
             <span className="text-secondary fw-semibold d-block mb-2">{t('dashboard', 'profit')}</span>
-            <h3 className="m-0 fw-bold fs-4" style={{ color: 'var(--primary)' }}>Rs. {summary?.totalNetProfit.toFixed(2) || '0.00'}</h3>
+            <h3 className="m-0 fw-bold fs-4" style={{ color: 'var(--primary)' }}>Rs. {summary?.totalNetProfit?.toFixed(2) || '0.00'}</h3>
           </div>
         </div>
 
@@ -216,10 +217,10 @@ export default function DashboardPage() {
             </h6>
             
             <div className="d-flex flex-column gap-3 mt-4 text-center">
-              {(!summary?.lowStockAlerts || summary.lowStockAlerts.length === 0) ? (
+              {lowStockAlerts.length === 0 ? (
                 <p className="text-secondary fw-semibold mt-5">{t('common', 'no_data')}</p>
               ) : (
-                summary.lowStockAlerts.map((prod, idx) => (
+                lowStockAlerts.map((prod: any, idx: number) => (
                   <div key={idx} className="d-flex align-items-center justify-content-between p-2 border-bottom">
                     <span className="fw-semibold text-dark">{prod.name}</span>
                     <span className="badge bg-danger-subtle text-danger px-2 py-1 rounded-pill">{prod.stock} {t('common', 'stock')}</span>
@@ -251,17 +252,17 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {summary?.recentTransactions.length === 0 ? (
+                  {recentTransactions.length === 0 ? (
                     <tr>
                        <td colSpan={7} className="text-center text-muted py-4">{t('dashboard', 'no_recent_sales')}</td>
                     </tr>
                   ) : (
-                    summary?.recentTransactions.map((tx) => (
+                    recentTransactions.map((tx: any) => (
                       <tr key={tx.id}>
                         <td className="fw-bold text-dark">{tx.invoiceNo}</td>
                         <td>{formatAdToBs(tx.createdAt)}</td>
                         <td>{tx.customer?.name || t('sales', 'walk_in_customer')}</td>
-                        <td className="fw-bold">Rs. {tx.totalAmount.toFixed(2)}</td>
+                        <td className="fw-bold">Rs. {tx.totalAmount?.toFixed(2) || '0.00'}</td>
                         <td><span className="badge bg-success-subtle text-success border border-success px-2 py-1 rounded-pill">{t('common', 'paid')}</span></td>
                         <td>{tx.paymentMethod}</td>
                         <td><button className="btn btn-sm btn-light border px-3"><i className="bi bi-eye"></i></button></td>
