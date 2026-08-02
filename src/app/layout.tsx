@@ -1,10 +1,10 @@
 import React from 'react';
 import type { Metadata } from 'next';
-import { AuthProvider } from '@/context/AuthContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { ModalProvider } from '@/context/ModalContext';
 import { CustomAlertProvider } from '@/context/CustomAlertContext';
 import ReduxProvider from '@/redux/ReduxProvider';
+import AppInitializer from '@/components/AppInitializer';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import './globals.css';
@@ -29,7 +29,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <ReduxProvider>
-          <AuthProvider>
+          <AppInitializer>
             <LanguageProvider>
               <ModalProvider>
                 <CustomAlertProvider>
@@ -38,7 +38,7 @@ export default function RootLayout({
                 </CustomAlertProvider>
               </ModalProvider>
             </LanguageProvider>
-          </AuthProvider>
+          </AppInitializer>
         </ReduxProvider>
       </body>
     </html>
