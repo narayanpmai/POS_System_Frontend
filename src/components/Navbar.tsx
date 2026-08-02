@@ -125,7 +125,7 @@ export default function Navbar() {
               title="Select tenant company to filter system-wide data"
             >
               <option value="">🌐 All Companies (Global View)</option>
-              {companies.map(c => (
+              {toSafeArray(companies).map(c => (
                 <option key={c.id} value={c.id}>🏢 {c.name}</option>
               ))}
             </select>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { toSafeArray } from '@/utils/array';
 
 export interface CustomerOption {
   id: number;
@@ -21,11 +22,12 @@ interface SearchableCustomerSelectProps {
 }
 
 export default function SearchableCustomerSelect({
-  customers,
+  customers: rawCustomers,
   selectedCustomerId,
   onSelectCustomer,
   placeholder = 'Search customer by name, phone, or email...',
 }: SearchableCustomerSelectProps) {
+  const customers = toSafeArray<CustomerOption>(rawCustomers);
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);

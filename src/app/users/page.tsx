@@ -7,6 +7,7 @@ import { useModal } from '@/context/ModalContext';
 import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
 import { formatAdToBs } from '@/utils/nepaliDate';
+import { toSafeArray } from '@/utils/array';
 import TableControls, { applyPagination } from '@/components/TableControls';
 
 export default function UserControlPage() {
@@ -49,22 +50,24 @@ export default function UserControlPage() {
   useEffect(() => {
     if (!token) return;
     loadData();
-  }, [token, currentPage, rowsPerPage]);
+  }, [token, currentPage, rowsPerPage, search]);
 
   const loadData = async () => {
     setLoading(true);
     try {
       const [uRes, rRes] = await Promise.all([
-        api.get(`/users?page=${currentPage}&limit=${rowsPerPage}`),
-        api.get('/users/roles')
+        api.get(`/users?page=${currentPage}&limit=${rowsPerPage}&search=${search}`),
+        api.get('/roles')
       ]);
-      setUsers(uRes.data?.items || uRes.data || []);
-      setTotalUsers(uRes.data?.total || (Array.isArray(uRes.data) ? uRes.data.length : 0));
-      setRoles(rRes.data);
+      const safeUsers = toSafeArray(uRes.data);
+      const safeRoles = toSafeArray(rRes.data);
+      setUsers(safeUsers);
+      setTotalUsers(uRes.data?.total || safeUsers.length);
+      setRoles(safeRoles);
 
       if (user?.role?.name === 'Super Admin') {
         const cRes = await api.get('/companies');
-        setCompanies(cRes.data?.items || cRes.data || []);
+        setCompanies(toSafeArray(cRes.data));
       }
     } catch (err) {
       console.error(err);

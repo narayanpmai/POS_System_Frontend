@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useModal } from '@/context/ModalContext';
 import { useRouter } from 'next/navigation';
+import { toSafeArray } from '@/utils/array';
 
 import AuthLayout from '@/components/AuthLayout';
 import { formatAdToBs } from '@/utils/nepaliDate';
@@ -81,8 +82,9 @@ export default function CompaniesPage() {
   const fetchCompanies = async (includeInactive = showInactive) => {
     try {
       const res = await api.get(`/companies?page=${currentPage}&limit=${rowsPerPage}&includeInactive=${includeInactive}`);
-      setCompanies(res.data?.items || res.data || []);
-      setTotalCompanies(res.data?.total || (Array.isArray(res.data) ? res.data.length : 0));
+      const safeCompanies = toSafeArray(res.data);
+      setCompanies(safeCompanies);
+      setTotalCompanies(res.data?.total || safeCompanies.length);
     } catch (err) {
       console.error('Error fetching companies', err);
     } finally {

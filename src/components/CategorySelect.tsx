@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { toSafeArray } from '@/utils/array';
 
 export interface CategoryOption {
   id: number;
@@ -22,7 +23,7 @@ interface CategorySelectProps {
 }
 
 export default function CategorySelect({
-  categories,
+  categories: rawCategories,
   value,
   onChange,
   placeholder = 'Select Category',
@@ -30,6 +31,7 @@ export default function CategorySelect({
   className = '',
   disabled = false,
 }: CategorySelectProps) {
+  const categories = toSafeArray<CategoryOption>(rawCategories);
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);

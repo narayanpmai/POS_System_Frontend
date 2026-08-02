@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { toSafeArray } from '@/utils/array';
 
 export interface CategoryNode {
   id: number;
@@ -25,7 +26,7 @@ interface CascadingCategorySelectProps {
 }
 
 export default function CascadingCategorySelect({
-  categories,
+  categories: rawCategories,
   value,
   onChange,
   placeholder = 'Select Category',
@@ -33,6 +34,7 @@ export default function CascadingCategorySelect({
   className = '',
   disabled = false,
 }: CascadingCategorySelectProps) {
+  const categories = toSafeArray<CategoryNode>(rawCategories);
   const [isOpen, setIsOpen] = useState(false);
   const [activePath, setActivePath] = useState<CategoryNode[]>([]); // Active path of open submenus
   const [searchTerm, setSearchTerm] = useState('');
