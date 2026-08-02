@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBs } from '@/utils/nepaliDate';
 import TableControls from '@/components/TableControls';
+import { useCustomAlert } from '@/context/CustomAlertContext';
 import {
   useGetExpensesQuery,
   useCreateExpenseMutation,
@@ -18,6 +19,7 @@ export default function ExpensesPage() {
   const router = useRouter();
   const { token, api, activeFiscalYear } = useAuth();
   const { t } = useLanguage();
+  const { showAlert, showConfirm } = useCustomAlert();
   
   // Tabs & Lists State
   const [activeTab, setActiveTab] = useState<'expenses' | 'categories'>('expenses');
@@ -87,10 +89,10 @@ export default function ExpensesPage() {
     try {
       if (isEditing && editingExpenseId) {
         await updateExpense({ id: editingExpenseId, data: payload }).unwrap();
-        alert(t('expenses', 'success_update'));
+        showAlert(t('expenses', 'success_update'), 'Success', 'success');
       } else {
         await createExpense(payload).unwrap();
-        alert(t('expenses', 'success_add'));
+        showAlert(t('expenses', 'success_add'), 'Success', 'success');
       }
 
       // Close modal
@@ -101,7 +103,7 @@ export default function ExpensesPage() {
         modal?.hide();
       }
     } catch (err: any) {
-      alert(err?.data?.message || err?.message || t('common', 'error'));
+      showAlert(err?.data?.message || err?.message || t('common', 'error'), 'Expense Error', 'error');
     }
   };
 
@@ -123,13 +125,20 @@ export default function ExpensesPage() {
   };
 
   const handleDeleteExpense = async (id: number) => {
-    if (!confirm(t('expenses', 'confirm_delete'))) return;
-    try {
-      await deleteExpense(id).unwrap();
-      alert(t('expenses', 'success_delete'));
-    } catch (err: any) {
-      alert(err?.data?.message || t('common', 'error'));
-    }
+    showConfirm(
+      t('expenses', 'confirm_delete'),
+      async () => {
+        try {
+          await deleteExpense(id).unwrap();
+          showAlert(t('expenses', 'success_delete'), 'Deleted', 'success');
+        } catch (err: any) {
+          showAlert(err?.data?.message || t('common', 'error'), 'Delete Failed', 'error');
+        }
+      },
+      'Delete Expense',
+      'Yes, Delete',
+      'error'
+    );
   };
 
   const handleAddExpenseClick = () => {
@@ -162,10 +171,10 @@ export default function ExpensesPage() {
     try {
       if (isEditingCategory && editingCategoryId) {
         await api.put(`/expense-categories/${editingCategoryId}`, payload);
-        alert(t('common', 'success_update') || 'Category updated');
+        showAlert(t('common', 'success_update') || 'Category updated', 'Success', 'success');
       } else {
         await api.post('/expense-categories', payload);
-        alert(t('common', 'success_add') || 'Category created');
+        showAlert(t('common', 'success_add') || 'Category created', 'Success', 'success');
       }
 
       setCategoryName('');
@@ -182,7 +191,7 @@ export default function ExpensesPage() {
 
       loadCategories();
     } catch (err: any) {
-      alert(err.response?.data?.message || t('common', 'error'));
+      showAlert(err.response?.data?.message || t('common', 'error'), 'Category Error', 'error');
     }
   };
 
@@ -201,14 +210,21 @@ export default function ExpensesPage() {
   };
 
   const handleDeleteCategory = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this expense category?')) return;
-    try {
-      await api.delete(`/expense-categories/${id}`);
-      alert('Expense category deleted');
-      loadCategories();
-    } catch (err: any) {
-      alert(err.response?.data?.message || t('common', 'error'));
-    }
+    showConfirm(
+      'Are you sure you want to delete this expense category?',
+      async () => {
+        try {
+          await api.delete(`/expense-categories/${id}`);
+          showAlert('Expense category deleted', 'Deleted', 'success');
+          loadCategories();
+        } catch (err: any) {
+          showAlert(err.response?.data?.message || t('common', 'error'), 'Delete Failed', 'error');
+        }
+      },
+      'Delete Expense Category',
+      'Yes, Delete',
+      'error'
+    );
   };
 
   const handleAddCategoryClick = () => {

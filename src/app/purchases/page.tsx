@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBs } from '@/utils/nepaliDate';
 import TableControls, { applyPagination } from '@/components/TableControls';
+import { useCustomAlert } from '@/context/CustomAlertContext';
 import {
   useGetPurchasesQuery,
   useCreatePurchaseMutation,
@@ -17,6 +18,7 @@ export default function PurchasesPage() {
   const router = useRouter();
   const { token, api, activeFiscalYear } = useAuth();
   const { t } = useLanguage();
+  const { showAlert } = useCustomAlert();
   const [products, setProducts] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [auxLoading, setAuxLoading] = useState(true);
@@ -125,7 +127,7 @@ export default function PurchasesPage() {
   const submitPurchase = async () => {
     const validCart = cart.filter(c => c.productId && c.qty > 0);
     if (validCart.length === 0) {
-      alert("Please add at least one valid item.");
+      showAlert("Please add at least one valid item.", "Validation Error", "warning");
       return;
     }
     
@@ -147,15 +149,15 @@ export default function PurchasesPage() {
     try {
       if (isEditing && editingPurchaseId) {
         await updatePurchase({ id: editingPurchaseId, data: payload }).unwrap();
-        alert(t('common', 'updated_successfully') || 'Purchase Order updated successfully!');
+        showAlert(t('common', 'updated_successfully') || 'Purchase Order updated successfully!', 'Success', 'success');
       } else {
         await createPurchase(payload).unwrap();
-        alert(t('common', 'saved_successfully') || 'Purchase Order created successfully!');
+        showAlert(t('common', 'saved_successfully') || 'Purchase Order created successfully!', 'Success', 'success');
       }
 
       closeForm();
     } catch (err: any) {
-      alert(err?.data?.message || err?.message || t('common', 'error'));
+      showAlert(err?.data?.message || err?.message || t('common', 'error'), 'Purchase Error', 'error');
     }
   };
 
