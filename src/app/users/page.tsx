@@ -21,6 +21,7 @@ export default function UserControlPage() {
   const [loading, setLoading] = useState(true);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState('');
 
   // Form states
   const [showForm, setShowForm] = useState(false);
@@ -319,7 +320,24 @@ export default function UserControlPage() {
       )}
 
       <div className="card p-4 border-none shadow-sm" style={{ backgroundColor: 'var(--light-card)', border: '1px solid var(--border-color)' }}>
-        <h5 className="fw-bold mb-3">{t('users', 'title')}</h5>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h5 className="fw-bold m-0">{t('users', 'title')}</h5>
+          <div className="input-group input-group-sm" style={{ maxWidth: '300px' }}>
+            <span className="input-group-text bg-white border-end-0 text-muted">
+              <i className="bi bi-search"></i>
+            </span>
+            <input
+              type="text"
+              className="form-control border-start-0 ps-0"
+              placeholder="Search by name or email..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+            />
+          </div>
+        </div>
         <div className="table-responsive">
           <table className="table custom-table align-middle">
             <thead>
