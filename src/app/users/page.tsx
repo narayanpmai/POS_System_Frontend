@@ -58,7 +58,7 @@ export default function UserControlPage() {
     try {
       const [uRes, rRes] = await Promise.all([
         api.get(`/users?page=${currentPage}&limit=${rowsPerPage}&search=${search}`),
-        api.get('/roles')
+        api.get('/users/roles')
       ]);
       const safeUsers = toSafeArray(uRes.data);
       const safeRoles = toSafeArray(rRes.data);

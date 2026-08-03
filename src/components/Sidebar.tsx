@@ -37,6 +37,23 @@ export default function Sidebar() {
     { en: 'Settings',      ne: 'सेटिङहरू',              path: '/settings',      icon: 'bi-gear',                  show: isAdmin },
   ];
 
+  const closeMobileSidebar = () => {
+    if (typeof window !== 'undefined') {
+      const modalElement = document.getElementById('mobileSidebar');
+      if (modalElement) {
+        try {
+          const bootstrap = require('bootstrap');
+          const offcanvasInstance = bootstrap.Offcanvas.getInstance(modalElement) || new bootstrap.Offcanvas(modalElement);
+          offcanvasInstance.hide();
+        } catch (e) {}
+        modalElement.classList.remove('show');
+        const backdrops = document.querySelectorAll('.offcanvas-backdrop');
+        backdrops.forEach(b => b.remove());
+        document.body.style.overflow = '';
+      }
+    }
+  };
+
   return (
     <>
       <aside className="custom-sidebar d-none d-xl-flex">
@@ -69,7 +86,7 @@ export default function Sidebar() {
       {/* Mobile Offcanvas Sidebar */}
       <div className="offcanvas offcanvas-start d-xl-none shadow" tabIndex={-1} id="mobileSidebar" aria-labelledby="mobileSidebarLabel" style={{ width: '280px', backgroundColor: 'var(--glass-bg)' }}>
         <div className="offcanvas-header border-bottom">
-          <Link href="/dashboard" className="text-decoration-none" data-bs-dismiss="offcanvas">
+          <Link href="/dashboard" className="text-decoration-none" onClick={closeMobileSidebar}>
             <div className="sidebar-brand-title d-flex align-items-center gap-2" style={{ padding: '0.2rem 0' }}>
               <img src="/logo.png" alt="Logo" style={{ height: '30px', width: '30px', objectFit: 'contain' }} />
               <span className="text-dark" style={{ fontSize: '1.1rem', lineHeight: '1.2', fontWeight: 700 }}>KoseliGhar POS</span>
@@ -85,7 +102,7 @@ export default function Sidebar() {
                   <Link
                     key={`mobile-${item.en}`}
                     href={item.path}
-                    data-bs-dismiss="offcanvas"
+                    onClick={closeMobileSidebar}
                     className={`sidebar-link ${pathname === item.path ? 'active' : ''}`}
                   >
                     <i className={`bi ${item.icon}`}></i>

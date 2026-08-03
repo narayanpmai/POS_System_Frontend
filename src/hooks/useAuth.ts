@@ -38,6 +38,9 @@ export function useAuth() {
   const login = async (email: string, password: string) => {
     try {
       const res = await loginMutation({ email, password }).unwrap();
+      if (typeof window !== 'undefined' && res.access_token) {
+        localStorage.setItem('token', res.access_token);
+      }
       dispatch(setUser({ user: res.user, token: res.access_token }));
       refreshFiscalYear();
       router.push('/dashboard');
@@ -51,6 +54,9 @@ export function useAuth() {
   const register = async (name: string, email: string, password: string) => {
     try {
       const res = await registerMutation({ name, email, password }).unwrap();
+      if (typeof window !== 'undefined' && res.access_token) {
+        localStorage.setItem('token', res.access_token);
+      }
       dispatch(setUser({ user: res.user, token: res.access_token }));
       router.push('/dashboard');
     } catch (err: any) {
@@ -65,6 +71,9 @@ export function useAuth() {
       await logoutMutation().unwrap();
     } catch (e) {
     } finally {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+      }
       dispatch(clearAuth());
       window.location.href = '/login';
     }

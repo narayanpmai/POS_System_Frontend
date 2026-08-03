@@ -17,6 +17,10 @@ const rawBaseQuery = fetchBaseQuery({
   credentials: 'include',
   prepareHeaders: (headers, { getState }) => {
     const state = getState() as RootState;
+    const token = state.auth?.token;
+    if (token && token !== 'cookie-authenticated') {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
     const superAdminCompanyId = state.auth?.superAdminCompanyId;
     if (superAdminCompanyId) {
       headers.set('x-company-id', superAdminCompanyId.toString());
