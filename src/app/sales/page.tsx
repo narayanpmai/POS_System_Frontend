@@ -156,7 +156,7 @@ export default function SalesHistoryPage() {
             <label className="form-label text-secondary fw-semibold">{t('sales', 'from_date')}</label>
             <BSDatePicker
               value={startDate}
-              onChange={(bsDate, adDate) => {
+              onChange={(adDate) => {
                 setStartDate(adDate);
                 setCurrentPage(1);
               }}
@@ -167,7 +167,7 @@ export default function SalesHistoryPage() {
             <label className="form-label text-secondary fw-semibold">{t('sales', 'to_date')}</label>
             <BSDatePicker
               value={endDate}
-              onChange={(bsDate, adDate) => {
+              onChange={(adDate) => {
                 setEndDate(adDate);
                 setCurrentPage(1);
               }}
@@ -175,7 +175,25 @@ export default function SalesHistoryPage() {
             />
           </div>
           <div className="col-md-3">
-            <label className="form-label text-secondary fw-semibold">{t('sales', 'filter_by_category')}</label>
+            <div className="d-flex justify-content-between align-items-center mb-1">
+              <label className="form-label text-secondary fw-semibold m-0">{t('sales', 'filter_by_category')}</label>
+              {(search || startDate || endDate || categoryId) && (
+                <button
+                  type="button"
+                  className="btn btn-link btn-sm text-danger p-0 text-decoration-none fw-bold"
+                  style={{ fontSize: '0.8rem' }}
+                  onClick={() => {
+                    setSearch('');
+                    setStartDate('');
+                    setEndDate('');
+                    setCategoryId('');
+                    setCurrentPage(1);
+                  }}
+                >
+                  <i className="bi bi-x-circle"></i> Clear Filters
+                </button>
+              )}
+            </div>
             <select
               className="form-select"
               value={categoryId}
