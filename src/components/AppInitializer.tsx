@@ -6,7 +6,7 @@ import { authApi } from '@/redux/api/authApi';
 import { setUser, clearAuth, setActiveFiscalYear } from '@/redux/slices/authSlice';
 
 export default function AppInitializer({ children }: { children: React.ReactNode }) {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<any>();
 
   useEffect(() => {
     const initApp = async () => {

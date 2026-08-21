@@ -5,8 +5,10 @@ import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { Bar } from 'react-chartjs-2';
-import { formatAdToBsShort } from '@/utils/nepaliDate';
+import { formatAdToBsShort, formatAdToBsFull } from '@/utils/nepaliDate';
+import { formatStock } from '@/utils/number';
 import BSDatePicker from '@/components/BSDatePicker';
+import TableControls from '@/components/TableControls';
 import Barcode from 'react-barcode';
 import {
   Chart as ChartJS,
@@ -55,7 +57,7 @@ export default function ReportsPage() {
   const { token, api, activeFiscalYear } = useAuth();
   const { t } = useLanguage();
 
-  const [activeTab, setActiveTab] = useState<'daily' | 'closing_stock' | 'closing_balance' | 'deleted_sales' | 'barcodes'>('daily');
+  const [activeTab, setActiveTab] = useState<'daily' | 'stock_movements' | 'closing_stock' | 'closing_balance' | 'deleted_sales' | 'barcodes'>('daily');
 
   // Barcodes State
   const [products, setProducts] = useState<any[]>([]);
@@ -92,6 +94,24 @@ export default function ReportsPage() {
   // Deleted Sales State
   const [deletedSales, setDeletedSales] = useState<any[]>([]);
 
+  // Stock Movement States
+  const [stockMovements, setStockMovements] = useState<any[]>([]);
+  const [stockMovementsSummary, setStockMovementsSummary] = useState<any>({
+    totalInflow: 0,
+    totalOutflow: 0,
+    netMovement: 0,
+    inflowCount: 0,
+    outflowCount: 0,
+    totalRecords: 0,
+  });
+  const [stockMovementType, setStockMovementType] = useState<'ALL' | 'STOCK_IN' | 'STOCK_OUT'>('ALL');
+  const [stockMovementSearch, setStockMovementSearch] = useState('');
+  const [stockMovementPage, setStockMovementPage] = useState(1);
+  const [stockMovementLimit, setStockMovementLimit] = useState(25);
+  const [stockMovementTotal, setStockMovementTotal] = useState(0);
+  const [stockMovementStartDate, setStockMovementStartDate] = useState(monthAgoStr);
+  const [stockMovementEndDate, setStockMovementEndDate] = useState(todayStr);
+
   // Loaders
   const loadDailyReport = async (start: string, end: string) => {
     if (!token) return;
@@ -118,6 +138,70 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadStockMovements = async (
+    page = stockMovementPage,
+    limit = stockMovementLimit,
+    type = stockMovementType,
+    search = stockMovementSearch,
+    start = stockMovementStartDate,
+    end = stockMovementEndDate,
+  ) => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const typeParam = type !== 'ALL' ? `&type=${type}` : '';
+      const searchParam = search ? `&search=${encodeURIComponent(search)}` : '';
+      const dateParam = `&startDate=${start}&endDate=${end}`;
+      const res = await api.get(
+        `/reports/stock-movements?page=${page}&limit=${limit}${typeParam}${searchParam}${dateParam}`,
+      );
+      setStockMovements(res.data?.items || []);
+      setStockMovementTotal(res.data?.total || 0);
+      setStockMovementsSummary(
+        res.data?.summary || {
+          totalInflow: 0,
+          totalOutflow: 0,
+          netMovement: 0,
+          inflowCount: 0,
+          outflowCount: 0,
+          totalRecords: 0,
+        },
+      );
+    } catch (err) {
+      console.error('Error fetching stock movements:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const exportStockMovementsToCSV = () => {
+    if (stockMovements.length === 0) {
+      alert('No stock movements data to export');
+      return;
+    }
+    const headers = ['S.N.', 'Date (BS)', 'Date (AD)', 'Product Name', 'SKU', 'Type', 'Quantity', 'Unit', 'Reason / Reference', 'User'];
+    const rows = stockMovements.map((item, idx) => [
+      idx + 1,
+      formatAdToBsShort(item.createdAt),
+      new Date(item.createdAt).toLocaleString(),
+      `"${(item.product?.name || '').replace(/"/g, '""')}"`,
+      `"${item.product?.SKU || ''}"`,
+      item.type,
+      item.quantity,
+      item.product?.unit || 'pcs',
+      `"${(item.reason || '').replace(/"/g, '""')}"`,
+      `"${item.user?.name || ''}"`
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Stock_Audit_Trail_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const loadClosingStock = async () => {
@@ -175,6 +259,15 @@ export default function ReportsPage() {
   useEffect(() => {
     if (activeTab === 'daily') {
       loadDailyReport(startDate, endDate);
+    } else if (activeTab === 'stock_movements') {
+      loadStockMovements(
+        stockMovementPage,
+        stockMovementLimit,
+        stockMovementType,
+        stockMovementSearch,
+        stockMovementStartDate,
+        stockMovementEndDate,
+      );
     } else if (activeTab === 'closing_stock') {
       loadClosingStock();
     } else if (activeTab === 'closing_balance') {
@@ -184,16 +277,29 @@ export default function ReportsPage() {
     } else if (activeTab === 'barcodes') {
       loadProductsForBarcodes();
     }
-  }, [token, activeFiscalYear, activeTab]);
+  }, [token, activeFiscalYear, activeTab, stockMovementPage, stockMovementLimit, stockMovementType]);
 
   const handleFilter = () => {
     if (activeTab === 'daily') loadDailyReport(startDate, endDate);
+    if (activeTab === 'stock_movements') {
+      setStockMovementPage(1);
+      loadStockMovements(1, stockMovementLimit, stockMovementType, stockMovementSearch, stockMovementStartDate, stockMovementEndDate);
+    }
   };
 
   const handleReset = () => {
-    setStartDate(monthAgoStr);
-    setEndDate(todayStr);
-    if (activeTab === 'daily') loadDailyReport(monthAgoStr, todayStr);
+    if (activeTab === 'daily') {
+      setStartDate(monthAgoStr);
+      setEndDate(todayStr);
+      loadDailyReport(monthAgoStr, todayStr);
+    } else if (activeTab === 'stock_movements') {
+      setStockMovementStartDate(monthAgoStr);
+      setStockMovementEndDate(todayStr);
+      setStockMovementType('ALL');
+      setStockMovementSearch('');
+      setStockMovementPage(1);
+      loadStockMovements(1, stockMovementLimit, 'ALL', '', monthAgoStr, todayStr);
+    }
   };
 
   const formatDateLabel = (dateStr: string) => {
@@ -256,6 +362,15 @@ export default function ReportsPage() {
         </li>
         <li className="nav-item">
           <button 
+            className={`nav-link fw-bold ${activeTab === 'stock_movements' ? 'active shadow-sm' : 'bg-white text-secondary border'}`}
+            style={{ borderRadius: '8px', padding: '0.6rem 1.2rem' }}
+            onClick={() => setActiveTab('stock_movements')}
+          >
+            <i className="bi bi-arrow-left-right me-2"></i> Stock Movement Audit
+          </button>
+        </li>
+        <li className="nav-item">
+          <button 
             className={`nav-link fw-bold ${activeTab === 'closing_stock' ? 'active shadow-sm' : 'bg-white text-secondary border'}`}
             style={{ borderRadius: '8px', padding: '0.6rem 1.2rem' }}
             onClick={() => setActiveTab('closing_stock')}
@@ -291,6 +406,243 @@ export default function ReportsPage() {
           </button>
         </li>
       </ul>
+
+      {activeTab === 'stock_movements' && (
+        <div className="animate-fade-in-up">
+          {/* Top Filter Bar */}
+          <div className="card border-0 rounded-md shadow-sm p-3 mb-4 bg-white" style={{ borderRadius: '10px' }}>
+            <div className="row g-3 align-items-end">
+              <div className="col-12 col-md-3">
+                <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: '0.75rem' }}>{t('reports', 'from_date') || 'From Date'}</label>
+                <BSDatePicker
+                  value={stockMovementStartDate}
+                  onChange={(val) => setStockMovementStartDate(val)}
+                  className="form-control bg-light border-0 p-2"
+                />
+              </div>
+              <div className="col-12 col-md-3">
+                <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: '0.75rem' }}>{t('reports', 'to_date') || 'To Date'}</label>
+                <BSDatePicker
+                  value={stockMovementEndDate}
+                  onChange={(val) => setStockMovementEndDate(val)}
+                  className="form-control bg-light border-0 p-2"
+                />
+              </div>
+              <div className="col-12 col-md-2">
+                <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: '0.75rem' }}>Movement Type</label>
+                <select
+                  className="form-select bg-light border-0 p-2"
+                  style={{ height: '38px' }}
+                  value={stockMovementType}
+                  onChange={(e) => setStockMovementType(e.target.value as any)}
+                >
+                  <option value="ALL">All (In & Out)</option>
+                  <option value="STOCK_IN">Stock IN (+Purchases/Returns)</option>
+                  <option value="STOCK_OUT">Stock OUT (-Sales/Losses)</option>
+                </select>
+              </div>
+              <div className="col-12 col-md-4">
+                <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: '0.75rem' }}>Search Product / Reference</label>
+                <div className="input-group">
+                  <input
+                    type="text"
+                    className="form-control bg-light border-0 p-2"
+                    placeholder="Search product, SKU, barcode, or reason..."
+                    value={stockMovementSearch}
+                    onChange={(e) => setStockMovementSearch(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleFilter();
+                    }}
+                    style={{ height: '38px' }}
+                  />
+                  <button
+                    className="btn btn-primary px-3 fw-bold"
+                    style={{ backgroundColor: '#0d6efd', border: 'none' }}
+                    onClick={handleFilter}
+                  >
+                    <i className="bi bi-search"></i>
+                  </button>
+                  <button
+                    className="btn btn-outline-secondary px-2"
+                    onClick={handleReset}
+                    title="Reset Filters"
+                  >
+                    <i className="bi bi-arrow-counterclockwise"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Metric Summary Cards */}
+          <div className="row g-3 mb-4">
+            <div className="col-12 col-sm-6 col-xl-3">
+              <div className="card p-3 border-0 shadow-sm bg-white" style={{ borderRadius: '10px' }}>
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <span className="text-secondary fw-bold" style={{ fontSize: '0.8rem' }}>TOTAL INFLOW (+IN)</span>
+                  <span className="badge bg-success-subtle text-success p-1.5 rounded-circle"><i className="bi bi-arrow-down-left"></i></span>
+                </div>
+                <h4 className="fw-bold text-success m-0">+{formatStock(stockMovementsSummary.totalInflow)}</h4>
+                <small className="text-muted" style={{ fontSize: '0.75rem' }}>{stockMovementsSummary.inflowCount} Inflow Transactions</small>
+              </div>
+            </div>
+
+            <div className="col-12 col-sm-6 col-xl-3">
+              <div className="card p-3 border-0 shadow-sm bg-white" style={{ borderRadius: '10px' }}>
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <span className="text-secondary fw-bold" style={{ fontSize: '0.8rem' }}>TOTAL OUTFLOW (-OUT)</span>
+                  <span className="badge bg-danger-subtle text-danger p-1.5 rounded-circle"><i className="bi bi-arrow-up-right"></i></span>
+                </div>
+                <h4 className="fw-bold text-danger m-0">-{formatStock(stockMovementsSummary.totalOutflow)}</h4>
+                <small className="text-muted" style={{ fontSize: '0.75rem' }}>{stockMovementsSummary.outflowCount} Outflow Transactions</small>
+              </div>
+            </div>
+
+            <div className="col-12 col-sm-6 col-xl-3">
+              <div className="card p-3 border-0 shadow-sm bg-white" style={{ borderRadius: '10px' }}>
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <span className="text-secondary fw-bold" style={{ fontSize: '0.8rem' }}>NET MOVEMENT</span>
+                  <span className="badge bg-primary-subtle text-primary p-1.5 rounded-circle"><i className="bi bi-plus-slash-minus"></i></span>
+                </div>
+                <h4 className={`fw-bold m-0 ${stockMovementsSummary.netMovement >= 0 ? 'text-primary' : 'text-danger'}`}>
+                  {stockMovementsSummary.netMovement >= 0 ? '+' : ''}{formatStock(stockMovementsSummary.netMovement)}
+                </h4>
+                <small className="text-muted" style={{ fontSize: '0.75rem' }}>Net Inventory Stock Impact</small>
+              </div>
+            </div>
+
+            <div className="col-12 col-sm-6 col-xl-3">
+              <div className="card p-3 border-0 shadow-sm bg-white" style={{ borderRadius: '10px' }}>
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <span className="text-secondary fw-bold" style={{ fontSize: '0.8rem' }}>TOTAL EVENTS</span>
+                  <span className="badge bg-secondary-subtle text-secondary p-1.5 rounded-circle"><i className="bi bi-receipt"></i></span>
+                </div>
+                <h4 className="fw-bold text-dark m-0">{stockMovementsSummary.totalRecords}</h4>
+                <small className="text-muted" style={{ fontSize: '0.75rem' }}>Recorded Inflow/Outflow Logs</small>
+              </div>
+            </div>
+          </div>
+
+          {/* Audit Ledger Table */}
+          <div className="card p-4 border-0 shadow-sm bg-white" style={{ borderRadius: '10px' }}>
+            <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+              <h5 className="fw-bold m-0 text-dark">
+                <i className="bi bi-journal-text text-primary me-2"></i> Stock Movement Audit Ledger
+              </h5>
+              <div className="d-flex gap-2">
+                <button
+                  className="btn btn-outline-success btn-sm fw-bold d-flex align-items-center gap-1 shadow-sm"
+                  onClick={exportStockMovementsToCSV}
+                  disabled={stockMovements.length === 0}
+                >
+                  <i className="bi bi-file-earmark-excel"></i> Export Excel (CSV)
+                </button>
+              </div>
+            </div>
+
+            <div className="table-responsive mb-3">
+              <table className="table custom-table align-middle">
+                <thead>
+                  <tr>
+                    <th>Date & Time</th>
+                    <th>Product & SKU</th>
+                    <th>Movement Type</th>
+                    <th>Quantity</th>
+                    <th>Unit</th>
+                    <th>Reason / Source Reference</th>
+                    <th>Recorded By</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="text-center py-5">
+                        <div className="spinner-border text-primary" role="status"></div>
+                      </td>
+                    </tr>
+                  ) : stockMovements.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="text-center py-5 text-muted">
+                        <i className="bi bi-box-seam fs-1 d-block mb-2 text-secondary opacity-50"></i>
+                        No stock movement logs found matching selected criteria.
+                      </td>
+                    </tr>
+                  ) : (
+                    stockMovements.map((item, idx) => (
+                      <tr key={item.id}>
+                        <td>
+                          <div className="fw-bold text-dark">{formatAdToBsShort(item.createdAt)}</div>
+                          <small className="text-muted" style={{ fontSize: '0.75rem' }}>
+                            {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </small>
+                        </td>
+                        <td>
+                          <div className="fw-semibold text-dark">{item.product?.name || 'Unknown Product'}</div>
+                          {item.product?.SKU && (
+                            <span className="badge bg-light text-secondary border font-mono" style={{ fontSize: '0.72rem' }}>
+                              {item.product.SKU}
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          {item.type === 'STOCK_IN' ? (
+                            <span className="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1">
+                              <i className="bi bi-arrow-down-left me-1"></i> +STOCK IN
+                            </span>
+                          ) : (
+                            <span className="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1">
+                              <i className="bi bi-arrow-up-right me-1"></i> -STOCK OUT
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <span className={`fw-bold ${item.type === 'STOCK_IN' ? 'text-success' : 'text-danger'}`} style={{ fontSize: '0.95rem' }}>
+                            {item.type === 'STOCK_IN' ? '+' : '-'}{formatStock(item.quantity)}
+                          </span>
+                        </td>
+                        <td className="fw-medium text-secondary">{item.product?.unit || 'pcs'}</td>
+                        <td>
+                          <span className="badge bg-secondary-subtle text-dark border border-secondary-subtle px-2 py-1" style={{ fontSize: '0.78rem' }}>
+                            {item.reason || 'General Movement'}
+                          </span>
+                          {item.supplier?.name && (
+                            <div className="text-muted small mt-0.5" style={{ fontSize: '0.72rem' }}>
+                              Supplier: {item.supplier.name}
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          <div className="d-flex align-items-center gap-1.5">
+                            <i className="bi bi-person-circle text-muted"></i>
+                            <span className="fw-medium text-dark small">{item.user?.name || 'System'}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {stockMovementTotal > 0 && (
+              <TableControls
+                total={stockMovementTotal}
+                currentPage={stockMovementPage}
+                rowsPerPage={stockMovementLimit}
+                onRowsPerPageChange={(n) => {
+                  setStockMovementLimit(n);
+                  setStockMovementPage(1);
+                  loadStockMovements(1, n, stockMovementType, stockMovementSearch, stockMovementStartDate, stockMovementEndDate);
+                }}
+                onPageChange={(p) => {
+                  setStockMovementPage(p);
+                  loadStockMovements(p, stockMovementLimit, stockMovementType, stockMovementSearch, stockMovementStartDate, stockMovementEndDate);
+                }}
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       {activeTab === 'daily' && (
         <>
@@ -433,7 +785,9 @@ export default function ReportsPage() {
                           <td className="ps-3 py-3 fw-semibold text-dark">{p.name}</td>
                           <td className="py-3 text-secondary">{p.SKU}</td>
                           <td className="py-3 text-end">
-                            <span className="badge bg-primary rounded-pill px-3 py-2">{p.closingQuantity}</span>
+                            <span className="badge bg-primary rounded-pill px-3 py-2">
+                              {formatStock(p.closingQuantity)} {p.unit || ''}
+                            </span>
                           </td>
                           <td className="py-3 text-end pe-3 fw-bold text-success">
                             Rs. {p.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}

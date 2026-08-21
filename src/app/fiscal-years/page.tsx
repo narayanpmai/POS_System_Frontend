@@ -264,36 +264,57 @@ export default function FiscalYearsPage() {
                     </p>
                   </div>
 
-                  <div>
+                  <div className="d-flex align-items-center gap-3 flex-wrap">
                     {activeFY ? (
-                      <div
-                        className="p-3 px-4 d-flex align-items-center gap-3 shadow-sm"
-                        style={{
-                          backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                          backdropFilter: 'blur(10px)',
-                          border: '1px solid rgba(255, 255, 255, 0.3)',
-                          borderRadius: '16px'
-                        }}
-                      >
+                      <>
                         <div
-                          className="bg-success text-white rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm"
-                          style={{ width: '48px', height: '48px', flexShrink: 0 }}
+                          className="p-3 px-4 d-flex align-items-center gap-3 shadow-sm"
+                          style={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                            backdropFilter: 'blur(10px)',
+                            border: '1px solid rgba(255, 255, 255, 0.3)',
+                            borderRadius: '16px'
+                          }}
                         >
-                          <i className="bi bi-check-lg fs-3"></i>
+                          <div
+                            className="bg-success text-white rounded-circle p-2 d-flex align-items-center justify-content-center shadow-sm"
+                            style={{ width: '48px', height: '48px', flexShrink: 0 }}
+                          >
+                            <i className="bi bi-check-lg fs-3"></i>
+                          </div>
+                          <div>
+                            <div className="text-warning fw-bold small text-uppercase" style={{ letterSpacing: '0.5px', fontSize: '0.75rem' }}>
+                              {language === 'ne' ? 'चालु सक्रिय आर्थिक वर्ष' : 'ACTIVE FISCAL YEAR'}
+                            </div>
+                            <div className="fs-4 fw-bold text-white mb-0" style={{ lineHeight: '1.2' }}>
+                              {activeFY.name}
+                            </div>
+                            <div className="small text-white-50 mt-1 d-flex align-items-center gap-1">
+                              <i className="bi bi-calendar3 me-1"></i>
+                              {renderBsDate(activeFY.startDate).bs} — {renderBsDate(activeFY.endDate).bs}
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <div className="text-warning fw-bold small text-uppercase" style={{ letterSpacing: '0.5px', fontSize: '0.75rem' }}>
-                            {language === 'ne' ? 'चालु सक्रिय आर्थिक वर्ष' : 'ACTIVE FISCAL YEAR'}
-                          </div>
-                          <div className="fs-4 fw-bold text-white mb-0" style={{ lineHeight: '1.2' }}>
-                            {activeFY.name}
-                          </div>
-                          <div className="small text-white-50 mt-1 d-flex align-items-center gap-1">
-                            <i className="bi bi-calendar3 me-1"></i>
-                            {renderBsDate(activeFY.startDate).bs} — {renderBsDate(activeFY.endDate).bs}
-                          </div>
-                        </div>
-                      </div>
+
+                        {!(activeFY as any).isClosed && (
+                          <button
+                            type="button"
+                            className="btn btn-warning fw-bold px-4 py-3 shadow d-flex align-items-center gap-2 hover-lift"
+                            style={{ borderRadius: '14px', border: 'none' }}
+                            onClick={() => openRolloverWizard(activeFY)}
+                          >
+                            <i className="bi bi-arrow-repeat fs-5"></i>
+                            <div>
+                              <div style={{ fontSize: '0.9rem', lineHeight: '1.2' }}>
+                                {language === 'ne' ? 'आर्थिक वर्ष बन्द तथा रोलओभर' : 'Close & Rollover FY'}
+                              </div>
+                              <small className="text-dark opacity-75" style={{ fontSize: '0.72rem' }}>
+                                {language === 'ne' ? 'स्टक स्थानान्तरण विमर्ष' : 'Stock Carryforward Wizard'}
+                              </small>
+                            </div>
+                          </button>
+                        )}
+                      </>
                     ) : (
                       <div
                         className="p-3 px-4 d-flex align-items-center gap-3 shadow-sm"

@@ -79,14 +79,14 @@ export default function SalesHistoryPage() {
     try {
       const html2pdf = (await import('html2pdf.js')).default;
       const opt = {
-        margin: [5, 5, 5, 5],
+        margin: [5, 5, 5, 5] as [number, number, number, number],
         filename: `Invoice_${selectedSale.invoiceNo}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
+        image: { type: 'jpeg' as const, quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: [80, 297], orientation: 'portrait' }
+        jsPDF: { unit: 'mm' as const, format: [80, 297] as any, orientation: 'portrait' as const }
       };
 
-      html2pdf().set(opt).from(element).save();
+      html2pdf().set(opt as any).from(element).save();
     } catch (err) {
       console.error('Error generating PDF:', err);
       alert('Could not generate PDF. Please try printing instead.');

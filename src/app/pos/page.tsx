@@ -8,6 +8,7 @@ import { formatAdToBsFull } from '@/utils/nepaliDate';
 import { printThermalReceipt } from '@/utils/printReceipt';
 import SearchableCustomerSelect from '@/components/SearchableCustomerSelect';
 import { useCustomAlert } from '@/context/CustomAlertContext';
+import { formatStock } from '@/utils/number';
 
 interface UnitConversion {
   id: number;
@@ -30,6 +31,7 @@ interface Product {
   cost: number;
   stock: number;
   minStockAlert: number;
+  unit?: string;
   taxRate?: number;
   category?: Category;
   unitConversions?: UnitConversion[];
@@ -140,12 +142,12 @@ export default function POSPage() {
   }, []);
 
   // Helper to handle barcode match and auto-add to cart
-  const processBarcodeScan = (scannedCode: string): boolean => {
+  const processBarcodeScan = async (scannedCode: string): Promise<boolean> => {
     const code = scannedCode.trim();
     if (!code) return false;
 
-    // Search by exact Barcode or SKU match first, then by substring
-    const matchedProduct = products.find(
+    // Search by exact Barcode or SKU match first, then by substring in loaded products
+    let matchedProduct = products.find(
       (p) =>
         (p.barcode && p.barcode.toLowerCase() === code.toLowerCase()) ||
         p.SKU.toLowerCase() === code.toLowerCase()
@@ -156,7 +158,29 @@ export default function POSPage() {
         p.name.toLowerCase().includes(code.toLowerCase())
     );
 
+    // Fallback: If not found in loaded memory, query server directly
+    if (!matchedProduct) {
+      try {
+        const res = await api.get(`/products?search=${encodeURIComponent(code)}&inStockOnly=true&limit=5`);
+        const items = res.data?.items || res.data || [];
+        if (items.length > 0) {
+          matchedProduct = items[0];
+          setProducts((prev) => {
+            const map = new Map<number, Product>(prev.map((p) => [p.id, p]));
+            map.set(matchedProduct!.id, matchedProduct!);
+            return Array.from(map.values());
+          });
+        }
+      } catch (err) {
+        console.error('POS barcode lookup error:', err);
+      }
+    }
+
     if (matchedProduct) {
+      if (matchedProduct.stock <= 0) {
+        showAlert(`"${matchedProduct.name}" is out of stock!`, 'Out of Stock', 'warning');
+        return false;
+      }
       addToCart(matchedProduct);
       setSearchTerm('');
       if (searchInputRef.current) {
@@ -171,12 +195,36 @@ export default function POSPage() {
     return false;
   };
 
+  // Debounced server search when typing in search bar
+  useEffect(() => {
+    const term = searchTerm.trim();
+    if (!term || term.length < 2) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.get(`/products?search=${encodeURIComponent(term)}&inStockOnly=true&limit=50`);
+        const items = res.data?.items || res.data || [];
+        if (items.length > 0) {
+          setProducts((prev) => {
+            const map = new Map<number, Product>(prev.map((p) => [p.id, p]));
+            items.forEach((item: Product) => map.set(item.id, item));
+            return Array.from(map.values());
+          });
+        }
+      } catch (err) {
+        console.error('POS server search error:', err);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm, api]);
+
   // Global keydown listener for hands-free scanning with Smart HC-6052 scanner anywhere on screen
   useEffect(() => {
     let barcodeBuffer = '';
     let lastKeyTime = 0;
 
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT';
 
@@ -184,7 +232,7 @@ export default function POSPage() {
       if (e.key === 'Enter') {
         if (target === searchInputRef.current && searchTerm) {
           e.preventDefault();
-          const matched = processBarcodeScan(searchTerm);
+          const matched = await processBarcodeScan(searchTerm);
           if (!matched) {
             showAlert(`No product matched barcode/SKU: "${searchTerm}"`, 'Product Not Found', 'warning');
           }
@@ -193,7 +241,7 @@ export default function POSPage() {
 
         if (barcodeBuffer.length >= 2) {
           e.preventDefault();
-          const matched = processBarcodeScan(barcodeBuffer);
+          const matched = await processBarcodeScan(barcodeBuffer);
           if (!matched && !isInput) {
             showAlert(`No product matched scanned barcode: "${barcodeBuffer}"`, 'Product Not Found', 'warning');
           }
@@ -218,34 +266,39 @@ export default function POSPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [products, searchTerm, cart]);
 
-  // Load catalogs
-  useEffect(() => {
+  const [isRefreshingCatalog, setIsRefreshingCatalog] = useState(false);
+
+  const refreshCatalog = async () => {
     if (!token) return;
+    try {
+      setIsRefreshingCatalog(true);
+      const [prodRes, catRes, custRes, settingsRes] = await Promise.all([
+        api.get('/products?limit=500&inStockOnly=true'),
+        api.get('/products/categories'),
+        api.get('/customers?limit=200'),
+        api.get('/settings'),
+      ]);
+      
+      setProducts(prodRes.data.items || []);
+      setCategories(catRes.data || []);
+      setCustomers(custRes.data.items || []);
+      setStoreSettings(settingsRes.data || null);
 
-    const loadData = async () => {
-      try {
-        const [prodRes, catRes, custRes, settingsRes] = await Promise.all([
-          api.get('/products?limit=100'),
-          api.get('/products/categories'),
-          api.get('/customers?limit=100'),
-          api.get('/settings'),
-        ]);
-        
-        setProducts(prodRes.data.items || []);
-        setCategories(catRes.data || []);
-        setCustomers(custRes.data.items || []);
-        setStoreSettings(settingsRes.data || null);
-
-        // Prepopulate Narayan Chhetri customer if exists for visual demonstration matches
-        const narayan = (custRes.data.items || []).find((c: any) => c.name.toLowerCase().includes('narayan'));
-        if (narayan) {
-          setSelectedCustomerId(narayan.id);
-        }
-      } catch (err) {
-        console.error('Error fetching POS dependencies:', err);
+      // Prepopulate Narayan Chhetri customer if exists for visual demonstration matches
+      const narayan = (custRes.data.items || []).find((c: any) => c.name.toLowerCase().includes('narayan'));
+      if (narayan && !selectedCustomerId) {
+        setSelectedCustomerId(narayan.id);
       }
-    };
-    loadData();
+    } catch (err) {
+      console.error('Error fetching POS dependencies:', err);
+    } finally {
+      setIsRefreshingCatalog(false);
+    }
+  };
+
+  // Load catalogs on mount
+  useEffect(() => {
+    refreshCatalog();
   }, [token]);
 
   // Add Item to Cart
@@ -260,7 +313,7 @@ export default function POSPage() {
     if (existingIndex > -1) {
       const currentQty = cart[existingIndex].quantity;
       if (product.stock < currentQty + 1) {
-        showAlert(`Insufficient stock. Only ${product.stock} units available.`, 'Insufficient Stock', 'warning');
+        showAlert(`Insufficient stock. Only ${formatStock(product.stock)} units available.`, 'Insufficient Stock', 'warning');
         return;
       }
       
@@ -311,7 +364,7 @@ export default function POSPage() {
       newCart.splice(existingIndex, 1);
     } else {
       if (item.product.stock < item.quantity) {
-        showAlert(`Insufficient stock. Only ${item.product.stock} units available.`, 'Insufficient Stock', 'warning');
+        showAlert(`Insufficient stock. Only ${formatStock(item.product.stock)} units available.`, 'Insufficient Stock', 'warning');
         return;
       }
       recalculateCartItem(item);
@@ -350,7 +403,7 @@ export default function POSPage() {
       }
 
       if (item.product.stock < item.quantity) {
-        showAlert(`Insufficient stock. Only ${item.product.stock} units available.`, 'Insufficient Stock', 'warning');
+        showAlert(`Insufficient stock. Only ${formatStock(item.product.stock)} units available.`, 'Insufficient Stock', 'warning');
         item.quantity = item.product.stock;
         if (!isBaseUnit && item.conversionFactor) {
           item.selectedUnitQuantity = item.quantity * item.conversionFactor;
@@ -518,8 +571,9 @@ export default function POSPage() {
     }
   };
 
-  // Filter logic
+  // Filter logic: Only display products with active stock (> 0)
   const filteredProducts = products.filter((p) => {
+    if (!p.stock || p.stock <= 0) return false;
     const searchMatch =
       p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.SKU.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -553,11 +607,11 @@ export default function POSPage() {
               <button 
                 className="btn btn-primary px-4 py-2 border-0 fw-bold" 
                 style={{ backgroundColor: '#0d6efd', borderRadius: '0px' }}
-                onClick={() => {
+                onClick={async () => {
                   if (searchTerm) {
-                    const matched = processBarcodeScan(searchTerm);
+                    const matched = await processBarcodeScan(searchTerm);
                     if (!matched) {
-                      alert(`No product matched: "${searchTerm}"`);
+                      showAlert(`No product matched: "${searchTerm}"`, 'Product Not Found', 'warning');
                     }
                   }
                 }}
@@ -565,6 +619,18 @@ export default function POSPage() {
                 {t('common', 'search') || 'Search'}
               </button>
             </div>
+
+            {/* Quick Refresh Catalog Button */}
+            <button
+              className="btn btn-outline-secondary px-3 d-flex align-items-center justify-content-center border shadow-sm"
+              style={{ borderRadius: '6px', backgroundColor: 'var(--light-card)' }}
+              type="button"
+              onClick={() => refreshCatalog()}
+              title="Refresh Products & Stock from Server"
+              disabled={isRefreshingCatalog}
+            >
+              <i className={`bi bi-arrow-clockwise text-primary fs-5 ${isRefreshingCatalog ? 'spin-animation' : ''}`}></i>
+            </button>
             
             {/* Shift Register Control Button */}
             {currentShift ? (
@@ -639,8 +705,8 @@ export default function POSPage() {
                     <div className="fw-bold mb-2" style={{ color: '#0d6efd', fontSize: '1.1rem' }}>
                       Rs.{prod.price.toFixed(2)}
                     </div>
-                    <div className="text-secondary" style={{ fontSize: '0.75rem' }}>
-                      {t('pos', 'stock') || 'Stock'}: {prod.stock}
+                    <div className="text-secondary fw-medium" style={{ fontSize: '0.75rem' }}>
+                      {t('pos', 'stock') || 'Stock'}: <strong className="text-dark">{formatStock(prod.stock)}</strong> {prod.unit || ''}
                     </div>
                   </div>
                 </div>

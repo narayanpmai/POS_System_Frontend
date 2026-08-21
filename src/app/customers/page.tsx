@@ -110,19 +110,21 @@ export default function CustomersPage() {
     modal.show();
   };
 
-  const handleDelete = async (id: number) => {
-    const confirmed = await showConfirm(
-      'Are you sure you want to delete this customer? This action cannot be undone.',
-      { title: 'Delete Customer', confirmText: 'Delete', cancelText: 'Cancel' }
-    );
-    if (!confirmed) return;
-
-    try {
-      await deleteCustomer(id).unwrap();
-      showAlert('Customer successfully removed', { type: 'success', title: 'Customer Deleted' });
-    } catch (err: any) {
-      showAlert(err?.data?.message || 'Cannot delete customer with purchase history', { type: 'warning', title: 'Cannot Delete' });
-    }
+  const handleDelete = (id: number) => {
+    showConfirm({
+      message: 'Are you sure you want to delete this customer? This action cannot be undone.',
+      title: 'Delete Customer',
+      confirmText: 'Delete',
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          await deleteCustomer(id).unwrap();
+          showAlert('Customer successfully removed', { title: 'Customer Deleted', type: 'success' });
+        } catch (err: any) {
+          showAlert(err?.data?.message || 'Cannot delete customer with purchase history', { title: 'Cannot Delete', type: 'warning' });
+        }
+      },
+    });
   };
 
   const handleHistoryClick = async (cust: Customer) => {

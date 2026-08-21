@@ -712,7 +712,7 @@ export default function ProductsPage() {
                 style={{ backgroundColor: '#0d6efd', borderRadius: '20px' }}
                 onClick={() => {
                   setEditingCategory(null);
-                  setCategoryForm({ name: '', description: '' });
+                  setCategoryForm({ name: '', description: '', parentId: null });
                   const modalElement = document.getElementById('categoryModal');
                   if (modalElement) {
                     const bootstrap = require('bootstrap');

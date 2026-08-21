@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useRouter } from 'next/navigation';
 import NepaliClock from './NepaliClock';
+import { toSafeArray } from '@/utils/array';
 
 export default function Navbar() {
   const { user, logout, activeFiscalYear, api, superAdminCompanyId, setSuperAdminCompanyId } = useAuth();

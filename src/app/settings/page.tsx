@@ -96,10 +96,10 @@ export default function SettingsPage() {
     setRevokingId(sessionId);
     try {
       await api.delete(`/users/sessions/${sessionId}`);
-      showToast('Session revoked successfully', 'success');
+      showAlert('Session revoked successfully', { title: 'Session Revoked', type: 'success' });
       loadSessions();
     } catch (err: any) {
-      showToast(err.response?.data?.message || 'Failed to revoke session', 'danger');
+      showAlert(err.response?.data?.message || 'Failed to revoke session', { title: 'Session Error', type: 'danger' });
     } finally {
       setRevokingId(null);
     }
@@ -413,15 +413,15 @@ export default function SettingsPage() {
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin) {
-      showToast('Only administrators are authorized to perform security changes', 'danger');
+      showAlert('Only administrators are authorized to perform security changes', { title: 'Unauthorized', type: 'danger' });
       return;
     }
     if (securityForm.newPassword !== securityForm.confirmPassword) {
-      showToast('New password and confirm password do not match', 'danger');
+      showAlert('New password and confirm password do not match', { title: 'Validation Error', type: 'danger' });
       return;
     }
     if (securityForm.newPassword.length < 6) {
-      showToast('Password must be at least 6 characters', 'danger');
+      showAlert('Password must be at least 6 characters', { title: 'Validation Error', type: 'danger' });
       return;
     }
     setSubmitting(true);
@@ -429,7 +429,7 @@ export default function SettingsPage() {
       await api.patch(`/users/${user.id}/reset-password`, {
         newPassword: securityForm.newPassword,
       });
-      showToast('Password updated successfully!', 'success');
+      showAlert('Password updated successfully!', { title: 'Success', type: 'success' });
       setSecurityForm({
         currentPassword: '',
         newPassword: '',
@@ -438,7 +438,7 @@ export default function SettingsPage() {
       setSubmitting(false);
     } catch (err: any) {
       setSubmitting(false);
-      showToast(err.response?.data?.message || 'Error updating password', 'danger');
+      showAlert(err.response?.data?.message || 'Error updating password', { title: 'Error', type: 'danger' });
     }
   };
 

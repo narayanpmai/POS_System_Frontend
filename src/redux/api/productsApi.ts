@@ -14,7 +14,7 @@ export const productsApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getProducts: builder.query<
       PaginatedResponse<any>,
-      { page?: number; limit?: number; search?: string; categoryId?: string | number }
+      { page?: number; limit?: number; search?: string; categoryId?: string | number; lowStockOnly?: boolean; inStockOnly?: boolean }
     >({
       query: (params) => {
         const queryParams = new URLSearchParams();
@@ -22,6 +22,8 @@ export const productsApi = baseApi.injectEndpoints({
         if (params.limit) queryParams.set('limit', String(params.limit));
         if (params.search) queryParams.set('search', params.search);
         if (params.categoryId) queryParams.set('categoryId', String(params.categoryId));
+        if (params.lowStockOnly) queryParams.set('lowStockOnly', 'true');
+        if (params.inStockOnly) queryParams.set('inStockOnly', 'true');
         return `/products?${queryParams.toString()}`;
       },
       providesTags: ['Products'],

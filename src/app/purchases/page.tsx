@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBs } from '@/utils/nepaliDate';
 import TableControls, { applyPagination } from '@/components/TableControls';
+import SearchableProductSelect from '@/components/SearchableProductSelect';
 import { useCustomAlert } from '@/context/CustomAlertContext';
 import {
   useGetPurchasesQuery,
@@ -16,9 +17,10 @@ import {
 
 export default function PurchasesPage() {
   const router = useRouter();
-  const { token, api, activeFiscalYear } = useAuth();
+  const { token, user, api, activeFiscalYear } = useAuth();
   const { t } = useLanguage();
   const { showAlert } = useCustomAlert();
+  const isAdmin = user?.role?.name === 'Admin' || user?.role?.name === 'Super Admin';
   const [products, setProducts] = useState<any[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [auxLoading, setAuxLoading] = useState(true);
@@ -82,6 +84,19 @@ export default function PurchasesPage() {
       qty: 1, 
       discPercent: 0 
     }]);
+  };
+
+  const handleSelectProduct = (idx: number, product: any | null) => {
+    const newCart = [...cart];
+    if (!product) {
+      newCart[idx].productId = '';
+      newCart[idx].unitPrice = 0;
+    } else {
+      newCart[idx].productId = String(product.id);
+      newCart[idx].unitPrice = product.cost || 0;
+      newCart[idx].unit = product.unit || 'pcs';
+    }
+    setCart(newCart);
   };
 
   const updateCartItem = (idx: number, field: string, value: any) => {
@@ -257,11 +272,13 @@ export default function PurchasesPage() {
                     const idx = (cartCurrentPage - 1) * cartRowsPerPage + pageIdx;
                     return (
                       <tr key={idx}>
-                        <td className="ps-3 border-bottom py-3">
-                          <select className="form-select" value={item.productId} onChange={e => updateCartItem(idx, 'productId', e.target.value)}>
-                            <option value="">-- Product --</option>
-                            {products.map(p => <option key={p.id} value={p.id}>{p.SKU ? `[${p.SKU}] ` : ''}{p.name}</option>)}
-                          </select>
+                        <td className="ps-3 border-bottom py-3" style={{ minWidth: '240px' }}>
+                          <SearchableProductSelect
+                            products={products}
+                            selectedProductId={item.productId}
+                            onSelectProduct={(p) => handleSelectProduct(idx, p)}
+                            placeholder="Type product name, SKU, or barcode..."
+                          />
                         </td>
                         <td className="border-bottom">
                           <input type="number" min="0" step="any" className="form-control" value={item.unitPrice} onChange={e => updateCartItem(idx, 'unitPrice', parseFloat(e.target.value) || 0)} />
@@ -382,14 +399,16 @@ export default function PurchasesPage() {
             <input 
               type="text" 
               className="form-control border-start-0 ps-0" 
-              placeholder={t('common', 'search') || 'Search purchases...'} 
+              placeholder="Search PO #, supplier, product name, or SKU..." 
               value={searchTerm} 
               onChange={e => { setSearchTerm(e.target.value); setListCurrentPage(1); }} 
             />
           </div>
-          <button className="btn btn-primary fw-bold d-flex align-items-center gap-2 px-3 text-nowrap" onClick={() => setShowForm(true)}>
-            <i className="bi bi-plus-lg"></i> {t('purchases', 'add_purchase')}
-          </button>
+          {isAdmin && (
+            <button className="btn btn-primary fw-bold d-flex align-items-center gap-2 px-3 text-nowrap" onClick={() => setShowForm(true)}>
+              <i className="bi bi-plus-lg"></i> {t('purchases', 'add_purchase')}
+            </button>
+          )}
         </div>
       </div>
 
@@ -435,12 +454,26 @@ export default function PurchasesPage() {
                   </td>
                   <td className="fw-bold">Rs. {Number(p.totalAmount).toFixed(2)}</td>
                   <td>
-                    <span className="badge bg-success-subtle text-success px-2 py-1 rounded-pill">{p.status}</span>
+                    <div className="d-flex flex-column align-items-start gap-1">
+                      <span className="badge bg-success-subtle text-success px-2.5 py-1 rounded-pill fw-semibold">
+                        <i className="bi bi-check-circle-fill me-1"></i> {p.status}
+                      </span>
+                      <span className="badge bg-light text-secondary border px-2 py-0.5" style={{ fontSize: '0.72rem' }} title="Inventory Transaction STOCK_IN Recorded">
+                        <i className="bi bi-box-arrow-in-down text-primary me-1"></i> Stock Credited
+                      </span>
+                      {p.user?.name && (
+                        <small className="text-muted" style={{ fontSize: '0.7rem' }}>by {p.user.name}</small>
+                      )}
+                    </div>
                   </td>
                   <td>
-                    <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(p)} title="Edit Purchase">
-                      <i className="bi bi-pencil-square"></i> {t('common', 'edit')}
-                    </button>
+                    {isAdmin ? (
+                      <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(p)} title="Edit Purchase">
+                        <i className="bi bi-pencil-square"></i> {t('common', 'edit')}
+                      </button>
+                    ) : (
+                      <span className="badge bg-light text-muted border px-2 py-1">View Only</span>
+                    )}
                   </td>
                 </tr>
               ))}

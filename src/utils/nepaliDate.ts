@@ -97,20 +97,20 @@ export const bsCalendarMap: Record<number, number[]> = {
   2067: [2067, 31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
   2068: [2068, 31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30],
   2069: [2069, 31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31],
-  2070: [2070, 31, 31, 31, 32, 31, 31, 29, 30, 30, 29, 30, 30],
+  2070: [2070, 31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30],
   2071: [2071, 31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
-  2072: [2072, 31, 32, 31, 32, 31, 30, 30, 29, 30, 29, 30, 30],
-  2073: [2073, 31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31],
-  2074: [2074, 31, 31, 31, 32, 31, 31, 30, 29, 30, 29, 30, 30],
-  2075: [2075, 31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
-  2076: [2076, 31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 30],
-  2077: [2077, 31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31],
+  2072: [2072, 31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 30],
+  2073: [2073, 31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30],
+  2074: [2074, 31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30],
+  2075: [2075, 31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 30],
+  2076: [2076, 31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30],
+  2077: [2077, 31, 31, 31, 32, 31, 31, 30, 29, 30, 29, 30, 30],
   2078: [2078, 31, 31, 31, 32, 31, 31, 30, 29, 30, 29, 30, 30],
   2079: [2079, 31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
-  2080: [2080, 31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 30],
+  2080: [2080, 31, 32, 32, 31, 30, 30, 30, 30, 29, 29, 30, 30],
   2081: [2081, 31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31],
   2082: [2082, 31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
-  2083: [2083, 31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30],
+  2083: [2083, 31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30],
   2084: [2084, 31, 31, 32, 31, 31, 30, 30, 30, 29, 30, 30, 30],
   2085: [2085, 31, 32, 31, 32, 30, 31, 30, 30, 29, 30, 30, 30],
   2086: [2086, 30, 32, 31, 32, 31, 30, 30, 30, 29, 30, 30, 30],
@@ -140,57 +140,72 @@ function isLeapYear(year: number): boolean {
  */
 export function adToBsDate(dateInput: Date | string | undefined | null) {
   if (!dateInput) return null;
-  const date = new Date(dateInput);
+  
+  let date: Date;
+  if (typeof dateInput === 'string') {
+    const clean = dateInput.split('T')[0];
+    const parts = clean.split('-');
+    if (parts.length === 3) {
+      date = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), 12, 0, 0);
+    } else {
+      date = new Date(dateInput);
+    }
+  } else {
+    date = new Date(dateInput.getFullYear(), dateInput.getMonth(), dateInput.getDate(), 12, 0, 0);
+  }
+
   if (isNaN(date.getTime())) return null;
 
-  // Extract UTC components to avoid timezone offset shifts
-  const todayYear = date.getUTCFullYear();
-  const todayMonth = date.getUTCMonth() + 1;
-  const todayDay = date.getUTCDate();
+  // Use accurate modern base anchor: 2077-01-01 BS = 2020-04-13 AD
+  const diffTime = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - Date.UTC(2020, 3, 13);
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
-  let daysDifference = 0;
-  let y = 1943, m = 4, d = 14;
-  const startMonthDays = (m === 2 && isLeapYear(y)) ? 29 : adMonthDays[m];
-  daysDifference += startMonthDays - d;
-  m++;
-  while (m <= 12) {
-    daysDifference += (m === 2 && isLeapYear(y)) ? 29 : adMonthDays[m];
-    m++;
-  }
-  y++;
-  while (y < todayYear) {
-    daysDifference += isLeapYear(y) ? 366 : 365;
-    y++;
-  }
-  for (let i = 1; i < todayMonth; i++) {
-    daysDifference += (i === 2 && isLeapYear(todayYear)) ? 29 : adMonthDays[i];
-  }
-  daysDifference += todayDay;
+  let year = 2077;
+  let month = 1;
+  let day = 1 + diffDays;
 
-  let currentYear = 0, currentMonth = 0, currentDay = 0, totalD = 0, flag = false;
-  for (let i = 2000; i < 2100; i++) {
-    if (flag) break;
-    const yearData = bsCalendarMap[i];
-    if (!yearData) continue;
-    for (let j = 1; j <= 12; j++) {
-      totalD += yearData[j];
-      if (daysDifference - totalD < 0) {
-        currentDay = daysDifference - totalD + yearData[j] + 1;
-        flag = true;
-        currentYear = i;
-        currentMonth = j;
+  if (diffDays >= 0) {
+    while (day > 0) {
+      const yearMap = bsCalendarMap[year];
+      if (!yearMap) break;
+      const daysInMonth = yearMap[month];
+      if (day <= daysInMonth) {
         break;
       }
+      day -= daysInMonth;
+      month++;
+      if (month > 12) {
+        month = 1;
+        year++;
+      }
+    }
+  } else {
+    // Before 2077 BS
+    let revDays = Math.abs(diffDays);
+    while (revDays > 0) {
+      month--;
+      if (month < 1) {
+        month = 12;
+        year--;
+      }
+      const yearMap = bsCalendarMap[year];
+      if (!yearMap) break;
+      const daysInMonth = yearMap[month];
+      if (revDays <= daysInMonth) {
+        day = daysInMonth - revDays + 1;
+        break;
+      }
+      revDays -= daysInMonth;
     }
   }
 
   const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const dayName = daysOfWeek[date.getUTCDay()];
+  const dayName = daysOfWeek[date.getDay()];
 
   return {
-    year: currentYear,
-    month: currentMonth,
-    date: currentDay,
+    year,
+    month,
+    date: day,
     day: dayName
   };
 }
@@ -199,24 +214,45 @@ export function adToBsDate(dateInput: Date | string | undefined | null) {
  * Converts a Nepali BS date (year, month, day) into ISO AD date string YYYY-MM-DD
  */
 export function bsToAdDate(year: number, month: number, day: number): string {
-  let daysDiff = 0;
-  for (let i = 2000; i <= year; i++) {
-    const yearData = bsCalendarMap[i];
-    if (!yearData) continue;
-    if (i === year) {
-      for (let j = 1; j < month; j++) {
-        daysDiff += yearData[j];
-      }
-      daysDiff += day - 1;
-    } else {
-      for (let j = 1; j <= 12; j++) {
-        daysDiff += yearData[j];
+  // Use accurate modern base anchor: 2077-01-01 BS = 2020-04-13 AD
+  const baseAD = new Date(2020, 3, 13, 12, 0, 0); // April 13, 2020
+
+  let totalDays = 0;
+  if (year >= 2077) {
+    for (let y = 2077; y < year; y++) {
+      const yearData = bsCalendarMap[y];
+      if (yearData) {
+        for (let m = 1; m <= 12; m++) totalDays += yearData[m];
       }
     }
+    const currentYearData = bsCalendarMap[year];
+    if (currentYearData) {
+      for (let m = 1; m < month; m++) {
+        totalDays += currentYearData[m];
+      }
+    }
+    totalDays += (day - 1);
+  } else {
+    for (let y = year; y < 2077; y++) {
+      const yearData = bsCalendarMap[y];
+      if (yearData) {
+        for (let m = 1; m <= 12; m++) totalDays -= yearData[m];
+      }
+    }
+    const currentYearData = bsCalendarMap[year];
+    if (currentYearData) {
+      for (let m = 1; m < month; m++) {
+        totalDays += currentYearData[m];
+      }
+    }
+    totalDays += (day - 1);
   }
-  const baseDate = new Date(Date.UTC(1943, 3, 14)); // 1943-04-14 UTC
-  baseDate.setUTCDate(baseDate.getUTCDate() + daysDiff);
-  return baseDate.toISOString().split('T')[0];
+
+  const targetDate = new Date(baseAD.getTime() + totalDays * 24 * 60 * 60 * 1000);
+  const yStr = targetDate.getFullYear();
+  const mStr = String(targetDate.getMonth() + 1).padStart(2, '0');
+  const dStr = String(targetDate.getDate()).padStart(2, '0');
+  return `${yStr}-${mStr}-${dStr}`;
 }
 
 /**
