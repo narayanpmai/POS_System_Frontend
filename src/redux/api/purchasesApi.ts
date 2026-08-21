@@ -5,13 +5,15 @@ export const purchasesApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
     getPurchases: builder.query<
       PaginatedResponse<any>,
-      { page?: number; limit?: number; search?: string }
+      { page?: number; limit?: number; search?: string; startDate?: string; endDate?: string }
     >({
       query: (params) => {
         const queryParams = new URLSearchParams();
         if (params?.page) queryParams.set('page', String(params.page));
         if (params?.limit) queryParams.set('limit', String(params.limit));
         if (params?.search) queryParams.set('search', params.search);
+        if (params?.startDate) queryParams.set('startDate', params.startDate);
+        if (params?.endDate) queryParams.set('endDate', params.endDate);
         return `/purchases?${queryParams.toString()}`;
       },
       providesTags: ['Purchases'],

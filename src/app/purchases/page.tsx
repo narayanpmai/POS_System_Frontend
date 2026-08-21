@@ -6,6 +6,7 @@ import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBs } from '@/utils/nepaliDate';
+import BSDatePicker from '@/components/BSDatePicker';
 import TableControls, { applyPagination } from '@/components/TableControls';
 import SearchableProductSelect from '@/components/SearchableProductSelect';
 import { useCustomAlert } from '@/context/CustomAlertContext';
@@ -29,12 +30,16 @@ export default function PurchasesPage() {
   const [cartCurrentPage, setCartCurrentPage] = useState(1);
   const [listCurrentPage, setListCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   
   // RTK Query for Purchases
   const { data: purchaseData, isFetching: loading } = useGetPurchasesQuery({
     page: listCurrentPage,
     limit: listRowsPerPage,
     search: searchTerm,
+    startDate: startDate || undefined,
+    endDate: endDate || undefined,
   });
   const [createPurchase] = useCreatePurchaseMutation();
   const [updatePurchase] = useUpdatePurchaseMutation();
@@ -393,22 +398,61 @@ export default function PurchasesPage() {
       </div>
       <div className="d-flex justify-content-between align-items-center mb-4 gap-3 flex-wrap">
         <h4 className="fw-bold m-0">{t('purchases', 'title')}</h4>
-        <div className="d-flex gap-3 align-items-center flex-grow-1 justify-content-end" style={{ maxWidth: '600px' }}>
-          <div className="input-group">
-            <span className="input-group-text bg-white border-end-0"><i className="bi bi-search text-muted"></i></span>
-            <input 
-              type="text" 
-              className="form-control border-start-0 ps-0" 
-              placeholder="Search PO #, supplier, product name, or SKU..." 
-              value={searchTerm} 
-              onChange={e => { setSearchTerm(e.target.value); setListCurrentPage(1); }} 
+        {isAdmin && (
+          <button className="btn btn-primary fw-bold d-flex align-items-center gap-2 px-3 text-nowrap" onClick={() => setShowForm(true)}>
+            <i className="bi bi-plus-lg"></i> {t('purchases', 'add_purchase')}
+          </button>
+        )}
+      </div>
+
+      {/* Filter Bar */}
+      <div className="card border-0 rounded-md shadow-sm p-3 mb-4 bg-white" style={{ borderRadius: '10px' }}>
+        <div className="row g-3 align-items-end">
+          <div className="col-12 col-md-3">
+            <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: '0.75rem' }}>{t('reports', 'from_date') || 'From Date (BS/AD)'}</label>
+            <BSDatePicker
+              value={startDate}
+              onChange={(val) => { setStartDate(val); setListCurrentPage(1); }}
+              className="form-control bg-light border-0 p-2"
             />
           </div>
-          {isAdmin && (
-            <button className="btn btn-primary fw-bold d-flex align-items-center gap-2 px-3 text-nowrap" onClick={() => setShowForm(true)}>
-              <i className="bi bi-plus-lg"></i> {t('purchases', 'add_purchase')}
+          <div className="col-12 col-md-3">
+            <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: '0.75rem' }}>{t('reports', 'to_date') || 'To Date (BS/AD)'}</label>
+            <BSDatePicker
+              value={endDate}
+              onChange={(val) => { setEndDate(val); setListCurrentPage(1); }}
+              className="form-control bg-light border-0 p-2"
+            />
+          </div>
+          <div className="col-12 col-md-4">
+            <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: '0.75rem' }}>Search Purchase / Product</label>
+            <div className="input-group">
+              <span className="input-group-text bg-light border-0"><i className="bi bi-search text-muted"></i></span>
+              <input 
+                type="text" 
+                className="form-control bg-light border-0 ps-0" 
+                placeholder="Search PO #, supplier, product name, or SKU..." 
+                value={searchTerm} 
+                onChange={e => { setSearchTerm(e.target.value); setListCurrentPage(1); }} 
+                style={{ height: '38px' }}
+              />
+            </div>
+          </div>
+          <div className="col-12 col-md-2">
+            <button
+              className="btn btn-outline-secondary w-100 fw-semibold d-flex align-items-center justify-content-center gap-1 border bg-white text-secondary"
+              style={{ height: '38px', borderRadius: '6px' }}
+              onClick={() => {
+                setStartDate('');
+                setEndDate('');
+                setSearchTerm('');
+                setListCurrentPage(1);
+              }}
+              title="Reset Filters"
+            >
+              <i className="bi bi-arrow-counterclockwise"></i> {t('common', 'reset') || 'Reset'}
             </button>
-          )}
+          </div>
         </div>
       </div>
 

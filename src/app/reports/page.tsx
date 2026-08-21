@@ -152,10 +152,11 @@ export default function ReportsPage() {
     setLoading(true);
     try {
       const typeParam = type !== 'ALL' ? `&type=${type}` : '';
-      const searchParam = search ? `&search=${encodeURIComponent(search)}` : '';
-      const dateParam = `&startDate=${start}&endDate=${end}`;
+      const searchParam = search?.trim() ? `&search=${encodeURIComponent(search.trim())}` : '';
+      const startParam = start?.trim() ? `&startDate=${start.trim()}` : '';
+      const endParam = end?.trim() ? `&endDate=${end.trim()}` : '';
       const res = await api.get(
-        `/reports/stock-movements?page=${page}&limit=${limit}${typeParam}${searchParam}${dateParam}`,
+        `/reports/stock-movements?page=${page}&limit=${limit}${typeParam}${searchParam}${startParam}${endParam}`,
       );
       setStockMovements(res.data?.items || []);
       setStockMovementTotal(res.data?.total || 0);
@@ -413,18 +414,26 @@ export default function ReportsPage() {
           <div className="card border-0 rounded-md shadow-sm p-3 mb-4 bg-white" style={{ borderRadius: '10px' }}>
             <div className="row g-3 align-items-end">
               <div className="col-12 col-md-3">
-                <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: '0.75rem' }}>{t('reports', 'from_date') || 'From Date'}</label>
+                <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: '0.75rem' }}>{t('reports', 'from_date') || 'From Date (BS/AD)'}</label>
                 <BSDatePicker
                   value={stockMovementStartDate}
-                  onChange={(val) => setStockMovementStartDate(val)}
+                  onChange={(val) => {
+                    setStockMovementStartDate(val);
+                    setStockMovementPage(1);
+                    loadStockMovements(1, stockMovementLimit, stockMovementType, stockMovementSearch, val, stockMovementEndDate);
+                  }}
                   className="form-control bg-light border-0 p-2"
                 />
               </div>
               <div className="col-12 col-md-3">
-                <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: '0.75rem' }}>{t('reports', 'to_date') || 'To Date'}</label>
+                <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: '0.75rem' }}>{t('reports', 'to_date') || 'To Date (BS/AD)'}</label>
                 <BSDatePicker
                   value={stockMovementEndDate}
-                  onChange={(val) => setStockMovementEndDate(val)}
+                  onChange={(val) => {
+                    setStockMovementEndDate(val);
+                    setStockMovementPage(1);
+                    loadStockMovements(1, stockMovementLimit, stockMovementType, stockMovementSearch, stockMovementStartDate, val);
+                  }}
                   className="form-control bg-light border-0 p-2"
                 />
               </div>
@@ -434,7 +443,12 @@ export default function ReportsPage() {
                   className="form-select bg-light border-0 p-2"
                   style={{ height: '38px' }}
                   value={stockMovementType}
-                  onChange={(e) => setStockMovementType(e.target.value as any)}
+                  onChange={(e) => {
+                    const val = e.target.value as any;
+                    setStockMovementType(val);
+                    setStockMovementPage(1);
+                    loadStockMovements(1, stockMovementLimit, val, stockMovementSearch, stockMovementStartDate, stockMovementEndDate);
+                  }}
                 >
                   <option value="ALL">All (In & Out)</option>
                   <option value="STOCK_IN">Stock IN (+Purchases/Returns)</option>
@@ -442,14 +456,17 @@ export default function ReportsPage() {
                 </select>
               </div>
               <div className="col-12 col-md-4">
-                <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: '0.75rem' }}>Search Product / Reference</label>
+                <label className="form-label fw-bold text-secondary mb-1" style={{ fontSize: '0.75rem' }}>Search Product / Reference / User</label>
                 <div className="input-group">
                   <input
                     type="text"
                     className="form-control bg-light border-0 p-2"
-                    placeholder="Search product, SKU, barcode, or reason..."
+                    placeholder="Search product, SKU, barcode, reason, or user..."
                     value={stockMovementSearch}
-                    onChange={(e) => setStockMovementSearch(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setStockMovementSearch(val);
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleFilter();
                     }}
