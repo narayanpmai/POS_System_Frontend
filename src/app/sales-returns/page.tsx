@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
@@ -21,7 +21,6 @@ interface SaleItemReturnState {
 
 export default function SalesReturnsPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { token, api } = useAuth();
   const { t, language } = useLanguage();
 
@@ -47,13 +46,16 @@ export default function SalesReturnsPage() {
     loadData();
   }, [token, currentPage, rowsPerPage]);
 
-  // Check URL query parameters for pre-selected sale/invoice
+  // Check URL query parameters on mount for pre-selected sale/invoice
   useEffect(() => {
-    const prefillInvoice = searchParams?.get('invoiceNo') || searchParams?.get('saleId');
-    if (prefillInvoice && token) {
-      handleDirectInvoiceLookup(prefillInvoice);
+    if (typeof window !== 'undefined' && token) {
+      const params = new URLSearchParams(window.location.search);
+      const prefillInvoice = params.get('invoiceNo') || params.get('saleId');
+      if (prefillInvoice) {
+        handleDirectInvoiceLookup(prefillInvoice);
+      }
     }
-  }, [searchParams, token]);
+  }, [token]);
 
   const loadData = async () => {
     setLoading(true);

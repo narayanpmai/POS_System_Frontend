@@ -1,34 +1,61 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBsFull } from '@/utils/nepaliDate';
-import TableControls, { applyPagination } from '@/components/TableControls';
+import TableControls from '@/components/TableControls';
+
+interface PurchaseItemReturnState {
+  purchaseItemId: number;
+  productId: number;
+  productName: string;
+  sku?: string;
+  costPrice: number;
+  purchasedQuantity: number;
+  returnQuantity: number;
+  currentStock: number;
+}
 
 export default function PurchaseReturnsPage() {
   const router = useRouter();
   const { token, api } = useAuth();
   const { t, language } = useLanguage();
+
   const [returns, setReturns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-
-  // New return form
-  const [showModal, setShowModal] = useState(false);
-  const [purchaseId, setPurchaseId] = useState('');
-  const [reason, setReason] = useState('');
-  const [items, setItems] = useState([{ purchaseItemId: '', quantity: 1 }]);
-
   const [totalReturns, setTotalReturns] = useState(0);
+
+  // Return Wizard Modal State
+  const [showModal, setShowModal] = useState(false);
+  const [searchPO, setSearchPO] = useState('');
+  const [matchingPurchases, setMatchingPurchases] = useState<any[]>([]);
+  const [isSearchingPurchases, setIsSearchingPurchases] = useState(false);
+  const [selectedPurchase, setSelectedPurchase] = useState<any | null>(null);
+  const [returnItems, setReturnItems] = useState<PurchaseItemReturnState[]>([]);
+  const [reason, setReason] = useState('Purchase Return / Damaged Goods');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (!token) return;
     loadData();
   }, [token, currentPage, rowsPerPage]);
+
+  // Check URL query parameters on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined' && token) {
+      const params = new URLSearchParams(window.location.search);
+      const prefillPO = params.get('poNumber') || params.get('purchaseId');
+      if (prefillPO) {
+        handleDirectPOLookup(prefillPO);
+      }
+    }
+  }, [token]);
 
   const loadData = async () => {
     setLoading(true);
@@ -43,71 +70,178 @@ export default function PurchaseReturnsPage() {
     }
   };
 
-  const handleCreateReturn = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Debounced search for purchase orders
+  useEffect(() => {
+    const q = searchPO.trim();
+    if (!q || q.length < 2) {
+      setMatchingPurchases([]);
+      return;
+    }
+
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(async () => {
+      try {
+        setIsSearchingPurchases(true);
+        const res = await api.get(`/purchases?search=${encodeURIComponent(q)}&limit=10`);
+        const items = res.data?.items || res.data || [];
+        setMatchingPurchases(items);
+      } catch (err) {
+        console.error('Failed to search purchases:', err);
+      } finally {
+        setIsSearchingPurchases(false);
+      }
+    }, 250);
+
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, [searchPO, api]);
+
+  const handleDirectPOLookup = async (poQuery: string) => {
     try {
-      const payload = {
-        purchaseId: Number(purchaseId),
-        reason,
-        items: items.map(item => ({
-          purchaseItemId: Number(item.purchaseItemId),
-          quantity: Number(item.quantity)
-        }))
-      };
-      await api.post('/purchase-returns', payload);
-      alert(language === 'ne' ? 'खरिद फिर्ता सफलतापूर्वक प्रशोधन गरियो!' : 'Purchase Return processed successfully!');
-      setShowModal(false);
-      loadData();
-    } catch (err: any) {
-      alert(err.response?.data?.message || (language === 'ne' ? 'खरिद फिर्ता प्रशोधन गर्दा त्रुटि भयो' : 'Error processing purchase return'));
+      setShowModal(true);
+      setIsSearchingPurchases(true);
+      const res = await api.get(`/purchases?search=${encodeURIComponent(poQuery)}&limit=5`);
+      const items = res.data?.items || res.data || [];
+      if (items.length > 0) {
+        handleSelectPurchase(items[0]);
+      }
+    } catch (err) {
+      console.error('Failed direct PO lookup:', err);
+    } finally {
+      setIsSearchingPurchases(false);
     }
   };
 
-  const addItemRow = () => {
-    setItems([...items, { purchaseItemId: '', quantity: 1 }]);
+  const handleSelectPurchase = async (purchase: any) => {
+    try {
+      const res = await api.get(`/purchases/${purchase.id}`);
+      const fullPurchase = res.data || purchase;
+      setSelectedPurchase(fullPurchase);
+      setSearchPO(fullPurchase.poNumber);
+      setMatchingPurchases([]);
+
+      const itemsState: PurchaseItemReturnState[] = (fullPurchase.items || []).map((item: any) => ({
+        purchaseItemId: item.id,
+        productId: item.productId,
+        productName: item.product?.name || `Product #${item.productId}`,
+        sku: item.product?.SKU,
+        costPrice: item.costPrice || 0,
+        purchasedQuantity: item.quantity || 0,
+        returnQuantity: 0,
+        currentStock: item.product?.stock ?? item.quantity,
+      }));
+      setReturnItems(itemsState);
+    } catch (err) {
+      console.error('Failed to load purchase details:', err);
+      setSelectedPurchase(purchase);
+    }
   };
 
-  const removeItemRow = (index: number) => {
-    const newItems = [...items];
-    newItems.splice(index, 1);
-    setItems(newItems);
+  const handleReturnQtyChange = (purchaseItemId: number, newQty: number) => {
+    setReturnItems((prev) =>
+      prev.map((item) => {
+        if (item.purchaseItemId === purchaseItemId) {
+          const maxAllowed = Math.min(item.purchasedQuantity, item.currentStock);
+          const clampedQty = Math.max(0, Math.min(maxAllowed, newQty));
+          return { ...item, returnQuantity: clampedQty };
+        }
+        return item;
+      }),
+    );
   };
 
-  const updateItem = (index: number, field: string, value: string) => {
-    const newItems = [...items];
-    (newItems[index] as any)[field] = value;
-    setItems(newItems);
+  const calculateTotalRefund = () => {
+    return returnItems.reduce((sum, item) => {
+      return sum + item.costPrice * item.returnQuantity;
+    }, 0);
   };
+
+  const handleCreateReturn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedPurchase) {
+      alert(language === 'ne' ? 'कृपया पहिले खरिद बिल छान्नुहोस्' : 'Please select a purchase order first');
+      return;
+    }
+
+    const validItems = returnItems
+      .filter((i) => i.returnQuantity > 0)
+      .map((i) => ({
+        purchaseItemId: i.purchaseItemId,
+        quantity: i.returnQuantity,
+      }));
+
+    if (validItems.length === 0) {
+      alert(language === 'ne' ? 'कृपया कम्तिमा एउटा सामानको फिर्ता परिमाण छान्नुहोस्' : 'Please specify return quantity for at least one item');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const payload = {
+        purchaseId: selectedPurchase.id,
+        poNumber: selectedPurchase.poNumber,
+        reason: reason.trim() || 'Purchase Return',
+        items: validItems,
+      };
+
+      await api.post('/purchase-returns', payload);
+      alert(language === 'ne' ? 'खरिद फिर्ता सफलतापूर्वक प्रशोधन गरियो र स्टक घटाइयो!' : 'Purchase return processed successfully and stock deducted!');
+      setShowModal(false);
+      setSelectedPurchase(null);
+      setReturnItems([]);
+      setSearchPO('');
+      loadData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || (language === 'ne' ? 'खरिद फिर्ता गर्दा त्रुटि भयो' : 'Error processing purchase return'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const openNewReturnModal = () => {
+    setSelectedPurchase(null);
+    setSearchPO('');
+    setMatchingPurchases([]);
+    setReturnItems([]);
+    setReason('Purchase Return / Damaged Goods');
+    setShowModal(true);
+  };
+
+  const totalRefundAmount = calculateTotalRefund();
+  const totalItemsToReturnCount = returnItems.filter((i) => i.returnQuantity > 0).length;
 
   return (
     <AuthLayout>
       <div className="container-fluid p-4">
-        <div className="d-flex justify-content-between align-items-center mb-4">
+        {/* Header Bar */}
+        <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
           <div className="d-flex align-items-center gap-2">
             <button className="btn btn-outline-secondary btn-sm" onClick={() => router.back()} title={t('common', 'back')}>
               <i className="bi bi-arrow-left"></i> {t('common', 'back')}
             </button>
-            <h2 className="text-dark fw-bold m-0">
+            <h3 className="text-dark fw-bold m-0">
               <i className="bi bi-cart-x text-danger me-2"></i>
               {language === 'ne' ? 'खरिद फिर्ता' : 'Purchase Returns'}
-            </h2>
+            </h3>
           </div>
-          <button className="btn btn-danger shadow-sm rounded-pill px-4" onClick={() => setShowModal(true)}>
-            <i className="bi bi-plus-circle me-2"></i> {language === 'ne' ? 'फिर्ता सिर्जना गर्नुहोस्' : 'Create Return'}
+          <button className="btn btn-danger shadow-sm px-4 fw-bold d-flex align-items-center gap-2" onClick={openNewReturnModal}>
+            <i className="bi bi-plus-circle"></i> {language === 'ne' ? 'नयाँ खरिद फिर्ता' : 'Create Purchase Return'}
           </button>
         </div>
 
+        {/* Returns Table */}
         <div className="card border-0 shadow-sm rounded-4 overflow-hidden">
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
               <thead className="table-light">
                 <tr>
-                  <th>{language === 'ne' ? 'फिर्ता नं.' : 'Return No'}</th>
-                  <th>{language === 'ne' ? 'PO नं.' : 'PO Number'}</th>
-                  <th>{language === 'ne' ? 'आपूर्तिकर्ता' : 'Supplier'}</th>
+                  <th>{language === 'ne' ? 'फिर्ता नं. (Return #)' : 'Return No'}</th>
+                  <th>{language === 'ne' ? 'खरिद PO नं. (PO #)' : 'PO Number'}</th>
+                  <th>{language === 'ne' ? 'आपूर्तिकर्ता (Supplier)' : 'Supplier'}</th>
                   <th>{t('common', 'date')}</th>
-                  <th>{language === 'ne' ? 'कारण' : 'Reason'}</th>
-                  <th>{language === 'ne' ? 'कुल फिर्ता' : 'Total Refund'}</th>
+                  <th>{language === 'ne' ? 'कारण (Reason)' : 'Reason'}</th>
+                  <th>{language === 'ne' ? 'कुल फिर्ता रकम' : 'Total Refund'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -117,22 +251,29 @@ export default function PurchaseReturnsPage() {
                   </tr>
                 ) : returns.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="text-center py-4 text-muted">
-                      {language === 'ne' ? 'कुनै फिर्ता फेला परेन' : 'No returns found'}
+                    <td colSpan={6} className="text-center py-5 text-muted">
+                      <i className="bi bi-cart-x fs-2 d-block text-secondary mb-2"></i>
+                      {language === 'ne' ? 'कुनै खरिद फिर्ता फेला परेन' : 'No purchase returns recorded yet'}
                     </td>
                   </tr>
                 ) : (
                   returns.map((ret) => (
                     <tr key={ret.id}>
-                      <td className="fw-bold">{ret.returnNo}</td>
-                      <td>{ret.purchase?.poNumber || '-'}</td>
-                      <td>{ret.supplier?.name || '-'}</td>
+                      <td className="fw-bold text-dark">{ret.returnNo}</td>
+                      <td>
+                        <span className="badge bg-light text-dark border px-2 py-1">
+                          {ret.purchase?.poNumber || '-'}
+                        </span>
+                      </td>
+                      <td className="fw-semibold text-secondary">{ret.supplier?.name || '-'}</td>
                       <td>
                         <div className="small text-muted">{new Date(ret.returnDate).toLocaleDateString()}</div>
-                        <div className="small text-primary">{formatAdToBsFull(new Date(ret.returnDate))}</div>
+                        <div className="small text-primary fw-semibold">{formatAdToBsFull(new Date(ret.returnDate))}</div>
                       </td>
-                      <td>{ret.reason || '-'}</td>
-                      <td className="fw-bold text-danger">Rs. {ret.totalAmount.toFixed(2)}</td>
+                      <td>
+                        <span className="text-secondary">{ret.reason || 'Purchase Return'}</span>
+                      </td>
+                      <td className="fw-bold text-danger">Rs. {Number(ret.totalAmount || 0).toFixed(2)}</td>
                     </tr>
                   ))
                 )}
@@ -148,93 +289,240 @@ export default function PurchaseReturnsPage() {
           />
         </div>
 
-        {/* Modal */}
+        {/* Smart Purchase Return Wizard Modal */}
         {showModal && (
-          <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-            <div className="modal-dialog modal-lg">
-              <div className="modal-content border-0 shadow rounded-4">
-                <div className="modal-header border-bottom-0 bg-light rounded-top-4">
-                  <h5 className="modal-title fw-bold text-dark">
-                    {language === 'ne' ? 'खरिद फिर्ता प्रशोधन' : 'Process Purchase Return'}
+          <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
+            <div className="modal-dialog modal-lg modal-dialog-centered">
+              <div className="modal-content border-0 shadow rounded-4 overflow-hidden">
+                <div className="modal-header bg-danger text-white border-bottom-0">
+                  <h5 className="modal-title fw-bold d-flex align-items-center gap-2">
+                    <i className="bi bi-cart-x"></i>
+                    {language === 'ne' ? 'खरिद फिर्ता फारम' : 'Process Purchase Return'}
                   </h5>
-                  <button type="button" className="btn-close shadow-none" onClick={() => setShowModal(false)}></button>
+                  <button type="button" className="btn-close btn-close-white shadow-none" onClick={() => setShowModal(false)}></button>
                 </div>
                 <div className="modal-body p-4">
                   <form onSubmit={handleCreateReturn}>
-                    <div className="row g-3 mb-3">
-                      <div className="col-md-6">
-                        <label className="form-label text-muted small fw-semibold">
-                          {language === 'ne' ? 'खरिद ID' : 'Purchase ID (Internal ID)'}
-                        </label>
-                        <input
-                          type="number" step="any" className="form-control rounded-3"
-                          value={purchaseId}
-                          onChange={(e) => setPurchaseId(e.target.value)}
-                          required
-                        />
-                        <small className="text-muted">
-                          {language === 'ne' ? 'खरिदको डेटाबेस ID दिनुहोस्' : 'Enter the database ID of the purchase'}
-                        </small>
-                      </div>
-                      <div className="col-md-6">
-                        <label className="form-label text-muted small fw-semibold">
-                          {language === 'ne' ? 'कारण' : 'Reason'}
-                        </label>
+                    {/* Step 1: PO Search */}
+                    <div className="mb-3 position-relative">
+                      <label className="form-label fw-bold text-dark mb-1">
+                        1. {language === 'ne' ? 'खरिद बिल खोज्नुहोस् (PO नं. वा आपूर्तिकर्ता)' : 'Search Purchase Order (PO #, Supplier, or Product)'}
+                      </label>
+                      <div className="input-group">
+                        <span className="input-group-text bg-light border-end-0">
+                          {isSearchingPurchases ? (
+                            <span className="spinner-border spinner-border-sm text-primary" role="status"></span>
+                          ) : (
+                            <i className="bi bi-search text-muted"></i>
+                          )}
+                        </span>
                         <input
                           type="text"
-                          className="form-control rounded-3"
-                          value={reason}
-                          onChange={(e) => setReason(e.target.value)}
-                          placeholder={language === 'ne' ? 'उदा: मियाद सकिएको सामान' : 'e.g. Expired goods'}
+                          className="form-control border-start-0 bg-light"
+                          placeholder="Type PO # (e.g. PUR-856391663), supplier name..."
+                          value={searchPO}
+                          onChange={(e) => setSearchPO(e.target.value)}
                         />
+                        {searchPO && (
+                          <button
+                            className="btn btn-outline-secondary btn-sm"
+                            type="button"
+                            onClick={() => {
+                              setSearchPO('');
+                              setSelectedPurchase(null);
+                              setReturnItems([]);
+                            }}
+                          >
+                            <i className="bi bi-x-lg"></i>
+                          </button>
+                        )}
                       </div>
+
+                      {/* Dropdown search suggestions */}
+                      {matchingPurchases.length > 0 && !selectedPurchase && (
+                        <div
+                          className="position-absolute start-0 end-0 bg-white border rounded-3 shadow-lg p-2 mt-1"
+                          style={{ zIndex: 1060, maxHeight: '220px', overflowY: 'auto' }}
+                        >
+                          {matchingPurchases.map((pur) => (
+                            <div
+                              key={pur.id}
+                              className="p-2.5 rounded cursor-pointer hover-bg-light border-bottom mb-1"
+                              onClick={() => handleSelectPurchase(pur)}
+                            >
+                              <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                  <span className="fw-bold text-primary">{pur.poNumber}</span>
+                                  <span className="text-muted small ms-2">
+                                    (Supplier: {pur.supplier?.name || 'N/A'})
+                                  </span>
+                                </div>
+                                <div className="fw-bold text-dark">
+                                  Rs. {Number(pur.totalAmount).toFixed(2)}
+                                </div>
+                              </div>
+                              <div className="text-secondary small mt-0.5">
+                                {new Date(pur.createdAt).toLocaleString()} | {pur.items?.length || 0} items
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
-                    <h6 className="fw-bold mt-4 mb-3">{language === 'ne' ? 'फिर्ता वस्तुहरू' : 'Return Items'}</h6>
-                    {items.map((item, index) => (
-                      <div className="row g-2 mb-2 align-items-center" key={index}>
-                        <div className="col-md-5">
-                          <input
-                            type="number" step="any" className="form-control rounded-3"
-                            placeholder={language === 'ne' ? 'खरिद वस्तु ID' : 'Purchase Item ID'}
-                            value={item.purchaseItemId}
-                            onChange={(e) => updateItem(index, 'purchaseItemId', e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div className="col-md-5">
-                          <input
-                            type="number" step="any" className="form-control rounded-3"
-                            placeholder={language === 'ne' ? 'फिर्ता परिमाण' : 'Quantity to Return'}
-                            value={item.quantity}
-                            onChange={(e) => updateItem(index, 'quantity', e.target.value)}
-                            min="1"
-                            required
-                          />
-                        </div>
-                        <div className="col-md-2 text-end">
-                          <button
-                            type="button"
-                            className="btn btn-outline-danger rounded-3"
-                            onClick={() => removeItemRow(index)}
-                            disabled={items.length === 1}
-                          >
-                            <i className="bi bi-trash"></i>
-                          </button>
+                    {/* Step 2: Selected Purchase Banner */}
+                    {selectedPurchase && (
+                      <div className="card bg-light border-0 rounded-3 p-3 mb-3">
+                        <div className="row g-2 align-items-center">
+                          <div className="col-12 col-md-4">
+                            <span className="text-muted small d-block">PO Number:</span>
+                            <strong className="text-primary fs-6">{selectedPurchase.poNumber}</strong>
+                          </div>
+                          <div className="col-12 col-md-4">
+                            <span className="text-muted small d-block">Supplier:</span>
+                            <strong className="text-dark">{selectedPurchase.supplier?.name || 'N/A'}</strong>
+                          </div>
+                          <div className="col-12 col-md-4 text-md-end">
+                            <span className="text-muted small d-block">Original PO Total:</span>
+                            <strong className="text-success fs-6">Rs. {Number(selectedPurchase.totalAmount).toFixed(2)}</strong>
+                          </div>
                         </div>
                       </div>
-                    ))}
+                    )}
 
-                    <button type="button" className="btn btn-sm btn-outline-primary rounded-pill mt-2 mb-4" onClick={addItemRow}>
-                      <i className="bi bi-plus"></i> {language === 'ne' ? 'वस्तु थप्नुहोस्' : 'Add Item'}
-                    </button>
+                    {/* Step 3: Purchased Items Return Selection Table */}
+                    {selectedPurchase && (
+                      <div className="mb-3">
+                        <label className="form-label fw-bold text-dark mb-1">
+                          2. {language === 'ne' ? 'आपूर्तिकर्तालाई फिर्ता गर्ने सामान र परिमाण छान्नुहोस्' : 'Select Items & Quantities to Return'}
+                        </label>
+                        <div className="table-responsive border rounded-3">
+                          <table className="table table-sm align-middle mb-0">
+                            <thead className="table-light">
+                              <tr>
+                                <th>Product</th>
+                                <th className="text-center">Purchased Qty</th>
+                                <th className="text-end">Cost Price</th>
+                                <th className="text-center" style={{ width: '150px' }}>Return Qty</th>
+                                <th className="text-end">Refund Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {returnItems.map((item) => {
+                                const itemRefund = item.costPrice * item.returnQuantity;
+                                const isReturning = item.returnQuantity > 0;
+                                const maxReturnable = Math.min(item.purchasedQuantity, item.currentStock);
+                                return (
+                                  <tr key={item.purchaseItemId} className={isReturning ? 'table-warning' : ''}>
+                                    <td>
+                                      <div className="fw-semibold text-dark">{item.productName}</div>
+                                      <div className="text-muted small">
+                                        {item.sku && <span className="me-2">SKU: {item.sku}</span>}
+                                        <span>Current Stock: <strong>{item.currentStock}</strong></span>
+                                      </div>
+                                    </td>
+                                    <td className="text-center fw-semibold text-secondary">
+                                      {item.purchasedQuantity}
+                                    </td>
+                                    <td className="text-end text-dark">
+                                      Rs. {item.costPrice.toFixed(2)}
+                                    </td>
+                                    <td>
+                                      <div className="input-group input-group-sm justify-content-center">
+                                        <button
+                                          type="button"
+                                          className="btn btn-outline-secondary"
+                                          onClick={() => handleReturnQtyChange(item.purchaseItemId, item.returnQuantity - 1)}
+                                          disabled={item.returnQuantity <= 0}
+                                        >
+                                          -
+                                        </button>
+                                        <input
+                                          type="number"
+                                          className="form-control text-center"
+                                          style={{ maxWidth: '60px' }}
+                                          min="0"
+                                          max={maxReturnable}
+                                          value={item.returnQuantity}
+                                          onChange={(e) => handleReturnQtyChange(item.purchaseItemId, parseFloat(e.target.value) || 0)}
+                                        />
+                                        <button
+                                          type="button"
+                                          className="btn btn-outline-secondary"
+                                          onClick={() => handleReturnQtyChange(item.purchaseItemId, item.returnQuantity + 1)}
+                                          disabled={item.returnQuantity >= maxReturnable}
+                                        >
+                                          +
+                                        </button>
+                                      </div>
+                                    </td>
+                                    <td className="text-end fw-bold text-danger">
+                                      Rs. {itemRefund.toFixed(2)}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
 
-                    <div className="text-end border-top pt-3 mt-2">
-                      <button type="button" className="btn btn-light rounded-pill px-4 me-2" onClick={() => setShowModal(false)}>
+                    {/* Step 4: Reason & Refund Summary */}
+                    {selectedPurchase && (
+                      <div className="row g-3 align-items-end mb-4">
+                        <div className="col-12 col-md-7">
+                          <label className="form-label fw-bold text-dark mb-1">
+                            3. {language === 'ne' ? 'फिर्ताको कारण (Reason)' : 'Return Reason'}
+                          </label>
+                          <input
+                            type="text"
+                            className="form-control"
+                            placeholder="e.g. Damaged goods, expired, over-delivered, defect..."
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                            required
+                          />
+                        </div>
+                        <div className="col-12 col-md-5">
+                          <div className="card bg-danger-subtle border-danger border p-2 text-center rounded-3">
+                            <span className="text-danger small fw-semibold">Total Refund from Supplier:</span>
+                            <span className="fs-5 fw-bold text-danger">
+                              Rs. {totalRefundAmount.toFixed(2)}
+                            </span>
+                            <span className="text-muted small">
+                              ({totalItemsToReturnCount} item(s) selected)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Modal Actions */}
+                    <div className="text-end border-top pt-3">
+                      <button
+                        type="button"
+                        className="btn btn-light rounded-pill px-4 me-2 fw-semibold"
+                        onClick={() => setShowModal(false)}
+                      >
                         {t('common', 'cancel')}
                       </button>
-                      <button type="submit" className="btn btn-danger rounded-pill px-4">
-                        {language === 'ne' ? 'फिर्ता प्रशोधन गर्नुहोस्' : 'Process Return'}
+                      <button
+                        type="submit"
+                        className="btn btn-danger rounded-pill px-4 fw-bold"
+                        disabled={isSubmitting || !selectedPurchase || totalItemsToReturnCount === 0}
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                            Processing...
+                          </>
+                        ) : (
+                          <>
+                            <i className="bi bi-check2-circle me-1"></i>
+                            {language === 'ne' ? 'खरिद फिर्ता सम्पन्न गर्नुहोस्' : 'Process Purchase Return'}
+                          </>
+                        )}
                       </button>
                     </div>
                   </form>
