@@ -19,7 +19,7 @@ import {
 export default function PurchasesPage() {
   const router = useRouter();
   const { token, user, api, activeFiscalYear } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { showAlert } = useCustomAlert();
   const isAdmin = user?.role?.name === 'Admin' || user?.role?.name === 'Super Admin';
   const [products, setProducts] = useState<any[]>([]);
@@ -33,14 +33,20 @@ export default function PurchasesPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   
-  // RTK Query for Purchases
-  const { data: purchaseData, isFetching: loading } = useGetPurchasesQuery({
-    page: listCurrentPage,
-    limit: listRowsPerPage,
-    search: searchTerm,
-    startDate: startDate || undefined,
-    endDate: endDate || undefined,
-  });
+  // RTK Query for Purchases with automatic cache busting on mount & window focus
+  const { data: purchaseData, isFetching: loading, refetch } = useGetPurchasesQuery(
+    {
+      page: listCurrentPage,
+      limit: listRowsPerPage,
+      search: searchTerm,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+    },
+    {
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+    },
+  );
   const [createPurchase] = useCreatePurchaseMutation();
   const [updatePurchase] = useUpdatePurchaseMutation();
 
