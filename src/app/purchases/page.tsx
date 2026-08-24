@@ -73,8 +73,14 @@ export default function PurchasesPage() {
         api.get('/products?limit=1000'),
         api.get('/suppliers')
       ]);
-      setProducts(productsRes.data.items || []);
-      setSuppliers(suppliersRes.data.items || []);
+      const prods = Array.isArray(productsRes.data)
+        ? productsRes.data
+        : (productsRes.data?.items || productsRes.data?.data || []);
+      const sups = Array.isArray(suppliersRes.data)
+        ? suppliersRes.data
+        : (suppliersRes.data?.items || suppliersRes.data?.data || []);
+      setProducts(prods);
+      setSuppliers(sups);
     } catch (err) {
       console.error(err);
     }
@@ -216,7 +222,7 @@ export default function PurchasesPage() {
   if (showForm) {
     return (
       <AuthLayout>
-        <div className="card p-4 border-0 shadow-sm" style={{ backgroundColor: 'var(--light-card)' }}>
+        <div className="card p-4 border-0 shadow-sm" style={{ backgroundColor: 'var(--light-card)', overflow: 'visible' }}>
           <div className="d-flex justify-content-between align-items-center mb-4">
             <h4 className="fw-bold m-0 text-dark">
               {isEditing ? 'Edit Purchase Order' : t('purchases', 'add_purchase')}
@@ -254,20 +260,20 @@ export default function PurchasesPage() {
             </button>
           </div>
 
-          <div className="table-responsive mb-3" style={{ minHeight: cart.length > 0 ? '380px' : 'auto' }}>
-            <table className="table custom-table align-middle">
+          <div className="table-responsive mb-3" style={{ overflow: 'visible', minHeight: cart.length > 0 ? '380px' : 'auto' }}>
+            <table className="table custom-table align-middle" style={{ overflow: 'visible' }}>
               <thead>
                 <tr>
-                  <th style={{ width: '30%' }}>Product</th>
+                  <th style={{ width: '32%' }}>Product</th>
                   <th style={{ width: '15%' }}>Cost Price</th>
                   <th style={{ width: '15%' }}>Unit</th>
                   <th style={{ width: '12%' }}>Qty</th>
                   <th style={{ width: '15%' }}>Subtotal</th>
                   <th style={{ width: '8%' }}>Disc %</th>
-                  <th style={{ width: '5%' }} className="text-center">Del</th>
+                  <th style={{ width: '3%' }} className="text-center">Del</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody style={{ overflow: 'visible' }}>
                 {cart.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="text-center py-4 text-muted">Click "Add Item" to start adding products</td>
@@ -276,8 +282,8 @@ export default function PurchasesPage() {
                   applyPagination(cart, cartCurrentPage, cartRowsPerPage).map((item, pageIdx) => {
                     const idx = (cartCurrentPage - 1) * cartRowsPerPage + pageIdx;
                     return (
-                      <tr key={idx}>
-                        <td className="ps-3 border-bottom py-3" style={{ minWidth: '240px' }}>
+                      <tr key={idx} style={{ position: 'relative' }}>
+                        <td className="ps-3 border-bottom py-3" style={{ minWidth: '320px', position: 'relative', overflow: 'visible' }}>
                           <SearchableProductSelect
                             products={products}
                             selectedProductId={item.productId}

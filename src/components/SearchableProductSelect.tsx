@@ -63,11 +63,24 @@ export default function SearchableProductSelect({
     );
   });
 
+  // Fallback initial load when opened if local products list is empty
+  useEffect(() => {
+    if (isOpen && (!products || products.length === 0) && remoteProducts.length === 0 && !isSearching) {
+      setIsSearching(true);
+      api.get('/products?limit=100')
+        .then(res => {
+          const items = Array.isArray(res.data) ? res.data : (res.data?.items || res.data?.data || []);
+          setRemoteProducts(items);
+        })
+        .catch(console.error)
+        .finally(() => setIsSearching(false));
+    }
+  }, [isOpen, products, remoteProducts.length]);
+
   // Debounced server search fallback if query has >= 2 characters
   useEffect(() => {
     const q = searchQuery.trim();
     if (!q || q.length < 2) {
-      setRemoteProducts([]);
       return;
     }
 
@@ -75,7 +88,7 @@ export default function SearchableProductSelect({
       try {
         setIsSearching(true);
         const res = await api.get(`/products?search=${encodeURIComponent(q)}&limit=50`);
-        const items = res.data?.items || res.data || [];
+        const items = Array.isArray(res.data) ? res.data : (res.data?.items || res.data?.data || []);
         setRemoteProducts(items);
       } catch (err) {
         console.error('Failed to remote search products:', err);
@@ -106,7 +119,7 @@ export default function SearchableProductSelect({
   }, [isOpen]);
 
   return (
-    <div ref={containerRef} className="position-relative flex-grow-1" style={{ minWidth: '220px' }}>
+    <div ref={containerRef} className="position-relative flex-grow-1" style={{ minWidth: '240px' }}>
       {/* Selected Value Trigger Bar */}
       <div
         className={`form-control d-flex justify-content-between align-items-center cursor-pointer bg-white ${
@@ -144,15 +157,16 @@ export default function SearchableProductSelect({
       {/* Popover Dropdown Menu */}
       {isOpen && (
         <div
-          className="position-absolute start-0 bg-white border rounded-3 shadow-lg p-2 mt-1"
+          className="position-absolute start-0 border rounded-3 shadow-lg p-2 mt-1"
           style={{
-            zIndex: 1080,
-            maxHeight: '300px',
+            zIndex: 99999,
+            backgroundColor: '#ffffff',
+            maxHeight: '320px',
             display: 'flex',
             flexDirection: 'column',
             width: '100%',
-            minWidth: '300px',
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+            minWidth: '320px',
+            boxShadow: '0 12px 30px rgba(0, 0, 0, 0.25), 0 4px 10px rgba(0, 0, 0, 0.1)',
           }}
         >
           {/* Search Bar Input */}
