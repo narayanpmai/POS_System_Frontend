@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBsFull } from '@/utils/nepaliDate';
 import TableControls from '@/components/TableControls';
+import CustomNotificationModal, { NotificationState } from '@/components/CustomNotificationModal';
 
 interface SaleItemReturnState {
   saleItemId: number;
@@ -29,6 +30,9 @@ export default function SalesReturnsPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalReturns, setTotalReturns] = useState(0);
+
+  // Custom Modal Notification State
+  const [notification, setNotification] = useState<NotificationState | null>(null);
 
   // Return Wizard Modal State
   const [showModal, setShowModal] = useState(false);
@@ -163,7 +167,12 @@ export default function SalesReturnsPage() {
   const handleCreateReturn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSale) {
-      alert(language === 'ne' ? 'कृपया पहिले बिक्री बिल छान्नुहोस्' : 'Please select a sales invoice first');
+      setNotification({
+        show: true,
+        type: 'warning',
+        title: language === 'ne' ? 'बिल छानिएको छैन' : 'No Invoice Selected',
+        message: language === 'ne' ? 'कृपया पहिले बिक्री बिल छान्नुहोस्' : 'Please select a sales invoice first',
+      });
       return;
     }
 
@@ -175,7 +184,12 @@ export default function SalesReturnsPage() {
       }));
 
     if (validItems.length === 0) {
-      alert(language === 'ne' ? 'कृपया कम्तिमा एउटा सामानको फिर्ता परिमाण छान्नुहोस्' : 'Please specify return quantity for at least one item');
+      setNotification({
+        show: true,
+        type: 'warning',
+        title: language === 'ne' ? 'परिमाण छानिएको छैन' : 'No Items Selected',
+        message: language === 'ne' ? 'कृपया कम्तिमा एउटा सामानको फिर्ता परिमाण छान्नुहोस्' : 'Please specify return quantity for at least one item',
+      });
       return;
     }
 
@@ -189,14 +203,25 @@ export default function SalesReturnsPage() {
       };
 
       await api.post('/sales-returns', payload);
-      alert(language === 'ne' ? 'बिक्री फिर्ता सफलतापूर्वक प्रशोधन गरियो र स्टक थपियो!' : 'Sales return processed successfully and stock restored!');
       setShowModal(false);
       setSelectedSale(null);
       setReturnItems([]);
       setSearchInvoice('');
       loadData();
+
+      setNotification({
+        show: true,
+        type: 'success',
+        title: language === 'ne' ? 'बिक्री फिर्ता सम्पन्न!' : 'Return Completed!',
+        message: language === 'ne' ? 'बिक्री फिर्ता सफलतापूर्वक प्रशोधन गरियो र स्टक थपियो!' : 'Sales return processed successfully and stock restored!',
+      });
     } catch (err: any) {
-      alert(err.response?.data?.message || (language === 'ne' ? 'फिर्ता प्रशोधन गर्दा त्रुटि भयो' : 'Error processing return'));
+      setNotification({
+        show: true,
+        type: 'error',
+        title: language === 'ne' ? 'त्रुटि (Error)' : 'Process Failed',
+        message: err.response?.data?.message || (language === 'ne' ? 'फिर्ता प्रशोधन गर्दा त्रुटि भयो' : 'Error processing return'),
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -528,6 +553,12 @@ export default function SalesReturnsPage() {
             </div>
           </div>
         )}
+
+        {/* Custom Notification Modal */}
+        <CustomNotificationModal
+          notification={notification}
+          onClose={() => setNotification(null)}
+        />
       </div>
     </AuthLayout>
   );

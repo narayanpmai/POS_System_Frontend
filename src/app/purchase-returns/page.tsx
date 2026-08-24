@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBsFull } from '@/utils/nepaliDate';
 import TableControls from '@/components/TableControls';
+import CustomNotificationModal, { NotificationState } from '@/components/CustomNotificationModal';
 
 interface PurchaseItemReturnState {
   purchaseItemId: number;
@@ -29,6 +30,9 @@ export default function PurchaseReturnsPage() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalReturns, setTotalReturns] = useState(0);
+
+  // Custom Modal Notification State
+  const [notification, setNotification] = useState<NotificationState | null>(null);
 
   // Return Wizard Modal State
   const [showModal, setShowModal] = useState(false);
@@ -160,7 +164,12 @@ export default function PurchaseReturnsPage() {
   const handleCreateReturn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedPurchase) {
-      alert(language === 'ne' ? 'कृपया पहिले खरिद बिल छान्नुहोस्' : 'Please select a purchase order first');
+      setNotification({
+        show: true,
+        type: 'warning',
+        title: language === 'ne' ? 'खरिद बिल छानिएको छैन' : 'No Purchase Selected',
+        message: language === 'ne' ? 'कृपया पहिले खरिद बिल छान्नुहोस्' : 'Please select a purchase order first',
+      });
       return;
     }
 
@@ -172,7 +181,12 @@ export default function PurchaseReturnsPage() {
       }));
 
     if (validItems.length === 0) {
-      alert(language === 'ne' ? 'कृपया कम्तिमा एउटा सामानको फिर्ता परिमाण छान्नुहोस्' : 'Please specify return quantity for at least one item');
+      setNotification({
+        show: true,
+        type: 'warning',
+        title: language === 'ne' ? 'परिमाण छानिएको छैन' : 'No Items Selected',
+        message: language === 'ne' ? 'कृपया कम्तिमा एउटा सामानको फिर्ता परिमाण छान्नुहोस्' : 'Please specify return quantity for at least one item',
+      });
       return;
     }
 
@@ -186,14 +200,25 @@ export default function PurchaseReturnsPage() {
       };
 
       await api.post('/purchase-returns', payload);
-      alert(language === 'ne' ? 'खरिद फिर्ता सफलतापूर्वक प्रशोधन गरियो र स्टक घटाइयो!' : 'Purchase return processed successfully and stock deducted!');
       setShowModal(false);
       setSelectedPurchase(null);
       setReturnItems([]);
       setSearchPO('');
       loadData();
+
+      setNotification({
+        show: true,
+        type: 'success',
+        title: language === 'ne' ? 'खरिद फिर्ता सम्पन्न!' : 'Purchase Return Processed!',
+        message: language === 'ne' ? 'खरिद फिर्ता सफलतापूर्वक प्रशोधन गरियो र स्टक घटाइयो!' : 'Purchase return processed successfully and stock deducted!',
+      });
     } catch (err: any) {
-      alert(err.response?.data?.message || (language === 'ne' ? 'खरिद फिर्ता गर्दा त्रुटि भयो' : 'Error processing purchase return'));
+      setNotification({
+        show: true,
+        type: 'error',
+        title: language === 'ne' ? 'त्रुटि (Error)' : 'Process Failed',
+        message: err.response?.data?.message || (language === 'ne' ? 'खरिद फिर्ता गर्दा त्रुटि भयो' : 'Error processing purchase return'),
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -531,6 +556,12 @@ export default function PurchaseReturnsPage() {
             </div>
           </div>
         )}
+
+        {/* Custom Notification Modal */}
+        <CustomNotificationModal
+          notification={notification}
+          onClose={() => setNotification(null)}
+        />
       </div>
     </AuthLayout>
   );
