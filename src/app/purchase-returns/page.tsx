@@ -16,6 +16,8 @@ interface PurchaseItemReturnState {
   sku?: string;
   costPrice: number;
   purchasedQuantity: number;
+  returnedQuantity: number;
+  remainingQuantity: number;
   returnQuantity: number;
   currentStock: number;
 }
@@ -125,16 +127,25 @@ export default function PurchaseReturnsPage() {
       setSearchPO(fullPurchase.poNumber);
       setMatchingPurchases([]);
 
-      const itemsState: PurchaseItemReturnState[] = (fullPurchase.items || []).map((item: any) => ({
-        purchaseItemId: item.id,
-        productId: item.productId,
-        productName: item.product?.name || `Product #${item.productId}`,
-        sku: item.product?.SKU,
-        costPrice: item.costPrice || 0,
-        purchasedQuantity: item.quantity || 0,
-        returnQuantity: 0,
-        currentStock: item.product?.stock ?? item.quantity,
-      }));
+      const itemsState: PurchaseItemReturnState[] = (fullPurchase.items || []).map((item: any) => {
+        const purQty = item.quantity || 0;
+        const retQty = item.returnedQuantity !== undefined ? item.returnedQuantity : 0;
+        const remQty = item.remainingQuantity !== undefined ? item.remainingQuantity : Math.max(0, purQty - retQty);
+        const currentStock = item.product?.stock !== undefined ? item.product.stock : purQty;
+
+        return {
+          purchaseItemId: item.id,
+          productId: item.productId,
+          productName: item.product?.name || `Product #${item.productId}`,
+          sku: item.product?.SKU,
+          costPrice: item.costPrice || 0,
+          purchasedQuantity: purQty,
+          returnedQuantity: retQty,
+          remainingQuantity: remQty,
+          returnQuantity: 0,
+          currentStock,
+        };
+      });
       setReturnItems(itemsState);
     } catch (err) {
       console.error('Failed to load purchase details:', err);
@@ -146,7 +157,7 @@ export default function PurchaseReturnsPage() {
     setReturnItems((prev) =>
       prev.map((item) => {
         if (item.purchaseItemId === purchaseItemId) {
-          const maxAllowed = Math.min(item.purchasedQuantity, item.currentStock);
+          const maxAllowed = Math.min(item.remainingQuantity, item.currentStock);
           const clampedQty = Math.max(0, Math.min(maxAllowed, newQty));
           return { ...item, returnQuantity: clampedQty };
         }
@@ -412,6 +423,27 @@ export default function PurchaseReturnsPage() {
                             <strong className="text-success fs-6">Rs. {Number(selectedPurchase.totalAmount).toFixed(2)}</strong>
                           </div>
                         </div>
+
+                        {/* Already Returned Alert Banner */}
+                        {(selectedPurchase.status === 'RETURNED' || selectedPurchase.returnStatus === 'FULL' || returnItems.every((i) => i.remainingQuantity === 0)) ? (
+                          <div className="alert alert-danger d-flex align-items-center gap-2 mb-0 mt-3 py-2 px-3 rounded-3">
+                            <i className="bi bi-exclamation-octagon-fill fs-5 text-danger"></i>
+                            <div>
+                              <strong>{language === 'ne' ? 'यो खरिद बिल पहिल्यै पूर्ण रूपमा फिर्ता भइसकेको छ!' : 'This purchase is already fully returned!'}</strong>
+                              <div className="small text-muted">{language === 'ne' ? 'सबै सामान फिर्ता भइसकेको हुनाले थप फिर्ता गर्न मिल्दैन।' : 'All items from this purchase order have already been returned. No further returns allowed.'}</div>
+                            </div>
+                          </div>
+                        ) : selectedPurchase.totalRefunded > 0 ? (
+                          <div className="alert alert-warning d-flex align-items-center gap-2 mb-0 mt-3 py-2 px-3 rounded-3">
+                            <i className="bi bi-info-circle-fill fs-5 text-warning"></i>
+                            <div>
+                              <strong>{language === 'ne' ? 'आंशिक फिर्ता भएको खरिद बिल (Partially Returned Purchase)' : 'Partially Returned Purchase'}</strong>
+                              <div className="small text-muted">
+                                {language === 'ne' ? `पहिले फिर्ता भएको रकम: Rs. ${selectedPurchase.totalRefunded.toFixed(2)}` : `Previously refunded amount: Rs. ${selectedPurchase.totalRefunded.toFixed(2)}`}
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
                     )}
 
@@ -426,9 +458,11 @@ export default function PurchaseReturnsPage() {
                             <thead className="table-light">
                               <tr>
                                 <th>Product</th>
-                                <th className="text-center">Purchased Qty</th>
+                                <th className="text-center">Purchased</th>
+                                <th className="text-center">Returned</th>
+                                <th className="text-center">Stock</th>
                                 <th className="text-end">Cost Price</th>
-                                <th className="text-center" style={{ width: '150px' }}>Return Qty</th>
+                                <th className="text-center" style={{ width: '140px' }}>Return Qty</th>
                                 <th className="text-end">Refund Amount</th>
                               </tr>
                             </thead>
@@ -436,50 +470,65 @@ export default function PurchaseReturnsPage() {
                               {returnItems.map((item) => {
                                 const itemRefund = item.costPrice * item.returnQuantity;
                                 const isReturning = item.returnQuantity > 0;
-                                const maxReturnable = Math.min(item.purchasedQuantity, item.currentStock);
+                                const maxReturnable = Math.min(item.remainingQuantity, item.currentStock);
+                                const isFullyReturned = item.remainingQuantity === 0;
+
                                 return (
-                                  <tr key={item.purchaseItemId} className={isReturning ? 'table-warning' : ''}>
+                                  <tr key={item.purchaseItemId} className={isReturning ? 'table-warning' : isFullyReturned ? 'table-light' : ''}>
                                     <td>
                                       <div className="fw-semibold text-dark">{item.productName}</div>
-                                      <div className="text-muted small">
-                                        {item.sku && <span className="me-2">SKU: {item.sku}</span>}
-                                        <span>Current Stock: <strong>{item.currentStock}</strong></span>
-                                      </div>
+                                      {item.sku && <small className="text-muted">SKU: {item.sku}</small>}
                                     </td>
                                     <td className="text-center fw-semibold text-secondary">
                                       {item.purchasedQuantity}
+                                    </td>
+                                    <td className="text-center text-danger fw-semibold">
+                                      {item.returnedQuantity}
+                                    </td>
+                                    <td className="text-center fw-bold text-success">
+                                      {item.currentStock}
                                     </td>
                                     <td className="text-end text-dark">
                                       Rs. {item.costPrice.toFixed(2)}
                                     </td>
                                     <td>
-                                      <div className="input-group input-group-sm justify-content-center">
-                                        <button
-                                          type="button"
-                                          className="btn btn-outline-secondary"
-                                          onClick={() => handleReturnQtyChange(item.purchaseItemId, item.returnQuantity - 1)}
-                                          disabled={item.returnQuantity <= 0}
-                                        >
-                                          -
-                                        </button>
-                                        <input
-                                          type="number"
-                                          className="form-control text-center"
-                                          style={{ maxWidth: '60px' }}
-                                          min="0"
-                                          max={maxReturnable}
-                                          value={item.returnQuantity}
-                                          onChange={(e) => handleReturnQtyChange(item.purchaseItemId, parseFloat(e.target.value) || 0)}
-                                        />
-                                        <button
-                                          type="button"
-                                          className="btn btn-outline-secondary"
-                                          onClick={() => handleReturnQtyChange(item.purchaseItemId, item.returnQuantity + 1)}
-                                          disabled={item.returnQuantity >= maxReturnable}
-                                        >
-                                          +
-                                        </button>
-                                      </div>
+                                      {isFullyReturned ? (
+                                        <span className="badge bg-secondary w-100 py-1.5">
+                                          {language === 'ne' ? 'फिर्ता भइसक्यो' : 'Returned'}
+                                        </span>
+                                      ) : maxReturnable <= 0 ? (
+                                        <span className="badge bg-warning-subtle text-warning-emphasis w-100 py-1.5" title="No available stock">
+                                          Out of Stock
+                                        </span>
+                                      ) : (
+                                        <div className="input-group input-group-sm justify-content-center">
+                                          <button
+                                            type="button"
+                                            className="btn btn-outline-secondary"
+                                            onClick={() => handleReturnQtyChange(item.purchaseItemId, item.returnQuantity - 1)}
+                                            disabled={item.returnQuantity <= 0}
+                                          >
+                                            -
+                                          </button>
+                                          <input
+                                            type="number"
+                                            className="form-control text-center"
+                                            style={{ maxWidth: '50px' }}
+                                            min="0"
+                                            max={maxReturnable}
+                                            value={item.returnQuantity}
+                                            onChange={(e) => handleReturnQtyChange(item.purchaseItemId, parseFloat(e.target.value) || 0)}
+                                          />
+                                          <button
+                                            type="button"
+                                            className="btn btn-outline-secondary"
+                                            onClick={() => handleReturnQtyChange(item.purchaseItemId, item.returnQuantity + 1)}
+                                            disabled={item.returnQuantity >= maxReturnable}
+                                          >
+                                            +
+                                          </button>
+                                        </div>
+                                      )}
                                     </td>
                                     <td className="text-end fw-bold text-danger">
                                       Rs. {itemRefund.toFixed(2)}

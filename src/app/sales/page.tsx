@@ -259,17 +259,40 @@ export default function SalesHistoryPage() {
                       {sale.customer?.name || t('sales', 'walk_in_customer')}
                     </td>
                     <td className="border-bottom text-dark fw-semibold">
-                      Rs. {Number(sale.totalAmount).toFixed(2)}
+                      {sale.totalRefunded > 0 ? (
+                        <div>
+                          <span className="text-decoration-line-through text-muted small d-block">
+                            Rs. {Number(sale.totalAmount).toFixed(2)}
+                          </span>
+                          <span className="text-danger fw-bold">
+                            Rs. {Number(sale.netAmount !== undefined ? sale.netAmount : (sale.totalAmount - sale.totalRefunded)).toFixed(2)}
+                          </span>
+                        </div>
+                      ) : (
+                        <span>Rs. {Number(sale.totalAmount).toFixed(2)}</span>
+                      )}
                     </td>
                     <td className="border-bottom">
-                      <span className="badge bg-success text-white px-2 py-1" style={{ borderRadius: '4px', fontSize: '11px', textTransform: 'capitalize' }}>
-                        {sale.paymentStatus?.toLowerCase() || 'cash'}
+                      <span className="badge bg-light text-dark border px-2 py-1" style={{ borderRadius: '4px', fontSize: '11px', textTransform: 'uppercase' }}>
+                        {sale.paymentMethod || 'CASH'}
                       </span>
                     </td>
                     <td className="border-bottom">
-                      <span className="badge bg-success text-white px-2 py-1" style={{ borderRadius: '4px', fontSize: '11px' }}>
-                        {t('common', 'paid')}
-                      </span>
+                      {sale.status === 'RETURNED' || sale.returnStatus === 'FULL' ? (
+                        <span className="badge bg-danger text-white px-2 py-1" style={{ borderRadius: '4px', fontSize: '11px' }}>
+                          <i className="bi bi-arrow-counterclockwise me-1"></i>
+                          {language === 'ne' ? 'फिर्ता (Returned)' : 'Returned'}
+                        </span>
+                      ) : sale.status === 'PARTIALLY_RETURNED' || sale.returnStatus === 'PARTIAL' ? (
+                        <span className="badge bg-warning text-dark px-2 py-1" style={{ borderRadius: '4px', fontSize: '11px' }}>
+                          <i className="bi bi-arrow-counterclockwise me-1"></i>
+                          {language === 'ne' ? 'आंशिक फिर्ता' : 'Partially Returned'}
+                        </span>
+                      ) : (
+                        <span className="badge bg-success text-white px-2 py-1" style={{ borderRadius: '4px', fontSize: '11px' }}>
+                          {t('common', 'paid')}
+                        </span>
+                      )}
                     </td>
                     <td className="border-bottom text-center">
                       <div className="d-flex justify-content-center gap-2">

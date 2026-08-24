@@ -502,12 +502,38 @@ export default function PurchasesPage() {
                       <span className="text-muted">0 products</span>
                     )}
                   </td>
-                  <td className="fw-bold">Rs. {Number(p.totalAmount).toFixed(2)}</td>
+                  <td className="fw-bold">
+                    {p.totalRefunded > 0 ? (
+                      <div>
+                        <span className="text-decoration-line-through text-muted small d-block">
+                          Rs. {Number(p.totalAmount).toFixed(2)}
+                        </span>
+                        <span className="text-danger fw-bold">
+                          Rs. {Number(p.netAmount !== undefined ? p.netAmount : (p.totalAmount - p.totalRefunded)).toFixed(2)}
+                        </span>
+                      </div>
+                    ) : (
+                      <span>Rs. {Number(p.totalAmount).toFixed(2)}</span>
+                    )}
+                  </td>
                   <td>
                     <div className="d-flex flex-column align-items-start gap-1">
-                      <span className="badge bg-success-subtle text-success px-2.5 py-1 rounded-pill fw-semibold">
-                        <i className="bi bi-check-circle-fill me-1"></i> {p.status}
-                      </span>
+                      {p.status === 'RETURNED' || p.returnStatus === 'FULL' ? (
+                        <span className="badge bg-danger-subtle text-danger px-2.5 py-1 rounded-pill fw-semibold">
+                          <i className="bi bi-arrow-counterclockwise me-1"></i>
+                          {language === 'ne' ? 'फिर्ता (Returned)' : 'Returned'}
+                        </span>
+                      ) : p.status === 'PARTIALLY_RETURNED' || p.returnStatus === 'PARTIAL' ? (
+                        <span className="badge bg-warning-subtle text-warning-emphasis px-2.5 py-1 rounded-pill fw-semibold">
+                          <i className="bi bi-arrow-counterclockwise me-1"></i>
+                          {language === 'ne' ? 'आंशिक फिर्ता' : 'Partially Returned'}
+                        </span>
+                      ) : (
+                        <span className="badge bg-success-subtle text-success px-2.5 py-1 rounded-pill fw-semibold">
+                          <i className="bi bi-check-circle-fill me-1"></i> {p.status}
+                        </span>
+                      )}
+
                       <span className="badge bg-light text-secondary border px-2 py-0.5" style={{ fontSize: '0.72rem' }} title="Inventory Transaction STOCK_IN Recorded">
                         <i className="bi bi-box-arrow-in-down text-primary me-1"></i> Stock Credited
                       </span>
@@ -517,13 +543,21 @@ export default function PurchasesPage() {
                     </div>
                   </td>
                   <td>
-                    {isAdmin ? (
-                      <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(p)} title="Edit Purchase">
-                        <i className="bi bi-pencil-square"></i> {t('common', 'edit')}
+                    <div className="d-flex align-items-center gap-1">
+                      {isAdmin && (
+                        <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(p)} title="Edit Purchase">
+                          <i className="bi bi-pencil-square"></i> {t('common', 'edit')}
+                        </button>
+                      )}
+                      <button
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => router.push(`/purchase-returns?poNumber=${encodeURIComponent(p.poNumber)}`)}
+                        title={language === 'ne' ? 'आपूर्तिकर्तालाई सामान फिर्ता गर्नुहोस्' : 'Return items to supplier'}
+                        disabled={p.status === 'RETURNED' || p.returnStatus === 'FULL'}
+                      >
+                        <i className="bi bi-arrow-counterclockwise"></i>
                       </button>
-                    ) : (
-                      <span className="badge bg-light text-muted border px-2 py-1">View Only</span>
-                    )}
+                    </div>
                   </td>
                 </tr>
               ))}
