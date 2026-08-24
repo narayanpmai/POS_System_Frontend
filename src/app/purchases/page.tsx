@@ -254,7 +254,7 @@ export default function PurchasesPage() {
             </button>
           </div>
 
-          <div className="table-responsive mb-3">
+          <div className="table-responsive mb-3" style={{ minHeight: cart.length > 0 ? '380px' : 'auto' }}>
             <table className="table custom-table align-middle">
               <thead>
                 <tr>

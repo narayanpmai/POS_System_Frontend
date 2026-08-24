@@ -144,8 +144,16 @@ export default function SearchableProductSelect({
       {/* Popover Dropdown Menu */}
       {isOpen && (
         <div
-          className="position-absolute start-0 end-0 bg-white border rounded-3 shadow-lg p-2 mt-1"
-          style={{ zIndex: 1060, maxHeight: '320px', display: 'flex', flexDirection: 'column', width: '100%', minWidth: '280px' }}
+          className="position-absolute start-0 bg-white border rounded-3 shadow-lg p-2 mt-1"
+          style={{
+            zIndex: 1080,
+            maxHeight: '300px',
+            display: 'flex',
+            flexDirection: 'column',
+            width: '100%',
+            minWidth: '300px',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+          }}
         >
           {/* Search Bar Input */}
           <div className="input-group input-group-sm mb-2">
