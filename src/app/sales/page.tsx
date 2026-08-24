@@ -16,7 +16,7 @@ import { useGetSalesQuery } from '@/redux/api/salesApi';
 export default function SalesHistoryPage() {
   const router = useRouter();
   const { token, api, activeFiscalYear, user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
@@ -386,6 +386,20 @@ export default function SalesHistoryPage() {
             </div>
             <div className="modal-footer">
               <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => {
+                  const modalEl = document.getElementById('viewSaleModal');
+                  if (modalEl && (window as any).bootstrap) {
+                    const modal = (window as any).bootstrap.Modal.getInstance(modalEl);
+                    if (modal) modal.hide();
+                  }
+                  router.push(`/sales-returns?invoiceNo=${encodeURIComponent(selectedSale.invoiceNo)}`);
+                }}
+              >
+                <i className="bi bi-arrow-counterclockwise me-1"></i> {language === 'ne' ? 'सामान फिर्ता लिनुहोस्' : 'Return Items'}
+              </button>
               <button type="button" className="btn btn-outline-danger" onClick={handleDownloadPDF}>
                 <i className="bi bi-file-earmark-pdf me-1"></i> Download PDF
               </button>
