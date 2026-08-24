@@ -296,18 +296,37 @@ export default function PurchasesPage() {
                         </td>
                         <td className="border-bottom">
                           <select className="form-select" value={item.unit || 'pcs'} onChange={e => updateCartItem(idx, 'unit', e.target.value)} style={{ fontSize: '0.875rem' }}>
-                            <option value="pcs">Piece (pcs)</option>
-                            <option value="kg">Kilogram (kg)</option>
-                            <option value="gram">Gram (g)</option>
-                            <option value="liter">Liter (L)</option>
-                            <option value="ml">Milliliter (ml)</option>
-                            <option value="dozen">Dozen</option>
-                            <option value="box">Box</option>
-                            <option value="pack">Pack</option>
-                            <option value="carton">Carton</option>
-                            <option value="bundle">Bundle</option>
-                            <option value="set">Set</option>
-                            <option value="meter">Meter (m)</option>
+                            <optgroup label="Quantity">
+                              <option value="pcs">Piece (pcs)</option>
+                              <option value="box">Box</option>
+                              <option value="dozen">Dozen</option>
+                              <option value="pack">Pack</option>
+                              <option value="carton">Carton</option>
+                              <option value="bundle">Bundle</option>
+                              <option value="set">Set</option>
+                              <option value="pair">Pair</option>
+                              <option value="roll">Roll</option>
+                            </optgroup>
+                            <optgroup label="Weight">
+                              <option value="kg">Kilogram (KG)</option>
+                              <option value="gram">Gram (g)</option>
+                              <option value="mg">Milligram (mg)</option>
+                              <option value="lb">Pound (lb)</option>
+                              <option value="oz">Ounce (oz)</option>
+                              <option value="ton">Ton</option>
+                            </optgroup>
+                            <optgroup label="Volume">
+                              <option value="liter">Liter (L)</option>
+                              <option value="ml">Milliliter (ml)</option>
+                              <option value="gallon">Gallon (gal)</option>
+                            </optgroup>
+                            <optgroup label="Length">
+                              <option value="meter">Meter (m)</option>
+                              <option value="cm">Centimeter (cm)</option>
+                              <option value="inch">Inch (in)</option>
+                              <option value="foot">Foot (ft)</option>
+                              <option value="yard">Yard (yd)</option>
+                            </optgroup>
                           </select>
                         </td>
                         <td className="border-bottom">
