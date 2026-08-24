@@ -119,37 +119,47 @@ export default function PurchaseReturnsPage() {
     }
   };
 
+  const mapPurchaseItems = (rawPurchase: any): PurchaseItemReturnState[] => {
+    return (rawPurchase?.items || []).map((item: any) => {
+      const purQty = item.quantity || 0;
+      const retQty = item.returnedQuantity !== undefined ? item.returnedQuantity : 0;
+      const remQty = item.remainingQuantity !== undefined ? item.remainingQuantity : Math.max(0, purQty - retQty);
+      const currentStock = item.product?.stock !== undefined ? item.product.stock : purQty;
+
+      return {
+        purchaseItemId: item.id,
+        productId: item.productId,
+        productName: item.product?.name || `Product #${item.productId}`,
+        sku: item.product?.SKU,
+        costPrice: item.costPrice || item.unitPrice || 0,
+        purchasedQuantity: purQty,
+        returnedQuantity: retQty,
+        remainingQuantity: remQty,
+        returnQuantity: 0,
+        currentStock,
+      };
+    });
+  };
+
   const handleSelectPurchase = async (purchase: any) => {
+    // 1. Immediately populate from searched purchase so items table is never empty
+    setSelectedPurchase(purchase);
+    setSearchPO(purchase.poNumber);
+    setMatchingPurchases([]);
+    if (purchase.items && purchase.items.length > 0) {
+      setReturnItems(mapPurchaseItems(purchase));
+    }
+
+    // 2. Fetch enriched details from backend
     try {
       const res = await api.get(`/purchases/${purchase.id}`);
       const fullPurchase = res.data || purchase;
       setSelectedPurchase(fullPurchase);
-      setSearchPO(fullPurchase.poNumber);
-      setMatchingPurchases([]);
-
-      const itemsState: PurchaseItemReturnState[] = (fullPurchase.items || []).map((item: any) => {
-        const purQty = item.quantity || 0;
-        const retQty = item.returnedQuantity !== undefined ? item.returnedQuantity : 0;
-        const remQty = item.remainingQuantity !== undefined ? item.remainingQuantity : Math.max(0, purQty - retQty);
-        const currentStock = item.product?.stock !== undefined ? item.product.stock : purQty;
-
-        return {
-          purchaseItemId: item.id,
-          productId: item.productId,
-          productName: item.product?.name || `Product #${item.productId}`,
-          sku: item.product?.SKU,
-          costPrice: item.costPrice || 0,
-          purchasedQuantity: purQty,
-          returnedQuantity: retQty,
-          remainingQuantity: remQty,
-          returnQuantity: 0,
-          currentStock,
-        };
-      });
-      setReturnItems(itemsState);
+      if (fullPurchase.items && fullPurchase.items.length > 0) {
+        setReturnItems(mapPurchaseItems(fullPurchase));
+      }
     } catch (err) {
       console.error('Failed to load purchase details:', err);
-      setSelectedPurchase(purchase);
     }
   };
 

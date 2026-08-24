@@ -119,38 +119,46 @@ export default function SalesReturnsPage() {
     }
   };
 
+  const mapSaleItems = (rawSale: any): SaleItemReturnState[] => {
+    return (rawSale?.items || []).map((item: any) => {
+      const soldQty = item.quantity || 0;
+      const retQty = item.returnedQuantity !== undefined ? item.returnedQuantity : 0;
+      const remQty = item.remainingQuantity !== undefined ? item.remainingQuantity : Math.max(0, soldQty - retQty);
+
+      return {
+        saleItemId: item.id,
+        productId: item.productId,
+        productName: item.product?.name || `Product #${item.productId}`,
+        sku: item.product?.SKU,
+        unitPrice: item.price || 0,
+        soldQuantity: soldQty,
+        returnedQuantity: retQty,
+        remainingQuantity: remQty,
+        returnQuantity: 0,
+        taxAmount: item.taxAmount || 0,
+      };
+    });
+  };
+
   const handleSelectSale = async (sale: any) => {
+    // 1. Immediately populate from searched sale so items table is never empty
+    setSelectedSale(sale);
+    setSearchInvoice(sale.invoiceNo);
+    setMatchingSales([]);
+    if (sale.items && sale.items.length > 0) {
+      setReturnItems(mapSaleItems(sale));
+    }
+
+    // 2. Fetch full details and real-time return status from server
     try {
-      // Fetch full details of the sale including product items and previous returns
       const res = await api.get(`/sales/${sale.id}`);
       const fullSale = res.data || sale;
       setSelectedSale(fullSale);
-      setSearchInvoice(fullSale.invoiceNo);
-      setMatchingSales([]);
-
-      // Initialize return items with already returned tracking
-      const itemsState: SaleItemReturnState[] = (fullSale.items || []).map((item: any) => {
-        const soldQty = item.quantity || 0;
-        const retQty = item.returnedQuantity !== undefined ? item.returnedQuantity : 0;
-        const remQty = item.remainingQuantity !== undefined ? item.remainingQuantity : Math.max(0, soldQty - retQty);
-
-        return {
-          saleItemId: item.id,
-          productId: item.productId,
-          productName: item.product?.name || `Product #${item.productId}`,
-          sku: item.product?.SKU,
-          unitPrice: item.price || 0,
-          soldQuantity: soldQty,
-          returnedQuantity: retQty,
-          remainingQuantity: remQty,
-          returnQuantity: 0,
-          taxAmount: item.taxAmount || 0,
-        };
-      });
-      setReturnItems(itemsState);
+      if (fullSale.items && fullSale.items.length > 0) {
+        setReturnItems(mapSaleItems(fullSale));
+      }
     } catch (err) {
       console.error('Failed to load sale details:', err);
-      setSelectedSale(sale);
     }
   };
 

@@ -32,15 +32,21 @@ export default function SalesHistoryPage() {
   const [categoryId, setCategoryId] = useState('');
   const [categories, setCategories] = useState<any[]>([]);
 
-  // RTK Query for Sales
-  const { data: salesData, isFetching: loading } = useGetSalesQuery({
-    page: currentPage,
-    limit: rowsPerPage,
-    search,
-    startDate,
-    endDate,
-    categoryId,
-  });
+  // RTK Query for Sales with automatic cache busting on mount & window focus
+  const { data: salesData, isFetching: loading, refetch } = useGetSalesQuery(
+    {
+      page: currentPage,
+      limit: rowsPerPage,
+      search,
+      startDate,
+      endDate,
+      categoryId,
+    },
+    {
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+    },
+  );
 
   const sales: any[] = salesData?.items || [];
   const totalSales = salesData?.total || 0;
@@ -48,6 +54,7 @@ export default function SalesHistoryPage() {
 
   useEffect(() => {
     if (!token) return;
+    refetch();
     api.get('/categories').then(res => setCategories(res.data?.items || res.data || [])).catch(console.error);
     api.get('/settings').then(res => setStoreSettings(res.data)).catch(console.error);
   }, [token, activeFiscalYear]);
