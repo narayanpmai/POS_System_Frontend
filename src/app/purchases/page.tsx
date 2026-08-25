@@ -57,6 +57,7 @@ export default function PurchasesPage() {
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingPurchaseId, setEditingPurchaseId] = useState<number | null>(null);
+  const [editingPurchaseDate, setEditingPurchaseDate] = useState<string | null>(null);
 
   // Form State
   const [referenceNo, setReferenceNo] = useState(`PUR-${Math.floor(Math.random() * 1000000000)}`);
@@ -173,7 +174,7 @@ export default function PurchasesPage() {
     const payload = {
       poNumber: referenceNo,
       supplierId: supplier ? parseInt(supplier) : null,
-      purchaseDate: new Date().toISOString(),
+      purchaseDate: isEditing && editingPurchaseDate ? editingPurchaseDate : new Date().toISOString(),
       totalAmount: totals.grandTotal,
       items: mappedItems
     };
@@ -197,6 +198,7 @@ export default function PurchasesPage() {
     setShowForm(false);
     setIsEditing(false);
     setEditingPurchaseId(null);
+    setEditingPurchaseDate(null);
     setCart([]);
     setReferenceNo(`PUR-${Math.floor(Math.random() * 1000000000)}`);
     setTaxPercent(0);
@@ -208,6 +210,7 @@ export default function PurchasesPage() {
   const handleEdit = (purchase: any) => {
     setIsEditing(true);
     setEditingPurchaseId(purchase.id);
+    setEditingPurchaseDate(purchase.purchaseDate || null);
     setReferenceNo(purchase.poNumber);
     setSupplier(purchase.supplierId ? purchase.supplierId.toString() : '');
     if (purchase.items && purchase.items.length > 0) {
