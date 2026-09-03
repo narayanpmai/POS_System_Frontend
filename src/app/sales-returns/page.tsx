@@ -19,6 +19,7 @@ interface SaleItemReturnState {
   returnedQuantity: number;
   remainingQuantity: number;
   returnQuantity: number;
+  returnQuantityInput?: string;
   taxAmount: number;
 }
 
@@ -121,9 +122,9 @@ export default function SalesReturnsPage() {
 
   const mapSaleItems = (rawSale: any): SaleItemReturnState[] => {
     return (rawSale?.items || []).map((item: any) => {
-      const soldQty = item.quantity || 0;
-      const retQty = item.returnedQuantity !== undefined ? item.returnedQuantity : 0;
-      const remQty = item.remainingQuantity !== undefined ? item.remainingQuantity : Math.max(0, soldQty - retQty);
+      const soldQty = Math.round((item.quantity || 0) * 1000) / 1000;
+      const retQty = Math.round((item.returnedQuantity !== undefined ? item.returnedQuantity : 0) * 1000) / 1000;
+      const remQty = Math.round((item.remainingQuantity !== undefined ? item.remainingQuantity : Math.max(0, soldQty - retQty)) * 1000) / 1000;
 
       return {
         saleItemId: item.id,
@@ -135,6 +136,7 @@ export default function SalesReturnsPage() {
         returnedQuantity: retQty,
         remainingQuantity: remQty,
         returnQuantity: 0,
+        returnQuantityInput: '',
         taxAmount: item.taxAmount || 0,
       };
     });
@@ -152,7 +154,7 @@ export default function SalesReturnsPage() {
     // 2. Fetch full details and real-time return status from server
     try {
       const res = await api.get(`/sales/${sale.id}`);
-      const fullSale = res.data || sale;
+      const fullSale = res.data?.data || res.data || sale;
       setSelectedSale(fullSale);
       if (fullSale.items && fullSale.items.length > 0) {
         setReturnItems(mapSaleItems(fullSale));
@@ -162,13 +164,65 @@ export default function SalesReturnsPage() {
     }
   };
 
-  const handleReturnQtyChange = (saleItemId: number, newQty: number) => {
+  const handleReturnQtyInputChange = (saleItemId: number, rawValue: string) => {
+    // Only allow positive numbers and up to one decimal point
+    if (!/^\d*\.?\d*$/.test(rawValue)) return;
+
     setReturnItems((prev) =>
       prev.map((item) => {
         if (item.saleItemId === saleItemId) {
-          const rounded = Math.round(newQty * 1000) / 1000;
+          if (rawValue === '' || rawValue === '.') {
+            return { ...item, returnQuantity: 0, returnQuantityInput: rawValue };
+          }
+          const num = parseFloat(rawValue);
+          if (isNaN(num)) {
+            return { ...item, returnQuantity: 0, returnQuantityInput: rawValue };
+          }
+          const rounded = Math.round(num * 1000) / 1000;
+          if (rounded > item.remainingQuantity) {
+            return {
+              ...item,
+              returnQuantity: item.remainingQuantity,
+              returnQuantityInput: String(item.remainingQuantity),
+            };
+          }
+          return {
+            ...item,
+            returnQuantity: rounded,
+            returnQuantityInput: rawValue,
+          };
+        }
+        return item;
+      }),
+    );
+  };
+
+  const handleReturnQtyBlur = (saleItemId: number) => {
+    setReturnItems((prev) =>
+      prev.map((item) => {
+        if (item.saleItemId === saleItemId) {
+          const val = item.returnQuantity;
+          return {
+            ...item,
+            returnQuantityInput: val > 0 ? String(val) : '',
+          };
+        }
+        return item;
+      }),
+    );
+  };
+
+  const handleReturnQtyChange = (saleItemId: number, newQty: number) => {
+    const rounded = Math.round(newQty * 1000) / 1000;
+    setReturnItems((prev) =>
+      prev.map((item) => {
+        if (item.saleItemId === saleItemId) {
           const clampedQty = Math.max(0, Math.min(item.remainingQuantity, rounded));
-          return { ...item, returnQuantity: clampedQty };
+          return {
+            ...item,
+            returnQuantity: clampedQty,
+            returnQuantityInput: clampedQty > 0 ? String(clampedQty) : '',
+          };
         }
         return item;
       }),
@@ -509,29 +563,25 @@ export default function SalesReturnsPage() {
                                           <button
                                             type="button"
                                             className="btn btn-outline-secondary"
-                                            onClick={() => handleReturnQtyChange(item.saleItemId, Math.max(0, item.returnQuantity - 1))}
+                                            onClick={() => handleReturnQtyChange(item.saleItemId, Math.max(0, Math.round((item.returnQuantity - 1) * 1000) / 1000))}
                                             disabled={item.returnQuantity <= 0}
                                           >
                                             -
                                           </button>
                                           <input
-                                            type="number"
-                                            step="any"
-                                            className="form-control text-center"
-                                            style={{ maxWidth: '75px' }}
-                                            min="0"
-                                            max={item.remainingQuantity}
-                                            value={item.returnQuantity === 0 ? '' : item.returnQuantity}
+                                            type="text"
+                                            inputMode="decimal"
+                                            className="form-control text-center fw-semibold"
+                                            style={{ maxWidth: '85px' }}
+                                            value={item.returnQuantityInput !== undefined ? item.returnQuantityInput : (item.returnQuantity > 0 ? String(item.returnQuantity) : '')}
                                             placeholder="0"
-                                            onChange={(e) => {
-                                              const val = parseFloat(e.target.value);
-                                              handleReturnQtyChange(item.saleItemId, isNaN(val) ? 0 : val);
-                                            }}
+                                            onChange={(e) => handleReturnQtyInputChange(item.saleItemId, e.target.value)}
+                                            onBlur={() => handleReturnQtyBlur(item.saleItemId)}
                                           />
                                           <button
                                             type="button"
                                             className="btn btn-outline-secondary"
-                                            onClick={() => handleReturnQtyChange(item.saleItemId, Math.min(item.remainingQuantity, item.returnQuantity + 1))}
+                                            onClick={() => handleReturnQtyChange(item.saleItemId, Math.min(item.remainingQuantity, Math.round((item.returnQuantity + 1) * 1000) / 1000))}
                                             disabled={item.returnQuantity >= item.remainingQuantity}
                                           >
                                             +

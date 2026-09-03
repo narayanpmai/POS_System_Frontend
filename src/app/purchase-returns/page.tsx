@@ -19,6 +19,7 @@ interface PurchaseItemReturnState {
   returnedQuantity: number;
   remainingQuantity: number;
   returnQuantity: number;
+  returnQuantityInput?: string;
   currentStock: number;
 }
 
@@ -121,10 +122,10 @@ export default function PurchaseReturnsPage() {
 
   const mapPurchaseItems = (rawPurchase: any): PurchaseItemReturnState[] => {
     return (rawPurchase?.items || []).map((item: any) => {
-      const purQty = item.quantity || 0;
-      const retQty = item.returnedQuantity !== undefined ? item.returnedQuantity : 0;
-      const remQty = item.remainingQuantity !== undefined ? item.remainingQuantity : Math.max(0, purQty - retQty);
-      const currentStock = item.product?.stock !== undefined ? item.product.stock : purQty;
+      const purQty = Math.round((item.quantity || 0) * 1000) / 1000;
+      const retQty = Math.round((item.returnedQuantity !== undefined ? item.returnedQuantity : 0) * 1000) / 1000;
+      const remQty = Math.round((item.remainingQuantity !== undefined ? item.remainingQuantity : Math.max(0, purQty - retQty)) * 1000) / 1000;
+      const currentStock = Math.round((item.product?.stock !== undefined ? item.product.stock : purQty) * 1000) / 1000;
 
       return {
         purchaseItemId: item.id,
@@ -136,6 +137,7 @@ export default function PurchaseReturnsPage() {
         returnedQuantity: retQty,
         remainingQuantity: remQty,
         returnQuantity: 0,
+        returnQuantityInput: '',
         currentStock,
       };
     });
@@ -153,7 +155,7 @@ export default function PurchaseReturnsPage() {
     // 2. Fetch enriched details from backend
     try {
       const res = await api.get(`/purchases/${purchase.id}`);
-      const fullPurchase = res.data || purchase;
+      const fullPurchase = res.data?.data || res.data || purchase;
       setSelectedPurchase(fullPurchase);
       if (fullPurchase.items && fullPurchase.items.length > 0) {
         setReturnItems(mapPurchaseItems(fullPurchase));
@@ -163,14 +165,67 @@ export default function PurchaseReturnsPage() {
     }
   };
 
-  const handleReturnQtyChange = (purchaseItemId: number, newQty: number) => {
+  const handleReturnQtyInputChange = (purchaseItemId: number, rawValue: string) => {
+    // Only allow positive numbers and at most one decimal point
+    if (!/^\d*\.?\d*$/.test(rawValue)) return;
+
     setReturnItems((prev) =>
       prev.map((item) => {
         if (item.purchaseItemId === purchaseItemId) {
           const maxAllowed = Math.min(item.remainingQuantity, item.currentStock);
-          const rounded = Math.round(newQty * 1000) / 1000;
+          if (rawValue === '' || rawValue === '.') {
+            return { ...item, returnQuantity: 0, returnQuantityInput: rawValue };
+          }
+          const num = parseFloat(rawValue);
+          if (isNaN(num)) {
+            return { ...item, returnQuantity: 0, returnQuantityInput: rawValue };
+          }
+          const rounded = Math.round(num * 1000) / 1000;
+          if (rounded > maxAllowed) {
+            return {
+              ...item,
+              returnQuantity: maxAllowed,
+              returnQuantityInput: String(maxAllowed),
+            };
+          }
+          return {
+            ...item,
+            returnQuantity: rounded,
+            returnQuantityInput: rawValue,
+          };
+        }
+        return item;
+      }),
+    );
+  };
+
+  const handleReturnQtyBlur = (purchaseItemId: number) => {
+    setReturnItems((prev) =>
+      prev.map((item) => {
+        if (item.purchaseItemId === purchaseItemId) {
+          const val = item.returnQuantity;
+          return {
+            ...item,
+            returnQuantityInput: val > 0 ? String(val) : '',
+          };
+        }
+        return item;
+      }),
+    );
+  };
+
+  const handleReturnQtyChange = (purchaseItemId: number, newQty: number) => {
+    const rounded = Math.round(newQty * 1000) / 1000;
+    setReturnItems((prev) =>
+      prev.map((item) => {
+        if (item.purchaseItemId === purchaseItemId) {
+          const maxAllowed = Math.min(item.remainingQuantity, item.currentStock);
           const clampedQty = Math.max(0, Math.min(maxAllowed, rounded));
-          return { ...item, returnQuantity: clampedQty };
+          return {
+            ...item,
+            returnQuantity: clampedQty,
+            returnQuantityInput: clampedQty > 0 ? String(clampedQty) : '',
+          };
         }
         return item;
       }),
@@ -516,29 +571,25 @@ export default function PurchaseReturnsPage() {
                                           <button
                                             type="button"
                                             className="btn btn-outline-secondary"
-                                            onClick={() => handleReturnQtyChange(item.purchaseItemId, Math.max(0, item.returnQuantity - 1))}
+                                            onClick={() => handleReturnQtyChange(item.purchaseItemId, Math.max(0, Math.round((item.returnQuantity - 1) * 1000) / 1000))}
                                             disabled={item.returnQuantity <= 0}
                                           >
                                             -
                                           </button>
                                           <input
-                                            type="number"
-                                            step="any"
-                                            className="form-control text-center"
-                                            style={{ maxWidth: '75px' }}
-                                            min="0"
-                                            max={maxReturnable}
-                                            value={item.returnQuantity === 0 ? '' : item.returnQuantity}
+                                            type="text"
+                                            inputMode="decimal"
+                                            className="form-control text-center fw-semibold"
+                                            style={{ maxWidth: '85px' }}
+                                            value={item.returnQuantityInput !== undefined ? item.returnQuantityInput : (item.returnQuantity > 0 ? String(item.returnQuantity) : '')}
                                             placeholder="0"
-                                            onChange={(e) => {
-                                              const val = parseFloat(e.target.value);
-                                              handleReturnQtyChange(item.purchaseItemId, isNaN(val) ? 0 : val);
-                                            }}
+                                            onChange={(e) => handleReturnQtyInputChange(item.purchaseItemId, e.target.value)}
+                                            onBlur={() => handleReturnQtyBlur(item.purchaseItemId)}
                                           />
                                           <button
                                             type="button"
                                             className="btn btn-outline-secondary"
-                                            onClick={() => handleReturnQtyChange(item.purchaseItemId, Math.min(maxReturnable, item.returnQuantity + 1))}
+                                            onClick={() => handleReturnQtyChange(item.purchaseItemId, Math.min(maxReturnable, Math.round((item.returnQuantity + 1) * 1000) / 1000))}
                                             disabled={item.returnQuantity >= maxReturnable}
                                           >
                                             +
