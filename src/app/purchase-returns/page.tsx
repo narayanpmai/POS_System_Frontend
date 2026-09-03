@@ -168,7 +168,8 @@ export default function PurchaseReturnsPage() {
       prev.map((item) => {
         if (item.purchaseItemId === purchaseItemId) {
           const maxAllowed = Math.min(item.remainingQuantity, item.currentStock);
-          const clampedQty = Math.max(0, Math.min(maxAllowed, newQty));
+          const rounded = Math.round(newQty * 1000) / 1000;
+          const clampedQty = Math.max(0, Math.min(maxAllowed, rounded));
           return { ...item, returnQuantity: clampedQty };
         }
         return item;
@@ -481,7 +482,7 @@ export default function PurchaseReturnsPage() {
                                 const itemRefund = item.costPrice * item.returnQuantity;
                                 const isReturning = item.returnQuantity > 0;
                                 const maxReturnable = Math.min(item.remainingQuantity, item.currentStock);
-                                const isFullyReturned = item.remainingQuantity === 0;
+                                const isFullyReturned = item.remainingQuantity <= 0.001;
 
                                 return (
                                   <tr key={item.purchaseItemId} className={isReturning ? 'table-warning' : isFullyReturned ? 'table-light' : ''}>
@@ -506,7 +507,7 @@ export default function PurchaseReturnsPage() {
                                         <span className="badge bg-secondary w-100 py-1.5">
                                           {language === 'ne' ? 'फिर्ता भइसक्यो' : 'Returned'}
                                         </span>
-                                      ) : maxReturnable <= 0 ? (
+                                      ) : maxReturnable <= 0.001 ? (
                                         <span className="badge bg-warning-subtle text-warning-emphasis w-100 py-1.5" title="No available stock">
                                           Out of Stock
                                         </span>
@@ -515,24 +516,29 @@ export default function PurchaseReturnsPage() {
                                           <button
                                             type="button"
                                             className="btn btn-outline-secondary"
-                                            onClick={() => handleReturnQtyChange(item.purchaseItemId, item.returnQuantity - 1)}
+                                            onClick={() => handleReturnQtyChange(item.purchaseItemId, Math.max(0, item.returnQuantity - 1))}
                                             disabled={item.returnQuantity <= 0}
                                           >
                                             -
                                           </button>
                                           <input
                                             type="number"
+                                            step="any"
                                             className="form-control text-center"
-                                            style={{ maxWidth: '50px' }}
+                                            style={{ maxWidth: '75px' }}
                                             min="0"
                                             max={maxReturnable}
-                                            value={item.returnQuantity}
-                                            onChange={(e) => handleReturnQtyChange(item.purchaseItemId, parseFloat(e.target.value) || 0)}
+                                            value={item.returnQuantity === 0 ? '' : item.returnQuantity}
+                                            placeholder="0"
+                                            onChange={(e) => {
+                                              const val = parseFloat(e.target.value);
+                                              handleReturnQtyChange(item.purchaseItemId, isNaN(val) ? 0 : val);
+                                            }}
                                           />
                                           <button
                                             type="button"
                                             className="btn btn-outline-secondary"
-                                            onClick={() => handleReturnQtyChange(item.purchaseItemId, item.returnQuantity + 1)}
+                                            onClick={() => handleReturnQtyChange(item.purchaseItemId, Math.min(maxReturnable, item.returnQuantity + 1))}
                                             disabled={item.returnQuantity >= maxReturnable}
                                           >
                                             +

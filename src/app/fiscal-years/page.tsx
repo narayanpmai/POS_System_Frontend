@@ -759,21 +759,19 @@ export default function FiscalYearsPage() {
                     </div>
                     <div className="row g-3">
                       <div className="col-md-6">
-                        <label className="form-label fw-semibold">Start Date</label>
-                        <input
-                          type="date"
-                          className="form-control"
+                        <label className="form-label fw-semibold">Start Date (BS)</label>
+                        <BSDatePicker
                           value={nextFyStart}
-                          onChange={(e) => setNextFyStart(e.target.value)}
+                          onChange={setNextFyStart}
+                          className="form-control"
                         />
                       </div>
                       <div className="col-md-6">
-                        <label className="form-label fw-semibold">End Date</label>
-                        <input
-                          type="date"
-                          className="form-control"
+                        <label className="form-label fw-semibold">End Date (BS)</label>
+                        <BSDatePicker
                           value={nextFyEnd}
-                          onChange={(e) => setNextFyEnd(e.target.value)}
+                          onChange={setNextFyEnd}
+                          className="form-control"
                         />
                       </div>
                     </div>

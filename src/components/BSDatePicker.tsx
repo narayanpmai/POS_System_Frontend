@@ -27,19 +27,33 @@ const WEEKDAYS_NE = ['आइत', 'सोम', 'मंगल', 'बुध', 'ब
 const WEEKDAYS_EN = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
 function getDaysInMonth(year: number, monthIndex: number): number {
+  try {
+    const bsMonth = monthIndex + 1;
+    const thisMonthAdStr = bsToAdDate(year, bsMonth, 1);
+    const nextMonthAdStr = bsMonth === 12
+      ? bsToAdDate(year + 1, 1, 1)
+      : bsToAdDate(year, bsMonth + 1, 1);
+    const d1 = new Date(thisMonthAdStr);
+    const d2 = new Date(nextMonthAdStr);
+    const diffDays = Math.round((d2.getTime() - d1.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays >= 28 && diffDays <= 32) {
+      return diffDays;
+    }
+  } catch {}
   const yearData = bsCalendarMap[year];
   if (!yearData) return 30;
   return yearData[monthIndex + 1] || 30;
 }
 
 function getFirstDayOfMonth(year: number, monthIndex: number): number {
-  // Convert 1st day of BS month to AD date to find exact day of week (0 = Sunday, 5 = Friday, 6 = Saturday)
-  const adDateStr = bsToAdDate(year, monthIndex + 1, 1);
-  const parts = adDateStr.split('-');
-  if (parts.length === 3) {
-    const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), 12, 0, 0);
-    return d.getDay();
-  }
+  try {
+    const adDateStr = bsToAdDate(year, monthIndex + 1, 1);
+    const parts = adDateStr.split('-');
+    if (parts.length === 3) {
+      const d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10), 12, 0, 0);
+      return d.getDay();
+    }
+  } catch {}
   return 0;
 }
 

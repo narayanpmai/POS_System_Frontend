@@ -6,6 +6,7 @@ import AuthLayout from '@/components/AuthLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatAdToBs } from '@/utils/nepaliDate';
+import BSDatePicker from '@/components/BSDatePicker';
 import TableControls from '@/components/TableControls';
 import { useCustomAlert } from '@/context/CustomAlertContext';
 import { toSafeArray } from '@/utils/array';
@@ -437,11 +438,10 @@ export default function ExpensesPage() {
                 </div>
                 <div className="mb-3">
                   <label className="form-label fw-semibold text-secondary">{t('expenses', 'expense_date')}</label>
-                  <input
-                    type="date"
-                    className="form-control"
+                  <BSDatePicker
                     value={date}
-                    onChange={(e) => setDate(e.target.value)}
+                    onChange={setDate}
+                    className="form-control"
                   />
                 </div>
                 <div className="mb-3">

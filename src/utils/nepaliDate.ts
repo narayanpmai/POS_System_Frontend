@@ -1,3 +1,5 @@
+import { adToBs as libAdToBs, bsToAd as libBsToAd } from '@sbmdkl/nepali-date-converter';
+
 const nepaliMonths = [
   'वैशाख',
   'जेठ',
@@ -136,11 +138,75 @@ function isLeapYear(year: number): boolean {
 }
 
 /**
- * Converts a Gregorian (AD) Date object or string into accurate Nepali BS Date
+ * Converts a Gregorian (AD) Date object or string into accurate Nepali BS Date.
+ * If the input is ALREADY a BS date string (e.g. "2083-05-18"), it parses and returns it directly without double-conversion.
  */
 export function adToBsDate(dateInput: Date | string | undefined | null) {
   if (!dateInput) return null;
-  
+
+  // 1. If it's a string, check if it's ALREADY a BS date string (e.g. from backend BsDateTransformInterceptor)
+  if (typeof dateInput === 'string') {
+    const clean = dateInput.split('T')[0].trim();
+    const parts = clean.split(/[-\/]/);
+    if (parts.length === 3) {
+      const yearPart = parseInt(fromDevanagari(parts[0]), 10);
+      const monthPart = parseInt(fromDevanagari(parts[1]), 10);
+      const dayPart = parseInt(fromDevanagari(parts[2]), 10);
+
+      // Years 2050-2120 are BS dates! Return BS object directly so it NEVER double-converts!
+      if (yearPart >= 2050 && yearPart <= 2120) {
+        let dayName = 'Sunday';
+        try {
+          const adStr = libBsToAd(`${yearPart}-${String(monthPart).padStart(2, '0')}-${String(dayPart).padStart(2, '0')}`);
+          const adDate = new Date(adStr);
+          const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+          if (!isNaN(adDate.getTime())) {
+            dayName = daysOfWeek[adDate.getDay()] || 'Sunday';
+          }
+        } catch {}
+
+        return {
+          year: yearPart,
+          month: monthPart,
+          date: dayPart,
+          day: dayName,
+        };
+      }
+    }
+  }
+
+  // 2. Try converting using official @sbmdkl/nepali-date-converter npm library
+  try {
+    let adStr: string;
+    let jsDate: Date;
+    if (dateInput instanceof Date) {
+      jsDate = dateInput;
+      const y = jsDate.getFullYear();
+      const m = String(jsDate.getMonth() + 1).padStart(2, '0');
+      const d = String(jsDate.getDate()).padStart(2, '0');
+      adStr = `${y}-${m}-${d}`;
+    } else {
+      const clean = String(dateInput).split('T')[0].trim();
+      adStr = clean;
+      jsDate = new Date(clean);
+    }
+
+    const res = libAdToBs(adStr);
+    let bsStr: string = typeof res === 'string' ? res : `${res.year}-${res.month}-${res.day}`;
+    const p = bsStr.split(/[-\/]/);
+    const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayName = !isNaN(jsDate.getTime()) ? daysOfWeek[jsDate.getDay()] : 'Sunday';
+
+    return {
+      year: parseInt(p[0], 10),
+      month: parseInt(p[1], 10),
+      date: parseInt(p[2], 10),
+      day: dayName,
+    };
+  } catch {
+    // Fallback to internal calendar map
+  }
+
   let date: Date;
   if (typeof dateInput === 'string') {
     const clean = dateInput.split('T')[0];
@@ -156,7 +222,7 @@ export function adToBsDate(dateInput: Date | string | undefined | null) {
 
   if (isNaN(date.getTime())) return null;
 
-  // Use accurate modern base anchor: 2077-01-01 BS = 2020-04-13 AD
+  // Modern base anchor: 2077-01-01 BS = 2020-04-13 AD
   const diffTime = Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - Date.UTC(2020, 3, 13);
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
@@ -180,7 +246,6 @@ export function adToBsDate(dateInput: Date | string | undefined | null) {
       }
     }
   } else {
-    // Before 2077 BS
     let revDays = Math.abs(diffDays);
     while (revDays > 0) {
       month--;
@@ -214,7 +279,16 @@ export function adToBsDate(dateInput: Date | string | undefined | null) {
  * Converts a Nepali BS date (year, month, day) into ISO AD date string YYYY-MM-DD
  */
 export function bsToAdDate(year: number, month: number, day: number): string {
-  // Use accurate modern base anchor: 2077-01-01 BS = 2020-04-13 AD
+  try {
+    const formatted = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const res = libBsToAd(formatted);
+    if (typeof res === 'string') return res;
+    if (res && typeof res === 'object' && 'year' in res) {
+      return `${res.year}-${String(res.month).padStart(2, '0')}-${String(res.day).padStart(2, '0')}`;
+    }
+  } catch {}
+
+  // Fallback to internal calendar map
   const baseAD = new Date(2020, 3, 13, 12, 0, 0); // April 13, 2020
 
   let totalDays = 0;

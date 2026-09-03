@@ -11,8 +11,7 @@
   "dependencies": {
     "@popperjs/core": "^2.11.8",
     "@reduxjs/toolkit": "^2.12.0",
-    "@remotemerge/nepali-date-converter": "^1.2.0",
-    "@sbmdkl/nepali-datepicker-reactjs": "^1.2.5",
+    "@sbmdkl/nepali-date-converter": "^2.0.5",
     "async-mutex": "^0.5.0",
     "axios": "^1.6.2",
     "bootstrap": "^5.3.2",
@@ -20,7 +19,6 @@
     "chart.js": "^4.4.1",
     "formik": "^2.4.9",
     "html2pdf.js": "^0.14.0",
-    "nepali-datetime": "^2.0.0",
     "next": "^14.0.4",
     "react": "^18.2.0",
     "react-barcode": "^1.6.1",

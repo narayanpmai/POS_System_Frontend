@@ -15,6 +15,7 @@ import {
   useCreatePurchaseMutation,
   useUpdatePurchaseMutation,
 } from '@/redux/api/purchasesApi';
+import * as XLSX from 'xlsx';
 
 export default function PurchasesPage() {
   const router = useRouter();
@@ -91,6 +92,45 @@ export default function PurchasesPage() {
       console.error(err);
     }
     setAuxLoading(false);
+  };
+
+  const exportToExcel = () => {
+    if (!purchases || purchases.length === 0) {
+      showAlert({
+        title: language === 'ne' ? 'डाटा छैन' : 'No Data',
+        message: language === 'ne' ? 'एक्सपोर्ट गर्नका लागि कुनै खरिद रेकर्ड छैन।' : 'No purchase records available to export.',
+        type: 'warning',
+      });
+      return;
+    }
+
+    const dataToExport = purchases.map((p, index) => {
+      const itemsSummary = (p.items || [])
+        .map((item: any) => {
+          const prodName = products.find((prod) => prod.id === item.productId)?.name || `Product #${item.productId}`;
+          return `${prodName} (x${item.quantity} ${item.measurementUnit || 'pcs'} @ Rs.${(item.costPrice || item.unitPrice || 0).toFixed(2)})`;
+        })
+        .join('; ');
+
+      return {
+        'S.N.': index + 1,
+        'PO Number': p.poNumber,
+        'Purchase Date (BS)': formatAdToBs(p.purchaseDate),
+        'Supplier': p.supplier?.name || 'Cash Supplier',
+        'Products': itemsSummary || 'No items',
+        'Total Amount (Rs.)': Number(p.totalAmount || 0).toFixed(2),
+        'Refunded Amount (Rs.)': Number(p.totalRefunded || 0).toFixed(2),
+        'Net Amount (Rs.)': Number(p.netAmount !== undefined ? p.netAmount : (p.totalAmount - (p.totalRefunded || 0))).toFixed(2),
+        'Status': p.status || 'COMPLETED',
+        'Payment Status': p.paymentStatus || 'PAID',
+        'Created By': p.user?.name || '',
+      };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Purchases');
+    XLSX.writeFile(workbook, `Purchases_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   const handleAddItem = () => {
@@ -414,11 +454,20 @@ export default function PurchasesPage() {
       </div>
       <div className="d-flex justify-content-between align-items-center mb-4 gap-3 flex-wrap">
         <h4 className="fw-bold m-0">{t('purchases', 'title')}</h4>
-        {isAdmin && (
-          <button className="btn btn-primary fw-bold d-flex align-items-center gap-2 px-3 text-nowrap" onClick={() => setShowForm(true)}>
-            <i className="bi bi-plus-lg"></i> {t('purchases', 'add_purchase')}
+        <div className="d-flex gap-2">
+          <button
+            onClick={exportToExcel}
+            className="btn btn-outline-success fw-bold d-flex align-items-center gap-2"
+            style={{ borderRadius: '6px' }}
+          >
+            <i className="bi bi-file-earmark-excel"></i> {language === 'ne' ? 'एक्सेल एक्सपोर्ट' : 'Export Excel'}
           </button>
-        )}
+          {isAdmin && (
+            <button className="btn btn-primary fw-bold d-flex align-items-center gap-2 px-3 text-nowrap" onClick={() => setShowForm(true)}>
+              <i className="bi bi-plus-lg"></i> {t('purchases', 'add_purchase')}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filter Bar */}

@@ -166,7 +166,8 @@ export default function SalesReturnsPage() {
     setReturnItems((prev) =>
       prev.map((item) => {
         if (item.saleItemId === saleItemId) {
-          const clampedQty = Math.max(0, Math.min(item.remainingQuantity, newQty));
+          const rounded = Math.round(newQty * 1000) / 1000;
+          const clampedQty = Math.max(0, Math.min(item.remainingQuantity, rounded));
           return { ...item, returnQuantity: clampedQty };
         }
         return item;
@@ -478,7 +479,7 @@ export default function SalesReturnsPage() {
                               {returnItems.map((item) => {
                                 const itemRefund = item.unitPrice * item.returnQuantity;
                                 const isReturning = item.returnQuantity > 0;
-                                const isFullyReturned = item.remainingQuantity === 0;
+                                const isFullyReturned = item.remainingQuantity <= 0.001;
 
                                 return (
                                   <tr key={item.saleItemId} className={isReturning ? 'table-warning' : isFullyReturned ? 'table-light' : ''}>
@@ -508,24 +509,29 @@ export default function SalesReturnsPage() {
                                           <button
                                             type="button"
                                             className="btn btn-outline-secondary"
-                                            onClick={() => handleReturnQtyChange(item.saleItemId, item.returnQuantity - 1)}
+                                            onClick={() => handleReturnQtyChange(item.saleItemId, Math.max(0, item.returnQuantity - 1))}
                                             disabled={item.returnQuantity <= 0}
                                           >
                                             -
                                           </button>
                                           <input
                                             type="number"
+                                            step="any"
                                             className="form-control text-center"
-                                            style={{ maxWidth: '50px' }}
+                                            style={{ maxWidth: '75px' }}
                                             min="0"
                                             max={item.remainingQuantity}
-                                            value={item.returnQuantity}
-                                            onChange={(e) => handleReturnQtyChange(item.saleItemId, parseFloat(e.target.value) || 0)}
+                                            value={item.returnQuantity === 0 ? '' : item.returnQuantity}
+                                            placeholder="0"
+                                            onChange={(e) => {
+                                              const val = parseFloat(e.target.value);
+                                              handleReturnQtyChange(item.saleItemId, isNaN(val) ? 0 : val);
+                                            }}
                                           />
                                           <button
                                             type="button"
                                             className="btn btn-outline-secondary"
-                                            onClick={() => handleReturnQtyChange(item.saleItemId, item.returnQuantity + 1)}
+                                            onClick={() => handleReturnQtyChange(item.saleItemId, Math.min(item.remainingQuantity, item.returnQuantity + 1))}
                                             disabled={item.returnQuantity >= item.remainingQuantity}
                                           >
                                             +
