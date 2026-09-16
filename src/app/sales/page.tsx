@@ -106,9 +106,12 @@ export default function SalesHistoryPage() {
       'Invoice No': sale.invoiceNo,
       'Date (BS)': formatDate(sale.createdAt),
       'Customer': sale.customer?.name || 'Walk-in Customer',
-      'Total Amount': sale.totalAmount,
+      'Total Amount': Number(sale.totalAmount || 0).toFixed(2),
+      'Refunded Amount (Rs.)': Number(sale.totalRefunded || 0).toFixed(2),
+      'Net Amount (Rs.)': Number(sale.netAmount !== undefined ? sale.netAmount : (sale.totalAmount - (sale.totalRefunded || 0))).toFixed(2),
+      'Return Status': sale.returnStatus || 'NONE',
       'Payment Status': sale.paymentStatus,
-      'Payment Method': sale.paymentMethod || 'CASH'
+      'Payment Method': sale.paymentMethod || 'CASH',
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -373,14 +376,29 @@ export default function SalesHistoryPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedSale.items?.map((item: any, i: number) => (
-                        <tr key={i}>
-                          <td>{item.product?.name || item.productName || 'Item'}</td>
-                          <td className="text-center">{item.quantity}</td>
-                          <td className="text-end">{item.unitPrice?.toFixed(2)}</td>
-                          <td className="text-end">{item.total?.toFixed(2)}</td>
-                        </tr>
-                      ))}
+                      {selectedSale.items?.map((item: any, i: number) => {
+                        const hasReturn = (selectedSale.totalRefunded || 0) > 0;
+                        const displayQty = hasReturn && item.remainingQuantity !== undefined
+                          ? item.remainingQuantity
+                          : item.quantity;
+                        const isFullyReturned = hasReturn && item.remainingQuantity !== undefined && item.remainingQuantity <= 0;
+                        const unitPrice = item.price || item.unitPrice || 0;
+                        const displayTotal = unitPrice * displayQty;
+
+                        return (
+                          <tr key={i} style={isFullyReturned ? { opacity: 0.45 } : {}}>
+                            <td>
+                              {item.product?.name || item.productName || 'Item'}
+                              {isFullyReturned && (
+                                <span className="badge bg-secondary ms-1" style={{ fontSize: '9px' }}>Returned</span>
+                              )}
+                            </td>
+                            <td className="text-center">{displayQty}</td>
+                            <td className="text-end">{unitPrice.toFixed(2)}</td>
+                            <td className="text-end">{displayTotal.toFixed(2)}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
 
@@ -404,8 +422,37 @@ export default function SalesHistoryPage() {
                   )}
                   <div className="d-flex justify-content-between fw-bold fs-6 my-2 border-top border-bottom py-1">
                     <span>Grand Total:</span>
-                    <span>Rs. {selectedSale.totalAmount?.toFixed(2)}</span>
+                    <span>Rs. {(selectedSale.totalRefunded > 0 && selectedSale.netAmount !== undefined
+                      ? selectedSale.netAmount
+                      : selectedSale.totalAmount)?.toFixed(2)}</span>
                   </div>
+
+                  {/* Return Audit Trail */}
+                  {(selectedSale.totalRefunded || 0) > 0 && (
+                    <div className="mt-3 border rounded p-2" style={{ fontSize: '11px', background: '#fff8e1', borderColor: '#ffe082' }}>
+                      <div className="d-flex align-items-center gap-1 mb-1 fw-bold text-warning-emphasis">
+                        <i className="bi bi-exclamation-triangle-fill text-warning"></i>
+                        {selectedSale.returnStatus === 'FULL' ? 'Fully Returned' : 'Partially Returned'}
+                      </div>
+                      {selectedSale.saleReturns?.map((ret: any, ri: number) => (
+                        <div key={ri} className="text-secondary" style={{ lineHeight: '1.6' }}>
+                          <div><span className="fw-semibold">Return No:</span> {ret.returnNo}</div>
+                          <div><span className="fw-semibold">Return Date:</span> {new Date(ret.createdAt).toLocaleDateString()}</div>
+                          <div><span className="fw-semibold">Reason:</span> {ret.reason || 'Customer Return'}</div>
+                          <div><span className="fw-semibold text-danger">Refunded:</span> <span className="text-danger fw-bold">Rs. {Number(ret.totalAmount || 0).toFixed(2)}</span></div>
+                          {ri < (selectedSale.saleReturns.length - 1) && <hr className="my-1" />}
+                        </div>
+                      ))}
+                      <div className="border-top mt-1 pt-1 d-flex justify-content-between fw-bold">
+                        <span>Total Refunded:</span>
+                        <span className="text-danger">Rs. {Number(selectedSale.totalRefunded).toFixed(2)}</span>
+                      </div>
+                      <div className="d-flex justify-content-between fw-bold text-success">
+                        <span>Net Total:</span>
+                        <span>Rs. {Number(selectedSale.netAmount ?? (selectedSale.totalAmount - selectedSale.totalRefunded)).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="text-center mt-3 text-muted small">
                     <p className="mb-0">Thank you for shopping with us!</p>

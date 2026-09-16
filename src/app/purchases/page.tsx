@@ -66,7 +66,12 @@ export default function PurchasesPage() {
   const [cart, setCart] = useState<any[]>([]);
   
   const [taxPercent, setTaxPercent] = useState<number>(0);
+  const [taxPercentInput, setTaxPercentInput] = useState<string>('0');
   const [overallDiscPercent, setOverallDiscPercent] = useState<number>(0);
+  const [overallDiscPercentInput, setOverallDiscPercentInput] = useState<string>('0');
+
+  // View modal state
+  const [viewPurchase, setViewPurchase] = useState<any | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -136,10 +141,13 @@ export default function PurchasesPage() {
   const handleAddItem = () => {
     setCart([...cart, { 
       productId: '', 
-      unitPrice: 0, 
+      unitPrice: 0,
+      unitPriceInput: '0',
       unit: 'pcs',
-      qty: 1, 
-      discPercent: 0 
+      qty: 1,
+      qtyInput: '1',
+      discPercent: 0,
+      discPercentInput: '0',
     }]);
   };
 
@@ -148,9 +156,11 @@ export default function PurchasesPage() {
     if (!product) {
       newCart[idx].productId = '';
       newCart[idx].unitPrice = 0;
+      newCart[idx].unitPriceInput = '0';
     } else {
       newCart[idx].productId = String(product.id);
       newCart[idx].unitPrice = product.cost || 0;
+      newCart[idx].unitPriceInput = String(product.cost || 0);
       newCart[idx].unit = product.unit || 'pcs';
     }
     setCart(newCart);
@@ -244,7 +254,9 @@ export default function PurchasesPage() {
     setCart([]);
     setReferenceNo(`PUR-${Math.floor(Math.random() * 1000000000)}`);
     setTaxPercent(0);
+    setTaxPercentInput('0');
     setOverallDiscPercent(0);
+    setOverallDiscPercentInput('0');
     setSupplier('');
     setNote('');
   };
@@ -258,9 +270,12 @@ export default function PurchasesPage() {
       const existingCart = purchase.items.map((item: any) => ({
         productId: item.productId.toString(),
         unitPrice: item.costPrice,
+        unitPriceInput: String(item.costPrice ?? 0),
         unit: item.measurementUnit || 'pcs',
         qty: item.quantity,
-        discPercent: 0
+        qtyInput: String(item.quantity ?? 1),
+        discPercent: 0,
+        discPercentInput: '0',
       }));
       setCart(existingCart);
     } else {
@@ -342,7 +357,25 @@ export default function PurchasesPage() {
                           />
                         </td>
                         <td className="border-bottom">
-                          <input type="number" min="0" step="any" className="form-control" value={item.unitPrice} onChange={e => updateCartItem(idx, 'unitPrice', parseFloat(e.target.value) || 0)} />
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            className="form-control"
+                            value={item.unitPriceInput !== undefined ? item.unitPriceInput : String(item.unitPrice)}
+                            onChange={e => {
+                              const raw = e.target.value;
+                              if (!/^\d*\.?\d*$/.test(raw)) return;
+                              const newCart = [...cart];
+                              newCart[idx].unitPriceInput = raw;
+                              newCart[idx].unitPrice = parseFloat(raw) || 0;
+                              setCart(newCart);
+                            }}
+                            onBlur={e => {
+                              const newCart = [...cart];
+                              newCart[idx].unitPriceInput = String(newCart[idx].unitPrice);
+                              setCart(newCart);
+                            }}
+                          />
                         </td>
                         <td className="border-bottom">
                           <select className="form-select" value={item.unit || 'pcs'} onChange={e => updateCartItem(idx, 'unit', e.target.value)} style={{ fontSize: '0.875rem' }}>
@@ -380,13 +413,51 @@ export default function PurchasesPage() {
                           </select>
                         </td>
                         <td className="border-bottom">
-                          <input type="number" min="0" step="any" className="form-control" value={item.qty} onChange={e => updateCartItem(idx, 'qty', parseFloat(e.target.value) || 0)} />
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            className="form-control"
+                            value={item.qtyInput !== undefined ? item.qtyInput : String(item.qty)}
+                            onChange={e => {
+                              const raw = e.target.value;
+                              if (!/^\d*\.?\d*$/.test(raw)) return;
+                              const newCart = [...cart];
+                              newCart[idx].qtyInput = raw;
+                              newCart[idx].qty = parseFloat(raw) || 0;
+                              setCart(newCart);
+                            }}
+                            onBlur={e => {
+                              const newCart = [...cart];
+                              newCart[idx].qtyInput = String(newCart[idx].qty);
+                              setCart(newCart);
+                            }}
+                          />
                         </td>
                         <td className="border-bottom">
                           <input type="text" className="form-control bg-light" readOnly value={`Rs.${((item.unitPrice || 0) * (item.qty || 0)).toFixed(2)}`} />
                         </td>
                         <td className="border-bottom">
-                          <input type="number" min="0" step="any" max="100" className="form-control" value={item.discPercent} onChange={e => updateCartItem(idx, 'discPercent', parseFloat(e.target.value) || 0)} />
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            className="form-control"
+                            value={item.discPercentInput !== undefined ? item.discPercentInput : String(item.discPercent)}
+                            onChange={e => {
+                              const raw = e.target.value;
+                              if (!/^\d*\.?\d*$/.test(raw)) return;
+                              const val = parseFloat(raw) || 0;
+                              if (val > 100) return;
+                              const newCart = [...cart];
+                              newCart[idx].discPercentInput = raw;
+                              newCart[idx].discPercent = val;
+                              setCart(newCart);
+                            }}
+                            onBlur={e => {
+                              const newCart = [...cart];
+                              newCart[idx].discPercentInput = String(newCart[idx].discPercent);
+                              setCart(newCart);
+                            }}
+                          />
                         </td>
                         <td className="border-bottom text-center">
                           <button className="btn btn-danger btn-sm p-1 rounded-sm" onClick={() => removeCartItem(idx)} style={{ width: '30px', height: '30px' }}>
@@ -421,11 +492,39 @@ export default function PurchasesPage() {
                 </div>
                 <div className="d-flex justify-content-between align-items-center mb-2">
                   <span>Discount (%):</span>
-                  <input type="number" className="form-control text-end form-control-sm" style={{ width: '80px' }} value={overallDiscPercent} onChange={e => setOverallDiscPercent(parseFloat(e.target.value) || 0)} />
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    className="form-control text-end form-control-sm"
+                    style={{ width: '80px' }}
+                    value={overallDiscPercentInput}
+                    onChange={e => {
+                      const raw = e.target.value;
+                      if (!/^\d*\.?\d*$/.test(raw)) return;
+                      const val = parseFloat(raw) || 0;
+                      if (val > 100) return;
+                      setOverallDiscPercentInput(raw);
+                      setOverallDiscPercent(val);
+                    }}
+                    onBlur={() => setOverallDiscPercentInput(String(overallDiscPercent))}
+                  />
                 </div>
                 <div className="d-flex justify-content-between align-items-center mb-2">
                   <span>Tax (%):</span>
-                  <input type="number" className="form-control text-end form-control-sm" style={{ width: '80px' }} value={taxPercent} onChange={e => setTaxPercent(parseFloat(e.target.value) || 0)} />
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    className="form-control text-end form-control-sm"
+                    style={{ width: '80px' }}
+                    value={taxPercentInput}
+                    onChange={e => {
+                      const raw = e.target.value;
+                      if (!/^\d*\.?\d*$/.test(raw)) return;
+                      setTaxPercentInput(raw);
+                      setTaxPercent(parseFloat(raw) || 0);
+                    }}
+                    onBlur={() => setTaxPercentInput(String(taxPercent))}
+                  />
                 </div>
                 <hr />
                 <div className="d-flex justify-content-between fs-5 fw-bold text-primary">
@@ -603,6 +702,13 @@ export default function PurchasesPage() {
                   </td>
                   <td>
                     <div className="d-flex align-items-center gap-1">
+                      <button
+                        className="btn btn-sm btn-outline-info"
+                        onClick={() => setViewPurchase(p)}
+                        title="View Purchase Details"
+                      >
+                        <i className="bi bi-eye"></i> View
+                      </button>
                       {isAdmin && (
                         <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(p)} title="Edit Purchase">
                           <i className="bi bi-pencil-square"></i> {t('common', 'edit')}
@@ -632,6 +738,141 @@ export default function PurchasesPage() {
           onPageChange={setListCurrentPage}
         />
       </div>
+
+      {/* Purchase View Modal */}
+      {viewPurchase && (
+        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}>
+          <div className="modal-dialog modal-dialog-centered modal-lg">
+            <div className="modal-content border-0 shadow rounded-4 overflow-hidden">
+              <div className="modal-header bg-primary text-white border-bottom-0">
+                <h5 className="modal-title fw-bold d-flex align-items-center gap-2">
+                  <i className="bi bi-receipt"></i> Purchase Details — {viewPurchase.poNumber}
+                </h5>
+                <button type="button" className="btn-close btn-close-white" onClick={() => setViewPurchase(null)}></button>
+              </div>
+              <div className="modal-body p-4">
+                {/* Header Info */}
+                <div className="row g-2 mb-3">
+                  <div className="col-6 col-md-3">
+                    <div className="text-muted small">PO Number</div>
+                    <div className="fw-bold text-primary">{viewPurchase.poNumber}</div>
+                  </div>
+                  <div className="col-6 col-md-3">
+                    <div className="text-muted small">Purchase Date</div>
+                    <div className="fw-semibold">{formatAdToBs(viewPurchase.purchaseDate)}</div>
+                  </div>
+                  <div className="col-6 col-md-3">
+                    <div className="text-muted small">Supplier</div>
+                    <div className="fw-semibold">{viewPurchase.supplier?.name || 'Cash Supplier'}</div>
+                  </div>
+                  <div className="col-6 col-md-3">
+                    <div className="text-muted small">Recorded By</div>
+                    <div className="fw-semibold">{viewPurchase.user?.name || '—'}</div>
+                  </div>
+                </div>
+
+                {/* Items Table */}
+                <div className="table-responsive border rounded-3 mb-3">
+                  <table className="table table-sm align-middle mb-0">
+                    <thead className="table-light">
+                      <tr>
+                        <th>Product</th>
+                        <th className="text-center">Qty Purchased</th>
+                        <th className="text-center">Qty Returned</th>
+                        <th className="text-center">Remaining</th>
+                        <th className="text-end">Cost Price</th>
+                        <th className="text-end">Net Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(viewPurchase.items || []).map((item: any, i: number) => {
+                        const returnedQty = item.returnedQuantity ?? 0;
+                        const remainingQty = item.remainingQuantity ?? item.quantity;
+                        const costPrice = item.costPrice || item.unitPrice || 0;
+                        const isFullyReturned = remainingQty <= 0;
+                        return (
+                          <tr key={i} style={isFullyReturned ? { opacity: 0.45 } : {}}>
+                            <td>
+                              <div className="fw-semibold">
+                                {products.find((p: any) => p.id === item.productId)?.name || item.product?.name || `Product #${item.productId}`}
+                              </div>
+                              <small className="text-muted">{item.measurementUnit || 'pcs'}</small>
+                              {isFullyReturned && <span className="badge bg-secondary ms-1" style={{ fontSize: '9px' }}>Returned</span>}
+                            </td>
+                            <td className="text-center text-secondary fw-semibold">{item.quantity}</td>
+                            <td className="text-center text-danger fw-semibold">{returnedQty > 0 ? returnedQty : '—'}</td>
+                            <td className="text-center fw-bold text-success">{remainingQty}</td>
+                            <td className="text-end">Rs. {costPrice.toFixed(2)}</td>
+                            <td className="text-end fw-bold">Rs. {(costPrice * remainingQty).toFixed(2)}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Totals */}
+                <div className="row justify-content-end">
+                  <div className="col-md-5">
+                    <div className="d-flex justify-content-between mb-1">
+                      <span>Original Total:</span>
+                      <span className={viewPurchase.totalRefunded > 0 ? 'text-decoration-line-through text-muted' : 'fw-bold'}>
+                        Rs. {Number(viewPurchase.totalAmount).toFixed(2)}
+                      </span>
+                    </div>
+                    {(viewPurchase.totalRefunded || 0) > 0 && (
+                      <div className="d-flex justify-content-between mb-1 text-danger">
+                        <span>Total Refunded:</span>
+                        <span className="fw-bold">- Rs. {Number(viewPurchase.totalRefunded).toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="d-flex justify-content-between fw-bold fs-6 border-top pt-2">
+                      <span>Net Amount:</span>
+                      <span className="text-primary">
+                        Rs. {Number(viewPurchase.netAmount ?? (viewPurchase.totalAmount - (viewPurchase.totalRefunded || 0))).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Return Audit Trail */}
+                {(viewPurchase.totalRefunded || 0) > 0 && viewPurchase.purchaseReturns?.length > 0 && (
+                  <div className="mt-3 border rounded p-2" style={{ fontSize: '12px', background: '#fff8e1', borderColor: '#ffe082' }}>
+                    <div className="d-flex align-items-center gap-1 mb-2 fw-bold text-warning-emphasis">
+                      <i className="bi bi-exclamation-triangle-fill text-warning"></i>
+                      {viewPurchase.returnStatus === 'FULL' ? 'Fully Returned to Supplier' : 'Partially Returned to Supplier'}
+                    </div>
+                    {viewPurchase.purchaseReturns.map((ret: any, ri: number) => (
+                      <div key={ri} className="text-secondary" style={{ lineHeight: '1.7' }}>
+                        <div><span className="fw-semibold">Return No:</span> {ret.returnNo || `Return #${ri + 1}`}</div>
+                        <div><span className="fw-semibold">Return Date:</span> {new Date(ret.createdAt || ret.returnDate).toLocaleDateString()}</div>
+                        <div><span className="fw-semibold">Reason:</span> {ret.reason || 'Supplier Return'}</div>
+                        <div><span className="fw-semibold text-danger">Refunded:</span> <span className="text-danger fw-bold">Rs. {Number(ret.totalAmount || 0).toFixed(2)}</span></div>
+                        {ri < (viewPurchase.purchaseReturns.length - 1) && <hr className="my-1" />}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setViewPurchase(null)}>Close</button>
+                {(viewPurchase.returnStatus !== 'FULL' && viewPurchase.status !== 'RETURNED') && (
+                  <button
+                    type="button"
+                    className="btn btn-outline-danger"
+                    onClick={() => {
+                      setViewPurchase(null);
+                      router.push(`/purchase-returns?poNumber=${encodeURIComponent(viewPurchase.poNumber)}`);
+                    }}
+                  >
+                    <i className="bi bi-arrow-counterclockwise me-1"></i> Return to Supplier
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </AuthLayout>
   );
 }
